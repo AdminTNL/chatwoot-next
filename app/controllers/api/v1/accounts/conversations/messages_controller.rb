@@ -57,7 +57,30 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
     render_could_not_create_error(e.details.presence || e.message)
   end
 
+  def approve_ai_suggestion
+    process_ai_suggestion_action(:approve, status: 'approved')
+  end
+
+  def reject_ai_suggestion
+    process_ai_suggestion_action(:reject, status: 'dismissed')
+  end
+
   private
+
+  def process_ai_suggestion_action(gateway_method, status:)
+    suggestion_id = message.content_attributes['ai_suggestion_id']
+    return render_could_not_create_error('Message is not an AI suggestion') if suggestion_id.blank?
+
+    ai_suggestion_gateway.public_send(gateway_method, suggestion_id: suggestion_id, operator_id: Current.user.id.to_s)
+    message.update!(content_attributes: message.content_attributes.merge('ai_suggestion_status' => status))
+    render json: { content_attributes: message.content_attributes }
+  rescue AiSuggestionGateway::RequestError => e
+    render_could_not_create_error(e.message)
+  end
+
+  def ai_suggestion_gateway
+    @ai_suggestion_gateway ||= AiSuggestionGateway.new
+  end
 
   def message
     @message ||= @conversation.messages.find(permitted_params[:id])

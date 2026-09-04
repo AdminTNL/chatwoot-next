@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 import { useElementSize } from '@vueuse/core';
@@ -7,6 +7,7 @@ import BackButton from '../BackButton.vue';
 import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
 import Avatar from 'next/avatar/Avatar.vue';
+import ButtonV4 from 'dashboard/components-next/button/Button.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
 import wootConstants from 'dashboard/constants/globals';
@@ -97,6 +98,14 @@ const hasSlaPolicyId = computed(
   () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
 );
 
+const showResolvedAiSuggestions = inject(
+  'showResolvedAiSuggestions',
+  ref(false)
+);
+const toggleResolvedAiSuggestions = () => {
+  showResolvedAiSuggestions.value = !showResolvedAiSuggestions.value;
+};
+
 const copyConversationId = async () => {
   try {
     await copyTextToClipboard(String(props.chat.id));
@@ -173,6 +182,19 @@ const copyConversationId = async () => {
         show-extended-info
         :parent-width="width"
         class="hidden md:flex"
+      />
+      <ButtonV4
+        v-tooltip="
+          showResolvedAiSuggestions
+            ? $t('CONVERSATION.HEADER.HIDE_AI_SUGGESTIONS')
+            : $t('CONVERSATION.HEADER.SHOW_AI_SUGGESTIONS')
+        "
+        size="sm"
+        :variant="showResolvedAiSuggestions ? 'faded' : 'ghost'"
+        color="slate"
+        icon="i-lucide-sparkles"
+        class="rounded-md"
+        @click="toggleResolvedAiSuggestions"
       />
       <ConversationCallButton :inbox="inbox" :chat="currentChat" />
       <MoreActions :conversation-id="currentChat.id" />
