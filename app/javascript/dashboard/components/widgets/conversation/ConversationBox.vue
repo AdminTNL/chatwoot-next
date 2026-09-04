@@ -1,5 +1,6 @@
 <script>
 import { mapGetters } from 'vuex';
+import { provide, ref } from 'vue';
 import ConversationHeader from './ConversationHeader.vue';
 import DashboardAppFrame from '../DashboardApp/Frame.vue';
 import EmptyState from './EmptyState/EmptyState.vue';
@@ -30,6 +31,11 @@ export default {
       type: Boolean,
       default: true,
     },
+  },
+  setup() {
+    const showResolvedAiSuggestions = ref(false);
+    provide('showResolvedAiSuggestions', showResolvedAiSuggestions);
+    return { showResolvedAiSuggestions };
   },
   data() {
     return { activeIndex: 0 };
@@ -72,6 +78,7 @@ export default {
     'currentChat.id'() {
       this.fetchLabels();
       this.activeIndex = 0;
+      this.showResolvedAiSuggestions = false;
     },
   },
   mounted() {

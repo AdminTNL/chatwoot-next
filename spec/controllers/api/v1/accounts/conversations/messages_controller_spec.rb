@@ -318,6 +318,82 @@ RSpec.describe 'Conversation Messages API', type: :request do
     end
   end
 
+  describe 'POST /api/v1/accounts/{account.id}/conversations/:conversation_id/messages/:id/approve_ai_suggestion' do
+    let(:message) do
+      create(:message, account: account, private: true, content_attributes: { ai_suggestion_id: 55 })
+    end
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:gateway) { instance_double(AiSuggestionGateway) }
+
+    before do
+      create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+      allow(AiSuggestionGateway).to receive(:new).and_return(gateway)
+    end
+
+    context 'when it is an unauthenticated user' do
+      it 'returns unauthorized' do
+        post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    it 'approves the suggestion and marks the message as approved' do
+      allow(gateway).to receive(:approve).with(suggestion_id: 55, operator_id: agent.id.to_s).and_return({})
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(message.reload.content_attributes['ai_suggestion_status']).to eq('approved')
+    end
+
+    it 'returns unprocessable_entity when the message is not an AI suggestion' do
+      other_message = create(:message, account: account, private: true, conversation: message.conversation)
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{other_message.id}/approve_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'returns unprocessable_entity when the gateway call fails' do
+      allow(gateway).to receive(:approve).and_raise(AiSuggestionGateway::RequestError, 'boom')
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(message.reload.content_attributes['ai_suggestion_status']).to be_nil
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/conversations/:conversation_id/messages/:id/reject_ai_suggestion' do
+    let(:message) do
+      create(:message, account: account, private: true, content_attributes: { ai_suggestion_id: 55 })
+    end
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:gateway) { instance_double(AiSuggestionGateway) }
+
+    before do
+      create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+      allow(AiSuggestionGateway).to receive(:new).and_return(gateway)
+    end
+
+    it 'rejects the suggestion and marks the message as dismissed' do
+      allow(gateway).to receive(:reject).with(suggestion_id: 55, operator_id: agent.id.to_s).and_return({})
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/reject_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(message.reload.content_attributes['ai_suggestion_status']).to eq('dismissed')
+    end
+  end
+
   describe 'PATCH /api/v1/accounts/{account.id}/conversations/:conversation_id/messages/:id' do
     let(:api_channel) { create(:channel_api, account: account) }
     let(:api_inbox) { create(:inbox, channel: api_channel, account: account) }

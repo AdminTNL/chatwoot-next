@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive } from 'vue';
+import { computed, inject, reactive, ref } from 'vue';
 import Message from './Message.vue';
 import { MESSAGE_TYPES } from './constants.js';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
@@ -45,6 +45,23 @@ const allMessages = computed(() => {
   return useCamelCase(props.messages, {
     deep: true,
     stopPaths: ['content_attributes.translations'],
+  });
+});
+
+const RESOLVED_AI_SUGGESTION_STATUSES = ['approved', 'dismissed'];
+const showResolvedAiSuggestions = inject(
+  'showResolvedAiSuggestions',
+  ref(false)
+);
+
+const visibleMessages = computed(() => {
+  return allMessages.value.filter(message => {
+    const isResolvedAiSuggestion =
+      message.private &&
+      RESOLVED_AI_SUGGESTION_STATUSES.includes(
+        message.contentAttributes?.aiSuggestionStatus
+      );
+    return !isResolvedAiSuggestion || showResolvedAiSuggestions.value;
   });
 });
 
@@ -165,7 +182,7 @@ const getInReplyToMessage = parentMessage => {
 <template>
   <ul class="px-4 bg-n-surface-1">
     <slot name="beforeAll" />
-    <template v-for="(message, index) in allMessages" :key="message.id">
+    <template v-for="(message, index) in visibleMessages" :key="message.id">
       <slot
         v-if="firstUnreadId && message.id === firstUnreadId"
         name="unreadBadge"
@@ -174,7 +191,7 @@ const getInReplyToMessage = parentMessage => {
         v-bind="message"
         :is-email-inbox="isAnEmailChannel"
         :in-reply-to="getInReplyToMessage(message)"
-        :group-with-next="shouldGroupWithNext(index, allMessages)"
+        :group-with-next="shouldGroupWithNext(index, visibleMessages)"
         :inbox-supports-reply-to="inboxSupportsReplyTo"
         :current-user-id="currentUserId"
         data-clarity-mask="True"

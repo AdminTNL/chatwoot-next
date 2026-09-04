@@ -99,11 +99,21 @@
       "TRANSCRIPT_SHOW_MORE": "Show more",
       "TRANSCRIPT_SHOW_LESS": "Show less"
     },
+    "PRIVATE_NOTE": {
+      "APPROVE_SUGGESTION": "Approve",
+      "REJECT_SUGGESTION": "Reject",
+      "COPY_SUGGESTION": "Copy",
+      "COPY_SUCCESS": "Suggestion copied to clipboard",
+      "APPROVE_ERROR": "Could not approve the suggestion, please try again",
+      "REJECT_ERROR": "Could not reject the suggestion, please try again"
+    },
     "HEADER": {
       "RESOLVE_ACTION": "Resolve",
       "REOPEN_ACTION": "Reopen",
       "OPEN_ACTION": "Open",
       "MORE_ACTIONS": "More actions",
+      "SHOW_AI_SUGGESTIONS": "Show resolved AI suggestions",
+      "HIDE_AI_SUGGESTIONS": "Hide resolved AI suggestions",
       "OPEN": "More",
       "CLOSE": "Close",
       "DETAILS": "details",
