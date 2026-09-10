@@ -62,7 +62,13 @@
       "INBOXES": "Caixas de Entrada",
       "NO_AGENTS": "Nenhum agente encontrado",
       "NO_CONTACTS": "Comece a pesquisar para ver os resultados",
-      "NO_INBOXES": "Nenhuma caixa de entrada encontrada"
+      "NO_INBOXES": "Nenhuma caixa de entrada encontrada",
+      "VISIBILITY": "Visibilidade",
+      "VISIBILITY_OPTIONS": {
+        "PUBLIC": "Mensagens públicas",
+        "PRIVATE_NOTE": "Nota privada",
+        "AI_SUGGESTION": "Sugestões da IA"
+      }
     }
   }
 }

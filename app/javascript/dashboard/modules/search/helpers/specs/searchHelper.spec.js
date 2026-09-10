@@ -153,6 +153,40 @@ describe('#generateURLParams', () => {
       );
       expect(result).toEqual({});
     });
+
+    it('still serializes visibility param when feature flag is disabled', () => {
+      const result = generateURLParams(
+        {
+          from: 'agent:123',
+          visibility: 'private_note',
+        },
+        false
+      );
+      expect(result).toEqual({ message_visibility: 'private_note' });
+    });
+  });
+
+  describe('with visibility', () => {
+    it('generates params with visibility parameter', () => {
+      const result = generateURLParams({ visibility: 'ai_suggestion' });
+      expect(result).toEqual({ message_visibility: 'ai_suggestion' });
+    });
+
+    it('omits visibility param when null', () => {
+      const result = generateURLParams({ visibility: null });
+      expect(result).toEqual({});
+    });
+
+    it('combines visibility with other advanced search params', () => {
+      const result = generateURLParams({
+        from: 'agent:456',
+        visibility: 'public',
+      });
+      expect(result).toEqual({
+        from: 'agent:456',
+        message_visibility: 'public',
+      });
+    });
   });
 });
 
@@ -167,6 +201,7 @@ describe('#parseURLParams', () => {
         from: null,
         to: null,
       },
+      visibility: null,
     });
   });
 
@@ -180,6 +215,7 @@ describe('#parseURLParams', () => {
         from: null,
         to: null,
       },
+      visibility: null,
     });
   });
 
@@ -193,6 +229,7 @@ describe('#parseURLParams', () => {
         from: null,
         to: null,
       },
+      visibility: null,
     });
   });
 
@@ -210,6 +247,7 @@ describe('#parseURLParams', () => {
         from: 1640995200,
         to: 1672531199,
       },
+      visibility: null,
     });
   });
 
@@ -227,6 +265,7 @@ describe('#parseURLParams', () => {
           from: 1640995200,
           to: 1672531199,
         },
+        visibility: null,
       });
     });
 
@@ -244,6 +283,7 @@ describe('#parseURLParams', () => {
           from: 1640995200,
           to: 1672531199,
         },
+        visibility: null,
       });
     });
   });
@@ -264,6 +304,40 @@ describe('#parseURLParams', () => {
         from: 1640995200,
         to: 1672531199,
       },
+      visibility: null,
+    });
+  });
+
+  describe('with visibility', () => {
+    it('parses message_visibility parameter', () => {
+      const result = parseURLParams({ message_visibility: 'ai_suggestion' });
+      expect(result).toEqual({
+        from: null,
+        in: null,
+        dateRange: {
+          type: undefined,
+          from: null,
+          to: null,
+        },
+        visibility: 'ai_suggestion',
+      });
+    });
+
+    it('parses visibility even when isAdvancedSearchEnabled is false', () => {
+      const result = parseURLParams(
+        { message_visibility: 'private_note' },
+        false
+      );
+      expect(result).toEqual({
+        from: null,
+        in: null,
+        dateRange: {
+          type: null,
+          from: null,
+          to: null,
+        },
+        visibility: 'private_note',
+      });
     });
   });
 
@@ -287,6 +361,7 @@ describe('#parseURLParams', () => {
           from: null,
           to: null,
         },
+        visibility: null,
       });
     });
 
@@ -306,6 +381,7 @@ describe('#parseURLParams', () => {
           from: null,
           to: null,
         },
+        visibility: null,
       });
     });
 
@@ -326,6 +402,7 @@ describe('#parseURLParams', () => {
           from: null,
           to: null,
         },
+        visibility: null,
       });
     });
   });

@@ -87,6 +87,7 @@ describe('#SearchAPI', () => {
           until: undefined,
           from: undefined,
           inbox_id: undefined,
+          message_visibility: undefined,
         },
       });
     });
@@ -99,6 +100,7 @@ describe('#SearchAPI', () => {
         until: 1732000000,
         from: 'contact:42',
         inboxId: 10,
+        messageVisibility: 'ai_suggestion',
       });
       expect(axiosMock.get).toHaveBeenCalledWith('/api/v1/search/messages', {
         params: {
@@ -108,6 +110,7 @@ describe('#SearchAPI', () => {
           until: 1732000000,
           from: 'contact:42',
           inbox_id: 10,
+          message_visibility: 'ai_suggestion',
         },
       });
     });
