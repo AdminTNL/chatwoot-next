@@ -61,6 +61,29 @@ describe('#ConversationAPI', () => {
       });
     });
 
+    it('#get conversations maps readStatus to read_status', () => {
+      conversationAPI.get({
+        inboxId: 1,
+        status: 'all',
+        readStatus: 'unread',
+        page: 1,
+      });
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v1/conversations', {
+        params: {
+          inbox_id: 1,
+          team_id: undefined,
+          status: 'all',
+          assignee_type: undefined,
+          read_status: 'unread',
+          page: 1,
+          labels: undefined,
+          conversation_type: undefined,
+          sort_by: undefined,
+          updated_within: undefined,
+        },
+      });
+    });
+
     it('#search', () => {
       conversationAPI.search({
         q: 'leads',
@@ -163,6 +186,26 @@ describe('#ConversationAPI', () => {
           status: 'open',
           assignee_type: 'me',
           labels: [],
+        },
+      });
+    });
+
+    it('#meta maps readStatus to read_status', () => {
+      conversationAPI.meta({
+        inboxId: 1,
+        status: 'all',
+        readStatus: 'in_progress',
+        teamId: 1,
+      });
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v1/conversations/meta', {
+        params: {
+          inbox_id: 1,
+          team_id: 1,
+          status: 'all',
+          assignee_type: undefined,
+          read_status: 'in_progress',
+          labels: undefined,
+          conversation_type: undefined,
         },
       });
     });

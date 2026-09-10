@@ -102,6 +102,15 @@ const columns = computed(() => [
     width: 200,
     cell: defaulSpanRender,
   }),
+  ...(props.type === 'agent'
+    ? [
+        columnHelper.accessor('participatedConversationsCount', {
+          header: t('SUMMARY_REPORTS.PARTICIPATED_CONVERSATIONS'),
+          width: 200,
+          cell: defaulSpanRender,
+        }),
+      ]
+    : []),
 ]);
 
 const renderAvgTime = value => (value ? formatTime(value) : '--');
@@ -117,6 +126,7 @@ const tableData = computed(() =>
       avgResolutionTime,
       avgReplyTime,
       resolvedConversationsCount,
+      participatedConversationsCount,
     } = rowMetrics;
     return {
       id: row.id,
@@ -128,6 +138,9 @@ const tableData = computed(() =>
       avgReplyTime: renderAvgTime(avgReplyTime),
       avgResolutionTime: renderAvgTime(avgResolutionTime),
       resolutionsCount: renderCount(resolvedConversationsCount),
+      participatedConversationsCount: renderCount(
+        participatedConversationsCount
+      ),
     };
   })
 );

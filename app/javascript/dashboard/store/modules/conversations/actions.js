@@ -54,7 +54,7 @@ const actions = {
         { commit, dispatch },
         params,
         data,
-        params.assigneeType
+        params.readStatus
       );
     } catch (error) {
       // Handle error
@@ -194,6 +194,7 @@ const actions = {
   async setActiveChat({ commit, dispatch }, { data, after }) {
     commit(types.SET_CURRENT_CHAT_WINDOW, data);
     commit(types.CLEAR_ALL_MESSAGES_LOADED, data.id);
+    dispatch('markMessagesRead', { id: data.id }, { root: true });
     if (data.dataFetched === undefined) {
       try {
         await dispatch('fetchPreviousMessages', {

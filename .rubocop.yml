@@ -18,6 +18,7 @@ Metrics/ClassLength:
   Exclude:
     - 'app/models/message.rb'
     - 'app/models/conversation.rb'
+    - 'app/finders/conversation_finder.rb'
 
 Metrics/MethodLength:
   Max: 19

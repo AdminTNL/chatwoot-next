@@ -18,6 +18,51 @@ describe ReportingEventListener do
       expect(account.reporting_events.where(name: 'conversation_resolved').count).to be 1
     end
 
+    describe 'user_id attribution' do
+      it 'credits the current_user from the event when present, not the conversation assignee' do
+        resolving_agent = create(:user, account: account)
+        event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: conversation, current_user: resolving_agent)
+
+        listener.conversation_resolved(event)
+
+        reporting_event = account.reporting_events.where(name: 'conversation_resolved').first
+        expect(reporting_event.user_id).to eq(resolving_agent.id)
+        expect(reporting_event.user_id).not_to eq(conversation.assignee_id)
+      end
+
+      it 'falls back to performed_by when current_user is not a User (e.g. an AgentBot)' do
+        agent_bot = create(:agent_bot, account: account)
+        executor = create(:user, account: account)
+        event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: conversation,
+                                                                          current_user: agent_bot, performed_by: executor)
+
+        listener.conversation_resolved(event)
+
+        reporting_event = account.reporting_events.where(name: 'conversation_resolved').first
+        expect(reporting_event.user_id).to eq(executor.id)
+      end
+
+      it 'falls back to conversation.assignee_id when neither current_user nor performed_by is a User' do
+        automation_rule = create(:automation_rule, account: account)
+        event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: conversation, performed_by: automation_rule)
+
+        listener.conversation_resolved(event)
+
+        reporting_event = account.reporting_events.where(name: 'conversation_resolved').first
+        expect(reporting_event.user_id).to eq(conversation.assignee_id)
+      end
+
+      it 'allows a nil user_id when there is no identifiable user at all' do
+        unassigned_conversation = create(:conversation, account: account, inbox: inbox, assignee: nil)
+        event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: unassigned_conversation)
+
+        listener.conversation_resolved(event)
+
+        reporting_event = account.reporting_events.where(name: 'conversation_resolved', conversation_id: unassigned_conversation.id).first
+        expect(reporting_event.user_id).to be_nil
+      end
+    end
+
     context 'when rollup creation fails' do
       let(:event) { Events::Base.new('conversation.resolved', Time.zone.now, conversation: conversation) }
       let(:error) { StandardError.new('rollup failed') }
@@ -130,6 +175,15 @@ describe ReportingEventListener do
       events = account.reporting_events.where(name: 'reply_time', conversation_id: message.conversation_id)
       expect(events.length).to be 1
       expect(events.first.value).to be_within(1).of(7200)
+    end
+
+    it 'credits the message sender, not the conversation assignee' do
+      event = Events::Base.new('reply.created', Time.zone.now, waiting_since: 2.hours.ago, message: message)
+      listener.reply_created(event)
+
+      reporting_event = account.reporting_events.where(name: 'reply_time', conversation_id: message.conversation_id).first
+      expect(reporting_event.user_id).to eq(message.sender_id)
+      expect(reporting_event.user_id).not_to eq(conversation.assignee_id)
     end
 
     context 'when conversation is reopened' do
@@ -561,6 +615,147 @@ describe ReportingEventListener do
         expect(reopened_event.value).to be_within(1).of(3600) # 1 hour since resolution
         expect(reopened_event.event_start_time).to be_within(1.second).of(bot_resolved_time)
         expect(reopened_event.event_end_time).to be_within(1.second).of(reopened_time)
+      end
+    end
+  end
+
+  describe '#conversation_resolved - agent participation events' do
+    # created well in the past so that messages timestamped relative to "N.hours/minutes.ago"
+    # in the examples below still fall after the conversation's own creation time
+    let(:cycle_conversation) { create(:conversation, account: account, inbox: inbox, assignee: user, created_at: 4.hours.ago) }
+
+    def create_outgoing_message(conv, sender:, created_at: Time.current, is_private: false)
+      create(:message, message_type: 'outgoing', private: is_private,
+                       account: account, inbox: inbox, conversation: conv,
+                       sender: sender, created_at: created_at)
+    end
+
+    def participation_events_for(conv)
+      account.reporting_events.where(name: 'agent_participation', conversation_id: conv.id)
+    end
+
+    it 'creates one agent_participation event when a single agent replied in the cycle' do
+      create_outgoing_message(cycle_conversation, sender: user)
+
+      event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+      listener.conversation_resolved(event)
+
+      events = participation_events_for(cycle_conversation)
+      expect(events.count).to eq 1
+      expect(events.first.user_id).to eq(user.id)
+      expect(events.first.account_id).to eq(account.id)
+      expect(events.first.inbox_id).to eq(inbox.id)
+      expect(events.first.value).to eq 0
+    end
+
+    it 'creates one agent_participation event per distinct agent who replied in the cycle' do
+      second_agent = create(:user, account: account)
+      create_outgoing_message(cycle_conversation, sender: user)
+      create_outgoing_message(cycle_conversation, sender: second_agent)
+
+      event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+      listener.conversation_resolved(event)
+
+      events = participation_events_for(cycle_conversation)
+      expect(events.count).to eq 2
+      expect(events.pluck(:user_id)).to contain_exactly(user.id, second_agent.id)
+    end
+
+    it 'creates only one event when the same agent sends multiple outgoing messages in the cycle' do
+      create_outgoing_message(cycle_conversation, sender: user, created_at: 3.minutes.ago)
+      create_outgoing_message(cycle_conversation, sender: user, created_at: 2.minutes.ago)
+      create_outgoing_message(cycle_conversation, sender: user, created_at: 1.minute.ago)
+
+      event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+      listener.conversation_resolved(event)
+
+      expect(participation_events_for(cycle_conversation).count).to eq 1
+    end
+
+    it 'does not count private notes' do
+      create_outgoing_message(cycle_conversation, sender: user, is_private: true)
+
+      event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+      listener.conversation_resolved(event)
+
+      expect(participation_events_for(cycle_conversation).count).to eq 0
+    end
+
+    it 'does not count outgoing messages from a bot/Captain (sender_type != User)' do
+      # the plain message factory auto-assigns a User sender for outgoing messages when sender
+      # is blank (see spec/factories/messages.rb), so the :bot_message trait is required here to
+      # get a message with no sender (sender_type nil), like a bot/Captain-authored message
+      create(:message, :bot_message, private: false, account: account, inbox: inbox, conversation: cycle_conversation)
+
+      event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+      listener.conversation_resolved(event)
+
+      expect(participation_events_for(cycle_conversation).count).to eq 0
+    end
+
+    it 'creates no agent_participation event when there is no outgoing User message in the cycle' do
+      event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+      listener.conversation_resolved(event)
+
+      expect(participation_events_for(cycle_conversation).count).to eq 0
+    end
+
+    context 'when the conversation is reopened and resolved again' do
+      it 'records a separate event per cycle even for the same agent' do
+        first_resolved_at = 2.hours.ago
+        create_outgoing_message(cycle_conversation, sender: user, created_at: 3.hours.ago)
+        listener.conversation_resolved(Events::Base.new('conversation.resolved', first_resolved_at, conversation: cycle_conversation))
+
+        create_outgoing_message(cycle_conversation, sender: user, created_at: 1.hour.ago)
+        listener.conversation_resolved(Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation))
+
+        events = participation_events_for(cycle_conversation)
+        expect(events.count).to eq 2
+        expect(events.pluck(:user_id)).to eq [user.id, user.id]
+      end
+    end
+
+    context 'when computing cycle_start' do
+      it 'uses conversation.created_at as cycle_start when the conversation was never reopened' do
+        # message from before the conversation existed belongs to no cycle and must not count,
+        # even though it is sent by an agent who would otherwise qualify
+        stale_agent = create(:user, account: account)
+        create_outgoing_message(cycle_conversation, sender: stale_agent, created_at: cycle_conversation.created_at - 1.hour)
+        create_outgoing_message(cycle_conversation, sender: user, created_at: cycle_conversation.created_at + 1.minute)
+
+        event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+        listener.conversation_resolved(event)
+
+        events = participation_events_for(cycle_conversation)
+        expect(events.count).to eq 1
+        expect(events.first.user_id).to eq(user.id)
+      end
+
+      it 'uses the previous conversation_resolved event_end_time as cycle_start for a reopened conversation' do
+        previous_resolved_time = 2.hours.ago
+        create(:reporting_event,
+               name: 'conversation_resolved',
+               account_id: account.id,
+               inbox_id: inbox.id,
+               conversation_id: cycle_conversation.id,
+               user_id: user.id,
+               value: 3600,
+               event_start_time: cycle_conversation.created_at,
+               event_end_time: previous_resolved_time)
+
+        # message from the earlier (already-resolved) cycle must not count again
+        create_outgoing_message(cycle_conversation, sender: user, created_at: previous_resolved_time - 10.minutes)
+
+        # message from the new cycle must count
+        second_agent = create(:user, account: account)
+        create_outgoing_message(cycle_conversation, sender: second_agent, created_at: previous_resolved_time + 10.minutes)
+
+        event = Events::Base.new('conversation.resolved', Time.zone.now, conversation: cycle_conversation)
+        listener.conversation_resolved(event)
+
+        events = participation_events_for(cycle_conversation)
+        expect(events.count).to eq 1
+        expect(events.first.user_id).to eq(second_agent.id)
       end
     end
   end

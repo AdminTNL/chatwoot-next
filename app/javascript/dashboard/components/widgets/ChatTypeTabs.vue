@@ -10,7 +10,7 @@ const props = defineProps({
   },
   activeTab: {
     type: String,
-    default: wootConstants.ASSIGNEE_TYPE.ME,
+    default: wootConstants.READ_STATUS_TYPE.UNREAD,
   },
 });
 
@@ -32,7 +32,7 @@ const onTabChange = selectedTabIndex => {
 const keyboardEvents = {
   'Alt+KeyN': {
     action: () => {
-      if (props.activeTab === wootConstants.ASSIGNEE_TYPE.ALL) {
+      if (props.activeTab === wootConstants.READ_STATUS_TYPE.ALL) {
         onTabChange(0);
       } else {
         const nextIndex = (activeTabIndex.value + 1) % props.items.length;
@@ -46,19 +46,35 @@ useKeyboardEvents(keyboardEvents);
 </script>
 
 <template>
-  <woot-tabs
-    :index="activeTabIndex"
-    class="w-full px-3 -mt-1 py-0 [&_ul]:p-0 h-10"
-    @change="onTabChange"
+  <ul
+    class="grid grid-cols-3 gap-x-2 gap-y-1 w-full px-3 py-2 list-none mb-0 border-b border-b-n-weak"
   >
-    <woot-tabs-item
+    <li
       v-for="(item, index) in items"
       :key="item.key"
-      class="text-sm [&_a]:font-medium"
-      :index="index"
-      :name="item.name"
-      :count="item.count"
-      is-compact
-    />
-  </woot-tabs>
+      class="hover:text-n-slate-12"
+    >
+      <a
+        class="flex items-center justify-center flex-row select-none cursor-pointer relative after:absolute after:bottom-px after:left-0 after:right-0 after:h-[2px] after:rounded-full after:transition-all after:duration-200 text-button text-sm font-medium py-2.5"
+        :class="[
+          index === activeTabIndex
+            ? 'text-n-blue-11 after:bg-n-brand after:opacity-100'
+            : 'text-n-slate-11 after:bg-transparent after:opacity-0',
+        ]"
+        @click="onTabChange(index)"
+      >
+        {{ item.name }}
+        <div
+          class="rounded-full h-5 flex items-center justify-center text-xs font-medium my-0 ltr:ml-1 rtl:mr-1 px-1.5 py-0 min-w-[20px]"
+          :class="[
+            index === activeTabIndex
+              ? 'bg-n-blue-3 text-n-blue-11'
+              : 'bg-n-alpha-1 text-n-slate-10',
+          ]"
+        >
+          <span>{{ item.count }}</span>
+        </div>
+      </a>
+    </li>
+  </ul>
 </template>

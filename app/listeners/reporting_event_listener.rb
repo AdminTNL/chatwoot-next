@@ -6,14 +6,18 @@ class ReportingEventListener < BaseListener
     event_end_time = event.timestamp
     time_to_resolve = event_end_time.to_i - conversation.created_at.to_i
 
+    # Must be computed before the conversation_resolved event below is saved, otherwise the
+    # lookback in cycle_start_for would find that very event (its event_end_time also satisfies
+    # <= event_end_time) and use it as the "previous" resolution, collapsing the cycle to zero width.
+    cycle_start = cycle_start_for(conversation, event_end_time)
+
     reporting_event = ReportingEvent.new(
       name: 'conversation_resolved',
       value: time_to_resolve,
-      value_in_business_hours: business_hours(conversation.inbox, conversation.created_at,
-                                              event_end_time),
+      value_in_business_hours: business_hours(conversation.inbox, conversation.created_at, event_end_time),
       account_id: conversation.account_id,
       inbox_id: conversation.inbox_id,
-      user_id: conversation.assignee_id,
+      user_id: resolved_by_user_id(event, conversation),
       conversation_id: conversation.id,
       event_start_time: conversation.created_at,
       event_end_time: event_end_time
@@ -22,6 +26,8 @@ class ReportingEventListener < BaseListener
     create_bot_resolved_event(conversation, reporting_event)
     reporting_event.save!
     safe_rollup(reporting_event)
+
+    create_agent_participation_events(conversation, cycle_start, event_end_time)
   end
 
   def first_reply_created(event)
@@ -62,7 +68,7 @@ class ReportingEventListener < BaseListener
       value_in_business_hours: business_hours(conversation.inbox, waiting_since, message.created_at),
       account_id: conversation.account_id,
       inbox_id: conversation.inbox_id,
-      user_id: conversation.assignee_id,
+      user_id: message.sender_id,
       conversation_id: conversation.id,
       event_start_time: waiting_since,
       event_end_time: message.created_at
@@ -110,11 +116,7 @@ class ReportingEventListener < BaseListener
     conversation = extract_conversation_and_account(event)[0]
     event_end_time = event.timestamp
 
-    # Find the most recent resolved event for this conversation
-    last_resolved_event = ReportingEvent.where(
-      conversation_id: conversation.id,
-      name: 'conversation_resolved'
-    ).where('event_end_time <= ?', event_end_time).order(event_end_time: :desc).first
+    last_resolved_event = last_resolved_event_for(conversation, event_end_time)
 
     # For first-time openings, value is 0
     # For reopenings, calculate time since resolution
@@ -132,6 +134,59 @@ class ReportingEventListener < BaseListener
   end
 
   private
+
+  # Who actually resolved the conversation, not who it happens to be assigned to.
+  # Falls back through the chain below when no human agent is identifiable on the
+  # event itself (automation, auto-close, bot/Captain resolutions, etc.):
+  #   event.data[:current_user] (only if a User) -> event.data[:performed_by] (only if a User) -> conversation.assignee_id -> nil
+  #
+  # Note: this reads event.data[:performed_by], not a live Current.executed_by call.
+  # This listener runs inside EventDispatcherJob, off the request thread that set
+  # Current.executed_by, so re-reading Current here would not see that value (same
+  # thread-boundary reasoning as event.data[:current_user] above). performed_by is
+  # already captured into the payload in Conversation#dispatcher_dispatch, so we reuse it.
+  def resolved_by_user_id(event, conversation)
+    current_user = event.data[:current_user]
+    return current_user.id if current_user.is_a?(User)
+
+    executed_by = event.data[:performed_by]
+    return executed_by.id if executed_by.is_a?(User)
+
+    conversation.assignee_id
+  end
+
+  # Most recent conversation_resolved event for this conversation at or before event_end_time,
+  # i.e. the resolution that closed the previous care cycle. nil means there isn't one yet
+  # (this is the conversation's first cycle). Shared lookback between conversation_opened and
+  # conversation_resolved (via cycle_start_for).
+  def last_resolved_event_for(conversation, event_end_time)
+    ReportingEvent.where(
+      conversation_id: conversation.id,
+      name: 'conversation_resolved'
+    ).where('event_end_time <= ?', event_end_time).order(event_end_time: :desc).first
+  end
+
+  # Start of the current care cycle: the event_end_time of the previous conversation_resolved
+  # event, or conversation.created_at when this is the first cycle.
+  def cycle_start_for(conversation, event_end_time)
+    last_resolved_event_for(conversation, event_end_time)&.event_end_time || conversation.created_at
+  end
+
+  # One agent_participation event per distinct agent who sent at least one real outgoing
+  # message (not a private note, not a bot/Captain message) during the care cycle that just
+  # ended. A message that started as an AI suggestion counts as the sending agent's own message
+  # once approved and sent, no special-casing needed since it is still sender_type: 'User'.
+  def create_agent_participation_events(conversation, cycle_start, event_end_time)
+    agent_ids = conversation.messages
+                            .where(message_type: :outgoing, private: false, sender_type: 'User')
+                            .where(created_at: cycle_start..event_end_time)
+                            .unscope(:order).distinct.pluck(:sender_id)
+
+    agent_ids.each do |sender_id|
+      ReportingEvent.create!(name: 'agent_participation', value: 0, account_id: conversation.account_id,
+                             inbox_id: conversation.inbox_id, user_id: sender_id, conversation_id: conversation.id)
+    end
+  end
 
   def create_conversation_opened_event(conversation, time_since_resolved, business_hours_value, start_time, event_end_time)
     reporting_event = ReportingEvent.new(

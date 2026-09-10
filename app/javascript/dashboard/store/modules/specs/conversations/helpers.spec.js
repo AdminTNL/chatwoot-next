@@ -5,6 +5,7 @@ import {
   filterByTeam,
   filterByLabel,
   filterByUnattended,
+  filterByReadStatus,
 } from '../../conversations/helpers';
 
 const conversationList = [
@@ -121,6 +122,89 @@ describe('#applyPageFilters', () => {
       };
       expect(applyPageFilters(conversationList[1], filters)).toEqual(true);
     });
+  });
+
+  describe('#filter-read-status', () => {
+    it('a pending conversation with unread_count > 0 falls into unread', () => {
+      const conversation = { status: 'pending', unread_count: 3, meta: {} };
+      expect(
+        applyPageFilters(conversation, { status: 'all', readStatus: 'unread' })
+      ).toEqual(true);
+    });
+
+    it('an open conversation with unread_count === 0 falls into in_progress', () => {
+      const conversation = { status: 'open', unread_count: 0, meta: {} };
+      expect(
+        applyPageFilters(conversation, {
+          status: 'all',
+          readStatus: 'in_progress',
+        })
+      ).toEqual(true);
+    });
+
+    it('a snoozed conversation with unread_count > 0 falls only into snoozed, never into unread', () => {
+      const conversation = { status: 'snoozed', unread_count: 5, meta: {} };
+      expect(
+        applyPageFilters(conversation, { status: 'all', readStatus: 'unread' })
+      ).toEqual(false);
+      expect(
+        applyPageFilters(conversation, {
+          status: 'all',
+          readStatus: 'snoozed',
+        })
+      ).toEqual(true);
+    });
+
+    it('a resolved conversation with unread_count === 0 falls only into resolved', () => {
+      const conversation = { status: 'resolved', unread_count: 0, meta: {} };
+      expect(
+        applyPageFilters(conversation, {
+          status: 'all',
+          readStatus: 'in_progress',
+        })
+      ).toEqual(false);
+      expect(
+        applyPageFilters(conversation, {
+          status: 'all',
+          readStatus: 'resolved',
+        })
+      ).toEqual(true);
+    });
+
+    it('readStatus "all" passes every conversation through', () => {
+      ['open', 'pending', 'snoozed', 'resolved'].forEach(status => {
+        const conversation = { status, unread_count: 0, meta: {} };
+        expect(
+          applyPageFilters(conversation, { status: 'all', readStatus: 'all' })
+        ).toEqual(true);
+      });
+    });
+
+    it('a missing readStatus behaves identically to before (legacy callers like getMineChats)', () => {
+      const conversation = {
+        status: 'resolved',
+        unread_count: 0,
+        meta: {},
+      };
+      // No `readStatus` key at all, only the legacy `status` filter.
+      expect(applyPageFilters(conversation, { status: 'open' })).toEqual(false);
+      expect(applyPageFilters(conversation, { status: 'all' })).toEqual(true);
+    });
+  });
+});
+
+describe('#filterByReadStatus', () => {
+  it('is a no-op (returns shouldFilter unchanged) when readStatus is not provided', () => {
+    expect(filterByReadStatus(true, undefined, 'resolved', 0)).toEqual(true);
+    expect(filterByReadStatus(false, undefined, 'open', 5)).toEqual(false);
+  });
+
+  it('is a no-op when readStatus is "all"', () => {
+    expect(filterByReadStatus(true, 'all', 'snoozed', 0)).toEqual(true);
+  });
+
+  it('short-circuits to false when shouldFilter is already false', () => {
+    expect(filterByReadStatus(false, 'unread', 'open', 3)).toEqual(false);
   });
 });
 

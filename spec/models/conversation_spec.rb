@@ -69,7 +69,7 @@ RSpec.describe Conversation do
       # send_events
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_CREATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: false,
-                                                                    changed_attributes: nil, performed_by: nil)
+                                                                    changed_attributes: nil, performed_by: nil, current_user: nil)
     end
   end
 
@@ -140,7 +140,8 @@ RSpec.describe Conversation do
           conversation: conversation,
           notifiable_assignee_change: false,
           changed_attributes: changed_attributes,
-          performed_by: nil
+          performed_by: nil,
+          current_user: old_assignee
         )
     end
 
@@ -182,16 +183,16 @@ RSpec.describe Conversation do
 
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_RESOLVED, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                     changed_attributes: status_change, performed_by: nil)
+                                                                     changed_attributes: status_change, performed_by: nil, current_user: old_assignee)
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_READ, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                 changed_attributes: nil, performed_by: nil)
+                                                                 changed_attributes: nil, performed_by: nil, current_user: old_assignee)
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::ASSIGNEE_CHANGED, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                changed_attributes: changed_attributes, performed_by: nil)
+                                                                changed_attributes: changed_attributes, performed_by: nil, current_user: old_assignee)
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_UPDATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                    changed_attributes: changed_attributes, performed_by: nil)
+                                                                    changed_attributes: changed_attributes, performed_by: nil, current_user: old_assignee)
     end
 
     it 'will not run conversation_updated event for empty updates' do
@@ -212,7 +213,7 @@ RSpec.describe Conversation do
 
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_UPDATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: false,
-                                                                    changed_attributes: changed_attributes, performed_by: nil)
+                                                                    changed_attributes: changed_attributes, performed_by: nil, current_user: old_assignee)
     end
 
     it 'invalidates filtered counts without sending conversation_updated for filtered-only additional_attributes' do

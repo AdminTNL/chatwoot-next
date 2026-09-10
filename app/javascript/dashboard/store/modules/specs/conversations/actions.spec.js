@@ -432,6 +432,92 @@ describe('#actions', () => {
     });
   });
 
+  describe('#fetchAllConversations', () => {
+    it('sends readStatus as read_status to the API and uses it as the pagination key', async () => {
+      // The real conversations#index endpoint wraps payload/meta one level
+      // deeper (see index.json.jbuilder: `json.data do ... end`), so the
+      // axios response shape is `{ data: { data: { meta, payload } } }`.
+      axios.get.mockResolvedValue({ data: { data: dataReceived } });
+      const localCommit = vi.fn();
+      const localDispatch = vi.fn();
+      const state = {
+        conversationFilters: {
+          inboxId: 1,
+          assigneeType: 'me',
+          readStatus: 'unread',
+          status: 'all',
+          page: 1,
+        },
+      };
+
+      await actions.fetchAllConversations({
+        commit: localCommit,
+        state,
+        dispatch: localDispatch,
+      });
+
+      // the HTTP request must carry read_status, not just assignee_type
+      expect(axios.get).toHaveBeenCalledWith(
+        '/api/v1/conversations',
+        expect.objectContaining({
+          params: expect.objectContaining({ read_status: 'unread' }),
+        })
+      );
+
+      // pagination bookkeeping must key off readStatus ('unread'), not
+      // assigneeType ('me')
+      expect(localDispatch).toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'unread', page: 1 },
+        { root: true }
+      );
+      expect(localDispatch).not.toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'me', page: 1 },
+        { root: true }
+      );
+    });
+
+    it('keeps read_status on the request across consecutive paginated fetches', async () => {
+      axios.get.mockResolvedValue({ data: { data: dataReceived } });
+      const localDispatch = vi.fn();
+      const buildState = page => ({
+        conversationFilters: {
+          readStatus: 'unread',
+          status: 'all',
+          page,
+        },
+      });
+
+      await actions.fetchAllConversations({
+        commit: vi.fn(),
+        state: buildState(1),
+        dispatch: localDispatch,
+      });
+      await actions.fetchAllConversations({
+        commit: vi.fn(),
+        state: buildState(2),
+        dispatch: localDispatch,
+      });
+
+      const readStatusSentPerCall = axios.get.mock.calls.map(
+        ([, config]) => config.params.read_status
+      );
+      expect(readStatusSentPerCall).toEqual(['unread', 'unread']);
+
+      expect(localDispatch).toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'unread', page: 1 },
+        { root: true }
+      );
+      expect(localDispatch).toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'unread', page: 2 },
+        { root: true }
+      );
+    });
+  });
+
   describe('#fetchFilteredConversations', () => {
     it('fetches filtered conversations with a mock commit', async () => {
       axios.post.mockResolvedValue({
@@ -738,6 +824,11 @@ describe('#addMentions', () => {
         [types.CLEAR_ALL_MESSAGES_LOADED, 42],
         [types.SET_CHAT_DATA_FETCHED, 42],
       ]);
+      expect(localDispatch).toHaveBeenCalledWith(
+        'markMessagesRead',
+        { id: 42 },
+        { root: true }
+      );
       expect(localDispatch).toHaveBeenCalledWith('fetchPreviousMessages', {
         after: 99,
         before: 100,
@@ -759,7 +850,15 @@ describe('#addMentions', () => {
         [types.SET_CURRENT_CHAT_WINDOW, data],
         [types.CLEAR_ALL_MESSAGES_LOADED, 42],
       ]);
-      expect(localDispatch).not.toHaveBeenCalled();
+      expect(localDispatch).toHaveBeenCalledWith(
+        'markMessagesRead',
+        { id: 42 },
+        { root: true }
+      );
+      expect(localDispatch).not.toHaveBeenCalledWith(
+        'fetchPreviousMessages',
+        expect.anything()
+      );
     });
 
     it('should commit SET_CHAT_DATA_FETCHED by ID, not mutate the data object directly (race condition fix)', async () => {

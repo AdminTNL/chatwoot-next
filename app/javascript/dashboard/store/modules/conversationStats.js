@@ -6,6 +6,11 @@ const state = {
   mineCount: 0,
   unAssignedCount: 0,
   allCount: 0,
+  unreadCount: 0,
+  inProgressCount: 0,
+  snoozedCount: 0,
+  resolvedCount: 0,
+  allConversationsCount: 0,
 };
 
 export const getters = {
@@ -64,11 +69,21 @@ export const mutations = {
       mine_count: mineCount,
       unassigned_count: unAssignedCount,
       all_count: allCount,
+      unread_conversations_count: unreadCount,
+      in_progress_conversations_count: inProgressCount,
+      snoozed_conversations_count: snoozedCount,
+      resolved_conversations_count: resolvedCount,
+      all_conversations_count: allConversationsCount,
     } = {}
   ) {
     $state.mineCount = mineCount;
     $state.allCount = allCount;
     $state.unAssignedCount = unAssignedCount;
+    $state.unreadCount = unreadCount;
+    $state.inProgressCount = inProgressCount;
+    $state.snoozedCount = snoozedCount;
+    $state.resolvedCount = resolvedCount;
+    $state.allConversationsCount = allConversationsCount;
     $state.updatedOn = new Date();
   },
 };

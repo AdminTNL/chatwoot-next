@@ -634,7 +634,7 @@ RSpec.describe 'Conversations API', type: :request do
         expect(pending_conversation.reload.status).to eq('open')
         expect(Rails.configuration.dispatcher).to have_received(:dispatch)
           .with(Events::Types::CONVERSATION_BOT_HANDOFF, kind_of(Time), conversation: pending_conversation, notifiable_assignee_change: false,
-                                                                        changed_attributes: anything, performed_by: anything)
+                                                                        changed_attributes: anything, performed_by: anything, current_user: anything)
       end
     end
   end

@@ -5,6 +5,13 @@ export default {
     UNASSIGNED: 'unassigned',
     ALL: 'all',
   },
+  READ_STATUS_TYPE: {
+    UNREAD: 'unread',
+    IN_PROGRESS: 'in_progress',
+    SNOOZED: 'snoozed',
+    RESOLVED: 'resolved',
+    ALL: 'all',
+  },
   STATUS_TYPE: {
     OPEN: 'open',
     RESOLVED: 'resolved',

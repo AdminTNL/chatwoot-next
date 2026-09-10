@@ -36,18 +36,9 @@ module Reports::ReportMetricRegistry
   end
 
   METRICS = {
-    conversations_count: Metric.new(
-      name: :conversations_count,
-      aggregate: :count
-    ),
-    incoming_messages_count: Metric.new(
-      name: :incoming_messages_count,
-      aggregate: :count
-    ),
-    outgoing_messages_count: Metric.new(
-      name: :outgoing_messages_count,
-      aggregate: :count
-    ),
+    conversations_count: Metric.new(name: :conversations_count, aggregate: :count),
+    incoming_messages_count: Metric.new(name: :incoming_messages_count, aggregate: :count),
+    outgoing_messages_count: Metric.new(name: :outgoing_messages_count, aggregate: :count),
     avg_first_response_time: Metric.new(
       name: :avg_first_response_time,
       aggregate: :average,
@@ -88,6 +79,13 @@ module Reports::ReportMetricRegistry
       raw_event_name: :conversation_bot_handoff,
       rollup_metric: :bot_handoffs_count,
       raw_count_strategy: :distinct_conversation
+    ),
+    participated_conversations_count: Metric.new(
+      name: :participated_conversations_count,
+      aggregate: :count,
+      raw_event_name: :agent_participation,
+      raw_count_strategy: :distinct_conversation,
+      summary_key: :participated_conversations_count
     )
   }.freeze
 
@@ -96,6 +94,7 @@ module Reports::ReportMetricRegistry
     avg_resolution_time
     avg_first_response_time
     reply_time
+    participated_conversations_count
   ].freeze
 
   module_function

@@ -124,9 +124,17 @@ class Reports::RawDataSource < Reports::DataSource
 
   def summary_select_field(definition)
     if definition.count?
-      "COUNT(CASE WHEN name = '#{definition.raw_event_name}' THEN 1 END) as #{definition.summary_key}"
+      "#{summary_count_expression(definition)} as #{definition.summary_key}"
     else
       "AVG(CASE WHEN name = '#{definition.raw_event_name}' THEN #{average_value_key} END) as #{definition.summary_key}"
+    end
+  end
+
+  def summary_count_expression(definition)
+    if definition.raw_count_strategy == :distinct_conversation
+      "COUNT(DISTINCT CASE WHEN name = '#{definition.raw_event_name}' THEN conversation_id END)"
+    else
+      "COUNT(CASE WHEN name = '#{definition.raw_event_name}' THEN 1 END)"
     end
   end
 

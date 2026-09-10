@@ -171,7 +171,12 @@ describe ConversationFinder do
                                        mine_count: 2,
                                        assigned_count: 3,
                                        unassigned_count: 1,
-                                       all_count: 4
+                                       all_count: 4,
+                                       unread_conversations_count: 0,
+                                       in_progress_conversations_count: 4,
+                                       snoozed_conversations_count: 0,
+                                       resolved_conversations_count: 1,
+                                       all_conversations_count: 5
                                      })
       end
     end
@@ -266,7 +271,12 @@ describe ConversationFinder do
                                        mine_count: 2,
                                        assigned_count: 3,
                                        unassigned_count: 1,
-                                       all_count: 4
+                                       all_count: 4,
+                                       unread_conversations_count: 0,
+                                       in_progress_conversations_count: 4,
+                                       snoozed_conversations_count: 0,
+                                       resolved_conversations_count: 1,
+                                       all_conversations_count: 5
                                      })
       end
 
@@ -288,6 +298,159 @@ describe ConversationFinder do
 
         result = conversation_finder.perform
         expect(result[:conversations].length).to be 2
+      end
+    end
+
+    context 'with read_status' do
+      let(:params) { {} }
+
+      it 'classifies an open conversation with no agent_last_seen_at and an incoming message as unread' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: nil)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: 1.minute.ago)
+
+        result = described_class.new(user_1, { read_status: 'unread' }).perform
+        expect(result[:conversations].map(&:id)).to include(conversation.id)
+      end
+
+      it 'classifies an open conversation with an incoming message newer than agent_last_seen_at as unread' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.hour.ago)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: 1.minute.ago)
+
+        result = described_class.new(user_1, { read_status: 'unread' }).perform
+        expect(result[:conversations].map(&:id)).to include(conversation.id)
+      end
+
+      it 'classifies an open conversation as in_progress when agent_last_seen_at is more recent than the last incoming message' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.minute.from_now)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: 1.hour.ago)
+
+        in_progress_result = described_class.new(user_1, { read_status: 'in_progress' }).perform
+        expect(in_progress_result[:conversations].map(&:id)).to include(conversation.id)
+
+        unread_result = described_class.new(user_1, { read_status: 'unread' }).perform
+        expect(unread_result[:conversations].map(&:id)).not_to include(conversation.id)
+      end
+
+      it 'classifies a pending conversation with an unread message as unread, not a category of its own' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'pending', agent_last_seen_at: 1.hour.ago)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: 1.minute.ago)
+
+        result = described_class.new(user_1, { read_status: 'unread' }).perform
+        expect(result[:conversations].map(&:id)).to include(conversation.id)
+      end
+
+      it 'classifies a pending conversation without an unread message as in_progress' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'pending', agent_last_seen_at: 1.minute.from_now)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: 1.hour.ago)
+
+        result = described_class.new(user_1, { read_status: 'in_progress' }).perform
+        expect(result[:conversations].map(&:id)).to include(conversation.id)
+
+        unread_result = described_class.new(user_1, { read_status: 'unread' }).perform
+        expect(unread_result[:conversations].map(&:id)).not_to include(conversation.id)
+      end
+
+      it 'always classifies a snoozed conversation as snoozed, regardless of unread messages' do
+        # The incoming message is created while the conversation is still 'open', and the
+        # conversation is only moved to 'snoozed' afterwards. Creating the message directly on an
+        # already-snoozed conversation would trigger Message#reopen_conversation (app/models/message.rb:403-410),
+        # which flips the conversation back to 'open' - that's real app behaviour, not something to work around,
+        # so the fixture must reach the resolved/snoozed-with-unread-message state without going through it.
+        with_unread_message = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: nil)
+        create(:message, account: account, inbox: inbox, conversation: with_unread_message, message_type: :incoming, created_at: 1.minute.ago)
+        with_unread_message.update!(status: 'snoozed')
+
+        without_unread_message = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.minute.from_now)
+        create(:message, account: account, inbox: inbox, conversation: without_unread_message, message_type: :incoming, created_at: 1.hour.ago)
+        without_unread_message.update!(status: 'snoozed')
+
+        snoozed_ids = described_class.new(user_1, { read_status: 'snoozed' }).perform[:conversations].map(&:id)
+        expect(snoozed_ids).to include(with_unread_message.id, without_unread_message.id)
+
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        expect(unread_ids).not_to include(with_unread_message.id, without_unread_message.id)
+        expect(in_progress_ids).not_to include(with_unread_message.id, without_unread_message.id)
+      end
+
+      it 'always classifies a resolved conversation as resolved, regardless of unread messages' do
+        # See the note in the snoozed spec above: the message must be created before the conversation
+        # is moved to 'resolved', otherwise Message#reopen_conversation reopens it back to 'open'.
+        with_unread_message = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: nil)
+        create(:message, account: account, inbox: inbox, conversation: with_unread_message, message_type: :incoming, created_at: 1.minute.ago)
+        with_unread_message.update!(status: 'resolved')
+
+        without_unread_message = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.minute.from_now)
+        create(:message, account: account, inbox: inbox, conversation: without_unread_message, message_type: :incoming, created_at: 1.hour.ago)
+        without_unread_message.update!(status: 'resolved')
+
+        resolved_ids = described_class.new(user_1, { read_status: 'resolved' }).perform[:conversations].map(&:id)
+        expect(resolved_ids).to include(with_unread_message.id, without_unread_message.id)
+
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        expect(unread_ids).not_to include(with_unread_message.id, without_unread_message.id)
+        expect(in_progress_ids).not_to include(with_unread_message.id, without_unread_message.id)
+      end
+
+      it 'has an all count that equals the sum of unread + in_progress + snoozed + resolved' do
+        create(:conversation, account: account, inbox: inbox, status: 'pending')
+        create(:conversation, account: account, inbox: inbox, status: 'snoozed')
+        create(:conversation, account: account, inbox: inbox, status: 'resolved')
+
+        result = described_class.new(user_1, {}).perform_meta_only
+        counts = result[:count]
+        sum_of_categories = counts[:unread_conversations_count] + counts[:in_progress_conversations_count] +
+                            counts[:snoozed_conversations_count] + counts[:resolved_conversations_count]
+
+        expect(counts[:all_conversations_count]).to eq(sum_of_categories)
+      end
+
+      it 'does not break pagination/updated_within when read_status is all' do
+        create_list(:conversation, 50, account: account, inbox: inbox, assignee: nil,
+                                       updated_at: Time.now.utc - 10.seconds, created_at: Time.now.utc - 10.seconds)
+
+        result = described_class.new(user_1, { read_status: 'all', updated_within: 20 }).perform
+        # pagination is bypassed when updated_within is present, same as today
+        expect(result[:conversations].length).to be >= 50
+      end
+
+      it 'returns conversations identical to today when read_status is absent (regression)' do
+        result = described_class.new(user_1, { assignee_type: 'me' }).perform
+
+        expect(result[:conversations].length).to be 2
+        expect(result[:count][:mine_count]).to eq(2)
+        expect(result[:count][:assigned_count]).to eq(3)
+        expect(result[:count][:unassigned_count]).to eq(1)
+        expect(result[:count][:all_count]).to eq(4)
+      end
+
+      it 'returns the same 5 new counts from perform_meta_only as from perform, even without read_status in the request' do
+        meta_result = described_class.new(user_1, {}).perform_meta_only
+        full_result = described_class.new(user_1, {}).perform
+
+        %i[unread_conversations_count in_progress_conversations_count snoozed_conversations_count
+           resolved_conversations_count all_conversations_count].each do |key|
+          expect(meta_result[:count][key]).to eq(full_result[:count][key])
+        end
+      end
+
+      it 'computes the read-status counts with a single aggregate query, not one per conversation' do
+        create_list(:conversation, 60, account: account, inbox: inbox, assignee: nil, status: 'open')
+
+        count_queries = []
+        subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |_name, _started, _finished, _unique_id, payload|
+          count_queries << payload[:sql] if payload[:sql].match?(/\ASELECT COUNT/i) && !payload[:cached]
+        end
+
+        result = described_class.new(user_1, {}).perform_meta_only
+
+        # one query for the read-status counts computed pre-status-filter (set_read_status_counts),
+        # one for the legacy mine/unassigned/all counts computed post-status-filter - never one per conversation.
+        expect(count_queries.size).to eq(2)
+        expect(result[:count][:in_progress_conversations_count]).to be >= 60
+      ensure
+        ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber
       end
     end
   end

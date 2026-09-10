@@ -34,7 +34,12 @@ RSpec.describe ConversationFinder do
                                      mine_count: 1,
                                      assigned_count: 2,
                                      unassigned_count: 0,
-                                     all_count: 2
+                                     all_count: 2,
+                                     unread_conversations_count: 0,
+                                     in_progress_conversations_count: 2,
+                                     snoozed_conversations_count: 0,
+                                     resolved_conversations_count: 0,
+                                     all_conversations_count: 2
                                    })
     end
   end

@@ -45,13 +45,8 @@ import {
   isOnParticipatingView,
   isOnUnattendedView,
 } from '../store/modules/conversations/helpers/actionHelpers';
-import {
-  getUserPermissions,
-  filterItemsByPermission,
-} from 'dashboard/helper/permissionsHelper.js';
 import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
-import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
 
 const props = defineProps({
   conversationInbox: { type: [String, Number], default: 0 },
@@ -72,8 +67,7 @@ const store = useStore();
 
 const resolveAttributesModalRef = ref(null);
 
-const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
-const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
+const activeReadStatusTab = ref(wootConstants.READ_STATUS_TYPE.UNREAD);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 const showAdvancedFilters = ref(false);
 // chatsOnView is to store the chats that are currently visible on the screen,
@@ -92,9 +86,7 @@ const advancedFilterTypes = ref(
 
 const currentUser = useMapGetter('getCurrentUser');
 const chatLists = useMapGetter('getFilteredConversations');
-const mineChatsList = useMapGetter('getMineChats');
 const allChatList = useMapGetter('getAllStatusChats');
-const unAssignedChatsList = useMapGetter('getUnAssignedChats');
 const participatingChatsList = useMapGetter('getParticipatingChats');
 const chatListLoading = useMapGetter('getChatListLoadingStatus');
 const activeInbox = useMapGetter('getSelectedInbox');
@@ -106,7 +98,6 @@ const teamsList = useMapGetter('teams/getTeams');
 const inboxesList = useMapGetter('inboxes/getInboxes');
 const campaigns = useMapGetter('campaigns/getAllCampaigns');
 const labels = useMapGetter('labels/getLabels');
-const currentAccountId = useMapGetter('getCurrentAccountId');
 // We can't useFunctionGetter here since it needs to be called on setup?
 const getTeamFn = useMapGetter('teams/getTeam');
 const getConversationById = useMapGetter('getConversationById');
@@ -171,39 +162,34 @@ const currentUserDetails = computed(() => {
   return { id, name };
 });
 
-const userPermissions = computed(() => {
-  return getUserPermissions(currentUser.value, currentAccountId.value);
-});
+const READ_STATUS_TAB_COUNT_KEYS = {
+  [wootConstants.READ_STATUS_TYPE.UNREAD]: 'unreadCount',
+  [wootConstants.READ_STATUS_TYPE.IN_PROGRESS]: 'inProgressCount',
+  [wootConstants.READ_STATUS_TYPE.SNOOZED]: 'snoozedCount',
+  [wootConstants.READ_STATUS_TYPE.RESOLVED]: 'resolvedCount',
+  [wootConstants.READ_STATUS_TYPE.ALL]: 'allConversationsCount',
+};
 
-const assigneeTabItems = computed(() => {
-  return filterItemsByPermission(
-    ASSIGNEE_TYPE_TAB_PERMISSIONS,
-    userPermissions.value,
-    item => item.permissions
-  ).map(({ key, count: countKey }) => ({
+const readStatusTabItems = computed(() => {
+  return Object.values(wootConstants.READ_STATUS_TYPE).map(key => ({
     key,
-    name: t(`CHAT_LIST.ASSIGNEE_TYPE_TABS.${key}`),
-    count: conversationStats.value[countKey] || 0,
+    name: t(`CHAT_LIST.READ_STATUS_TABS.${key}`),
+    count: conversationStats.value[READ_STATUS_TAB_COUNT_KEYS[key]] || 0,
   }));
 });
 
-const showAssigneeInConversationCard = computed(() => {
-  return (
-    hasAppliedFiltersOrActiveFolders.value ||
-    activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ALL
-  );
-});
+const showAssigneeInConversationCard = computed(() => true);
 
 const currentPageFilterKey = computed(() => {
   return hasAppliedFiltersOrActiveFolders.value
     ? 'appliedFilters'
-    : activeAssigneeTab.value;
+    : activeReadStatusTab.value;
 });
 
 const inbox = useFunctionGetter('inboxes/getInbox', activeInbox);
 const currentPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
-  activeAssigneeTab
+  activeReadStatusTab
 );
 const currentFiltersPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
@@ -219,9 +205,9 @@ const conversationCustomAttributes = useFunctionGetter(
   'conversation_attribute'
 );
 
-const activeAssigneeTabCount = computed(() => {
-  const count = assigneeTabItems.value.find(
-    item => item.key === activeAssigneeTab.value
+const activeReadStatusTabCount = computed(() => {
+  const count = readStatusTabItems.value.find(
+    item => item.key === activeReadStatusTab.value
   ).count;
   return count;
 });
@@ -236,8 +222,8 @@ const conversationListPagination = computed(() => {
     !hasAppliedFiltersOrActiveFolders.value && hasChatsOnView;
   const isUnderPerPage =
     chatsOnView.value.length < conversationsPerPage &&
-    activeAssigneeTabCount.value < conversationsPerPage &&
-    activeAssigneeTabCount.value > chatsOnView.value.length;
+    activeReadStatusTabCount.value < conversationsPerPage &&
+    activeReadStatusTabCount.value > chatsOnView.value.length;
 
   if (isNoFiltersOrFoldersAndChatListNotEmpty && isUnderPerPage) {
     return 1;
@@ -246,17 +232,38 @@ const conversationListPagination = computed(() => {
   return currentPage.value + 1;
 });
 
+// `readStatus` carries the active read-status tab through to the backend as
+// `read_status` (see ConversationApi#get/#meta and ConversationFinder#filter_by_read_status),
+// which does the real filtering/pagination/counts server-side. `status` stays
+// fixed to `all` because `read_status` already covers the status+read
+// intersection for these 5 tabs (see Spec 2). Client-side `filterByReadStatus`
+// (helpers.js) is kept only to reclassify conversations that arrive via
+// WebSocket in real time, between paginated fetches.
 const conversationFilters = computed(() => {
   return {
     inboxId: props.conversationInbox ? props.conversationInbox : undefined,
-    assigneeType: activeAssigneeTab.value,
-    status: activeStatus.value,
+    readStatus: activeReadStatusTab.value,
+    status: wootConstants.STATUS_TYPE.ALL,
     sortBy: activeSortBy.value,
     page: conversationListPagination.value,
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
     conversationType: props.conversationType || undefined,
   };
+});
+
+// Derived from the active read-status tab, used only to feed the advanced
+// filters modal pre-fill (`initializeExistingFilterToModal`). Snoozed/
+// Resolved tabs pre-populate a status chip; the other 3 tabs don't (empty
+// string means "no status filter" for `initializeStatusAndAssigneeFilterToModal`).
+const activeStatus = computed(() => {
+  if (activeReadStatusTab.value === wootConstants.READ_STATUS_TYPE.SNOOZED) {
+    return wootConstants.STATUS_TYPE.SNOOZED;
+  }
+  if (activeReadStatusTab.value === wootConstants.READ_STATUS_TYPE.RESOLVED) {
+    return wootConstants.STATUS_TYPE.RESOLVED;
+  }
+  return '';
 });
 
 const activeTeam = computed(() => {
@@ -296,18 +303,6 @@ const pageTitle = computed(() => {
   return t('CHAT_LIST.TAB_HEADING');
 });
 
-function filterByAssigneeTab(conversations) {
-  if (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ME) {
-    return conversations.filter(
-      c => c.meta?.assignee?.id === currentUser.value?.id
-    );
-  }
-  if (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.UNASSIGNED) {
-    return conversations.filter(c => !c.meta?.assignee);
-  }
-  return [...conversations];
-}
-
 function sortByUnreadStatus(conversations) {
   return [...conversations].sort((a, b) => {
     const unreadCountDiff = (b.unread_count || 0) - (a.unread_count || 0);
@@ -325,13 +320,7 @@ const conversationList = computed(() => {
     if (
       props.conversationType === wootConstants.CONVERSATION_TYPE.PARTICIPATING
     ) {
-      localConversationList = filterByAssigneeTab(
-        participatingChatsList.value(filters)
-      );
-    } else if (activeAssigneeTab.value === 'me') {
-      localConversationList = [...mineChatsList.value(filters)];
-    } else if (activeAssigneeTab.value === 'unassigned') {
-      localConversationList = [...unAssignedChatsList.value(filters)];
+      localConversationList = [...participatingChatsList.value(filters)];
     } else {
       localConversationList = [...allChatList.value(filters)];
     }
@@ -380,8 +369,9 @@ const uniqueInboxes = computed(() => {
 // ---------------------- Methods -----------------------
 function setFiltersFromUISettings() {
   const { conversations_filter_by: filterBy = {} } = uiSettings.value;
-  const { status, order_by: orderBy } = filterBy;
-  activeStatus.value = status || wootConstants.STATUS_TYPE.OPEN;
+  // A `status` key saved before this change (legacy `conversations_filter_by`)
+  // is intentionally ignored — status is no longer a user-selectable filter.
+  const { order_by: orderBy } = filterBy;
   activeSortBy.value = Object.values(wootConstants.SORT_BY_TYPE).includes(
     orderBy
   )
@@ -493,7 +483,7 @@ function initializeExistingFilterToModal() {
   const statusFilter = initializeStatusAndAssigneeFilterToModal(
     activeStatus.value,
     currentUserDetails.value,
-    activeAssigneeTab.value
+    activeReadStatusTab.value
   );
   // TODO: Remove the usage of useCamelCase after migrating useFilter to camelcase
   if (statusFilter) {
@@ -603,23 +593,19 @@ function loadMoreConversations() {
   }
 }
 
-function updateAssigneeTab(selectedTab) {
-  if (activeAssigneeTab.value !== selectedTab) {
+function updateReadStatusTab(selectedTab) {
+  if (activeReadStatusTab.value !== selectedTab) {
     resetBulkActions();
     emitter.emit('clearSearchInput');
-    activeAssigneeTab.value = selectedTab;
+    activeReadStatusTab.value = selectedTab;
     if (!currentPage.value) {
       fetchConversations();
     }
   }
 }
 
-function onBasicFilterChange(value, type) {
-  if (type === 'status') {
-    activeStatus.value = value;
-  } else {
-    activeSortBy.value = value;
-  }
+function onBasicFilterChange(value) {
+  activeSortBy.value = value;
   resetAndFetchData();
 }
 
@@ -895,7 +881,7 @@ watch(conversationFilters, (newVal, oldVal) => {
       :page-title="pageTitle"
       :has-applied-filters="hasAppliedFilters"
       :has-active-folders="hasActiveFolders"
-      :active-status="activeStatus"
+      :active-read-status-tab="activeReadStatusTab"
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading && !conversationList.length"
@@ -929,10 +915,10 @@ watch(conversationFilters, (newVal, oldVal) => {
 
     <ChatTypeTabs
       v-if="!hasAppliedFiltersOrActiveFolders"
-      :items="assigneeTabItems"
-      :active-tab="activeAssigneeTab"
+      :items="readStatusTabItems"
+      :active-tab="activeReadStatusTab"
       is-compact
-      @chat-tab-change="updateAssigneeTab"
+      @chat-tab-change="updateReadStatusTab"
     />
 
     <p
