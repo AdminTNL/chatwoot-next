@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_14_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_14_140000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1088,7 +1088,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120000) do
     t.bigint "account_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "team_id"
     t.index ["account_id"], name: "index_labels_on_account_id"
+    t.index ["team_id"], name: "index_labels_on_team_id"
     t.index ["title", "account_id"], name: "index_labels_on_title_and_account_id", unique: true
   end
 
@@ -1496,6 +1498,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_14_120000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
   add_foreign_key "inboxes", "teams"
+  add_foreign_key "labels", "teams"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
