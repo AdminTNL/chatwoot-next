@@ -24,6 +24,7 @@ class Team < ApplicationRecord
   has_many :team_members, dependent: :destroy_async
   has_many :members, through: :team_members, source: :user
   has_many :conversations, dependent: :nullify
+  has_many :inboxes, dependent: :nullify
 
   before_destroy :capture_filtered_unread_count_member_ids, prepend: true
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy

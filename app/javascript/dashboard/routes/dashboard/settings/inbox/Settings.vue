@@ -111,6 +111,7 @@ export default {
       replyTime: '',
       selectedTabIndex: 0,
       selectedPortalSlug: '',
+      selectedTeamId: '',
       showBusinessNameInput: false,
       healthData: null,
       isLoadingHealth: false,
@@ -129,6 +130,7 @@ export default {
       isOnChatwootCloud: 'globalConfig/isOnChatwootCloud',
       uiFlags: 'inboxes/getUIFlags',
       portals: 'portals/allPortals',
+      teams: 'teams/getTeams',
     }),
     isInboundEmailEnabled() {
       return this.isFeatureEnabledonAccount(
@@ -552,6 +554,7 @@ export default {
       this.selectedPortalSlug = this.inbox.help_center
         ? this.inbox.help_center.slug
         : '';
+      this.selectedTeamId = this.inbox.team_id || '';
 
       const savedBubbleSettings = LocalStorage.get(
         this.widgetBuilderStorageKey
@@ -665,6 +668,7 @@ export default {
           lock_to_single_conversation: this.locktoSingleConversation,
           sender_name_type: this.senderNameType,
           business_name: this.businessName || null,
+          team_id: this.selectedTeamId || null,
           channel: {
             widget_color: this.inbox.widget_color,
             website_url: this.channelWebsiteUrl,
@@ -957,6 +961,29 @@ export default {
                 :options="[
                   { value: '', label: $t('INBOX_MGMT.HELP_CENTER.NONE') },
                   ...portals.map(p => ({ value: p.slug, label: p.name })),
+                ]"
+              />
+            </SettingsFieldSection>
+
+            <SettingsFieldSection
+              :label="$t('INBOX_MGMT.SETTINGS_POPUP.RESPONSIBLE_TEAM.LABEL')"
+              :help-text="
+                $t('INBOX_MGMT.SETTINGS_POPUP.RESPONSIBLE_TEAM.SUB_TEXT')
+              "
+            >
+              <SelectInput
+                v-model="selectedTeamId"
+                :placeholder="
+                  $t('INBOX_MGMT.SETTINGS_POPUP.RESPONSIBLE_TEAM.PLACEHOLDER')
+                "
+                :options="[
+                  {
+                    value: '',
+                    label: $t(
+                      'INBOX_MGMT.SETTINGS_POPUP.RESPONSIBLE_TEAM.NONE'
+                    ),
+                  },
+                  ...teams.map(team => ({ value: team.id, label: team.name })),
                 ]"
               />
             </SettingsFieldSection>

@@ -27,16 +27,19 @@
 #  account_id                    :integer          not null
 #  channel_id                    :integer          not null
 #  portal_id                     :bigint
+#  team_id                       :bigint
 #
 # Indexes
 #
 #  index_inboxes_on_account_id                   (account_id)
 #  index_inboxes_on_channel_id_and_channel_type  (channel_id,channel_type)
 #  index_inboxes_on_portal_id                    (portal_id)
+#  index_inboxes_on_team_id                      (team_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (portal_id => portals.id)
+#  fk_rails_...  (team_id => teams.id)
 #
 
 class Inbox < ApplicationRecord
@@ -53,9 +56,11 @@ class Inbox < ApplicationRecord
   validates :out_of_office_message, length: { maximum: Limits::OUT_OF_OFFICE_MESSAGE_MAX_LENGTH }
   validates :greeting_message, length: { maximum: Limits::GREETING_MESSAGE_MAX_LENGTH }
   validate :ensure_valid_max_assignment_limit
+  validate { errors.add(:team, 'must belong to the same account as the inbox') if team.present? && team.account_id != account_id }
 
   belongs_to :account
   belongs_to :portal, optional: true
+  belongs_to :team, optional: true
 
   belongs_to :channel, polymorphic: true, dependent: :destroy
 

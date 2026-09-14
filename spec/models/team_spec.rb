@@ -5,6 +5,19 @@ RSpec.describe Team do
     it { is_expected.to belong_to(:account) }
     it { is_expected.to have_many(:conversations) }
     it { is_expected.to have_many(:team_members) }
+    it { is_expected.to have_many(:inboxes) }
+  end
+
+  describe '#inboxes' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+
+    it 'returns only the inboxes belonging to that team' do
+      own_inbox = create(:inbox, account: account, team: team)
+      create(:inbox, account: account)
+
+      expect(team.inboxes).to contain_exactly(own_inbox)
+    end
   end
 
   describe 'name normalization' do
