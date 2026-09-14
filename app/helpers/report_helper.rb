@@ -1,19 +1,23 @@
 module ReportHelper
   private
 
+  DIMENSION_TARGETS = { account: :account, inbox: :inbox, agent: :user, label: :label, team: :team }.freeze
+
+  # Reports::AccessScope for the current request, if the caller (the
+  # controller building the params hash) provided one. Absent means
+  # unrestricted, so every existing internal caller that doesn't know
+  # about access scoping yet keeps behaving exactly as before.
+  def access_scope = params[:access_scope] || Reports::AccessScope::Null.instance
+
   def scope
-    case params[:type]
-    when :account
-      account
-    when :inbox
-      inbox
-    when :agent
-      user
-    when :label
-      label
-    when :team
-      team
-    end
+    ensure_dimension_permitted!
+    access_scope.restrict(send(DIMENSION_TARGETS.fetch(params[:type])))
+  end
+
+  def ensure_dimension_permitted!
+    return if access_scope.unrestricted? || access_scope.permits_dimension?(params[:type], params[:id])
+
+    raise ActiveRecord::RecordNotFound
   end
 
   def conversations_count

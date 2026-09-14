@@ -3,6 +3,8 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   include Api::V2::Accounts::HeatmapHelper
 
   before_action :check_authorization
+  # These three builders are not scoped yet, so keep them admin/report_manage-only.
+  before_action :ensure_unrestricted_access, only: %i[bot_metrics first_response_time_distribution conversation_traffic]
 
   def index
     builder = V2::Reports::Conversations::ReportBuilder.new(Current.account, report_params)
@@ -52,7 +54,6 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   end
 
   def drilldown
-    return head :unauthorized unless Current.account_user.administrator?
     return head :unprocessable_entity unless valid_drilldown_params?
 
     render json: V2::Reports::DrilldownBuilder.new(Current.account, drilldown_params).build
@@ -106,13 +107,25 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
     authorize :report, :view?
   end
 
+  def ensure_unrestricted_access
+    raise Pundit::NotAuthorizedError unless access_scope.unrestricted?
+  end
+
+  # Every builder below receives this through its params hash, so scoping
+  # and the default-deny check both flow from this one memoized scope.
+  def access_scope
+    @access_scope ||= Reports::AccessScope.new(account: Current.account, user: Current.user, account_user: Current.account_user)
+  end
+
+  def scoped(hash) = hash.merge(access_scope: access_scope)
+
   def common_params
-    {
+    scoped(
       type: params[:type].to_sym,
       id: params[:id],
       group_by: params[:group_by],
       business_hours: ActiveModel::Type::Boolean.new.cast(params[:business_hours])
-    }
+    )
   end
 
   def current_summary_params
@@ -144,10 +157,10 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
     permitted_params = params.permit(
       :metric, :id, :since, :until, :group_by, :timezone_offset, :bucket_timestamp, :page, :per_page
     ).to_h.symbolize_keys
-    permitted_params.merge(
+    scoped(permitted_params.merge(
       type: (params[:type].presence || 'account').to_sym,
       business_hours: ActiveModel::Type::Boolean.new.cast(params[:business_hours])
-    )
+    ))
   end
 
   def valid_drilldown_params?
@@ -157,11 +170,7 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   end
 
   def conversation_params
-    {
-      type: params[:type].to_sym,
-      user_id: params[:user_id],
-      page: params[:page].presence || 1
-    }
+    scoped(type: params[:type].to_sym, user_id: params[:user_id], page: params[:page].presence || 1)
   end
 
   def range
@@ -189,12 +198,7 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   end
 
   def inbox_label_matrix_params
-    {
-      since: params[:since],
-      until: params[:until],
-      inbox_ids: params[:inbox_ids],
-      label_ids: params[:label_ids]
-    }
+    scoped(since: params[:since], until: params[:until], inbox_ids: params[:inbox_ids], label_ids: params[:label_ids])
   end
 
   def first_response_time_distribution_params
@@ -205,10 +209,6 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   end
 
   def outgoing_messages_count_params
-    {
-      group_by: params[:group_by],
-      since: params[:since],
-      until: params[:until]
-    }
+    scoped(group_by: params[:group_by], since: params[:since], until: params[:until])
   end
 end

@@ -5,7 +5,7 @@ module Api::V2::Accounts::ReportsHelper
       params: build_params(type: :agent)
     ).build
 
-    Current.account.users.map do |agent|
+    accessible_agents.map do |agent|
       report = reports.find { |r| r[:id] == agent.id }
       [agent.name] + generate_readable_report_metrics(report)
     end
@@ -17,7 +17,7 @@ module Api::V2::Accounts::ReportsHelper
       params: build_params(type: :inbox)
     ).build
 
-    Current.account.inboxes.map do |inbox|
+    accessible_inboxes.map do |inbox|
       report = reports.find { |r| r[:id] == inbox.id }
       [inbox.name, inbox.channel&.name] + generate_readable_report_metrics(report)
     end
@@ -29,7 +29,7 @@ module Api::V2::Accounts::ReportsHelper
       params: build_params(type: :team)
     ).build
 
-    Current.account.teams.map do |team|
+    accessible_teams.map do |team|
       report = reports.find { |r| r[:id] == team.id }
       [team.name] + generate_readable_report_metrics(report)
     end
@@ -40,6 +40,8 @@ module Api::V2::Accounts::ReportsHelper
       account: Current.account,
       params: build_params({})
     ).build
+
+    reports = reports.select { |report| accessible_label_titles.nil? || accessible_label_titles.include?(report[:name]) }
 
     reports.map do |report|
       [report[:name]] + generate_readable_report_metrics(report)
@@ -60,9 +62,35 @@ module Api::V2::Accounts::ReportsHelper
       {
         since: params[:since],
         until: params[:until],
-        business_hours: ActiveModel::Type::Boolean.new.cast(params[:business_hours])
+        business_hours: ActiveModel::Type::Boolean.new.cast(params[:business_hours]),
+        access_scope: access_scope
       }
     )
+  end
+
+  # Row-level scoping for the CSV enumerators above: a restricted agent
+  # only ever sees rows for agents/inboxes/teams/labels inside their
+  # Reports::AccessScope, never the account-wide list.
+  def accessible_agents
+    return Current.account.users if access_scope.unrestricted?
+
+    Current.account.users.where(id: access_scope.agent_ids)
+  end
+
+  def accessible_inboxes
+    return Current.account.inboxes if access_scope.unrestricted?
+
+    Current.account.inboxes.where(id: access_scope.inbox_ids)
+  end
+
+  def accessible_teams
+    return Current.account.teams if access_scope.unrestricted?
+
+    Current.account.teams.where(id: access_scope.team_ids)
+  end
+
+  def accessible_label_titles
+    access_scope.label_titles
   end
 
   def report_builder(report_params)

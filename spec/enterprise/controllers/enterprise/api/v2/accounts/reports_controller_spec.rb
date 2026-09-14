@@ -78,13 +78,17 @@ RSpec.describe 'Enterprise Reports API', type: :request do
         )
       end
 
-      it 'returns unauthorized' do
+      # report_manage grants unrestricted access via ReportPolicy#view? and
+      # Reports::AccessScope#unrestricted?, so drilldown (which used to have
+      # its own redundant `administrator?` check, ignoring report_manage
+      # entirely) now behaves consistently with the other report endpoints.
+      it 'returns success' do
         get "/api/v2/accounts/#{account.id}/reports/drilldown",
             params: params,
             headers: agent_with_role.create_new_auth_token,
             as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:success)
       end
     end
   end
