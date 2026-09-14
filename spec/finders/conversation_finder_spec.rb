@@ -192,6 +192,32 @@ describe ConversationFinder do
       end
     end
 
+    context 'with team-inherited inbox access' do
+      let(:team_agent) { create(:user, account: account, role: :agent) }
+      let(:team) { create(:team, account: account) }
+
+      it "includes the team's inbox conversations for an agent who is not a direct inbox_member" do
+        create(:team_member, user: team_agent, team: team)
+        restricted_inbox.update!(team: team)
+        team_owned_conversation = create(:conversation, account: account, inbox: restricted_inbox)
+
+        result = described_class.new(team_agent, { assignee_type: 'all' }).perform
+
+        expect(result[:conversations].map(&:id)).to include(team_owned_conversation.id)
+      end
+
+      it 'does not include conversations of an inbox belonging to another team' do
+        other_team = create(:team, account: account)
+        create(:team_member, user: team_agent, team: other_team)
+        restricted_inbox.update!(team: team)
+        team_owned_conversation = create(:conversation, account: account, inbox: restricted_inbox)
+
+        result = described_class.new(team_agent, { assignee_type: 'all' }).perform
+
+        expect(result[:conversations].map(&:id)).not_to include(team_owned_conversation.id)
+      end
+    end
+
     context 'with labels' do
       let(:params) { { labels: ['resolved'] } }
 

@@ -136,7 +136,21 @@ class User < ApplicationRecord
   end
 
   def assigned_inboxes
-    administrator? ? Current.account.inboxes : inboxes.where(account_id: Current.account.id)
+    administrator? ? Current.account.inboxes : accessible_inboxes(Current.account)
+  end
+
+  # Inboxes the user can access in the given account, combining:
+  #   - direct membership via `inbox_members`
+  #   - inheritance via team membership (inbox.team_id in user's teams for this account)
+  #
+  # Returns an ActiveRecord::Relation (not an Array) with no duplicates, so callers
+  # can safely chain `.where(...)` / `.pluck(:id)` on top of it.
+  def accessible_inboxes(account)
+    member_inbox_ids = inbox_members.select(:inbox_id)
+    team_ids = teams.where(account_id: account.id).select(:id)
+
+    Inbox.where(account_id: account.id, id: member_inbox_ids)
+         .or(Inbox.where(account_id: account.id, team_id: team_ids))
   end
 
   def serializable_hash(options = nil)
