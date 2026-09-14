@@ -25,6 +25,59 @@ RSpec.describe 'Label API', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.body).to include(label.title)
       end
+
+      it 'includes team_id in the payload' do
+        get "/api/v1/accounts/#{account.id}/labels",
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        payload = JSON.parse(response.body)['payload']
+        returned_label = payload.find { |l| l['id'] == label.id }
+        expect(returned_label).to have_key('team_id')
+      end
+    end
+
+    context 'when filtering by team' do
+      let!(:team_a) { create(:team, account: account) }
+      let!(:team_b) { create(:team, account: account) }
+      let!(:team_a_label) { create(:label, account: account, team: team_a, title: 'team-a-label') }
+      let!(:team_b_label) { create(:label, account: account, team: team_b, title: 'team-b-label') }
+
+      it 'returns all labels for an administrator' do
+        admin = create(:user, account: account, role: :administrator)
+
+        get "/api/v1/accounts/#{account.id}/labels",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        titles = JSON.parse(response.body)['payload'].pluck('title')
+        expect(titles).to include(label.title, team_a_label.title, team_b_label.title)
+      end
+
+      it 'returns global labels and the labels of the teams the agent belongs to' do
+        agent_in_team_a = create(:user, account: account, role: :agent)
+        team_a.add_members([agent_in_team_a.id])
+
+        get "/api/v1/accounts/#{account.id}/labels",
+            headers: agent_in_team_a.create_new_auth_token,
+            as: :json
+
+        titles = JSON.parse(response.body)['payload'].pluck('title')
+        expect(titles).to include(label.title, team_a_label.title)
+        expect(titles).not_to include(team_b_label.title)
+      end
+
+      it 'returns only global labels for an agent with no team' do
+        agent_without_team = create(:user, account: account, role: :agent)
+
+        get "/api/v1/accounts/#{account.id}/labels",
+            headers: agent_without_team.create_new_auth_token,
+            as: :json
+
+        titles = JSON.parse(response.body)['payload'].pluck('title')
+        expect(titles).to include(label.title)
+        expect(titles).not_to include(team_a_label.title, team_b_label.title)
+      end
     end
   end
 
@@ -73,6 +126,17 @@ RSpec.describe 'Label API', type: :request do
 
         expect(response).to have_http_status(:success)
       end
+
+      it 'creates the label with a team_id and returns it in the JSON' do
+        team = create(:team, account: account)
+
+        post "/api/v1/accounts/#{account.id}/labels", headers: admin.create_new_auth_token,
+                                                        params: { label: { title: 'team-scoped', team_id: team.id } }
+
+        expect(response).to have_http_status(:success)
+        expect(JSON.parse(response.body)['team_id']).to eq(team.id)
+        expect(Label.last.team_id).to eq(team.id)
+      end
     end
   end
 
@@ -99,6 +163,19 @@ RSpec.describe 'Label API', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(label.reload.title).to eq('test_2')
+      end
+
+      it 'removes the team when team_id is set to null' do
+        team = create(:team, account: account)
+        team_label = create(:label, account: account, team: team)
+
+        patch "/api/v1/accounts/#{account.id}/labels/#{team_label.id}",
+              headers: admin.create_new_auth_token,
+              params: { team_id: nil },
+              as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(team_label.reload.team_id).to be_nil
       end
     end
   end

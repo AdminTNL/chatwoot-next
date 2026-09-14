@@ -38,6 +38,11 @@
       "SHOW_ON_SIDEBAR": {
         "LABEL": "Exibir etiqueta na barra lateral"
       },
+      "TEAM": {
+        "LABEL": "Time",
+        "PLACEHOLDER": "Selecione um time",
+        "NONE": "Global (todos os times)"
+      },
       "EDIT": "Alterar",
       "CREATE": "Criar",
       "DELETE": "Excluir",

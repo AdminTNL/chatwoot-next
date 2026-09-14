@@ -10,22 +10,30 @@
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
 #  account_id      :bigint
+#  team_id         :bigint
 #
 # Indexes
 #
 #  index_labels_on_account_id            (account_id)
+#  index_labels_on_team_id               (team_id)
 #  index_labels_on_title_and_account_id  (title,account_id) UNIQUE
+#
+# Foreign Keys
+#
+#  fk_rails_...  (team_id => teams.id)
 #
 class Label < ApplicationRecord
   include RegexHelper
   include AccountCacheRevalidator
 
   belongs_to :account
+  belongs_to :team, optional: true
 
   validates :title,
             presence: { message: I18n.t('errors.validations.presence') },
             format: { with: UNICODE_CHARACTER_NUMBER_HYPHEN_UNDERSCORE },
             uniqueness: { scope: :account_id }
+  validate :team_belongs_to_same_account
 
   after_update_commit :update_associated_models
   default_scope { order(:title) }
@@ -52,5 +60,11 @@ class Label < ApplicationRecord
     return unless title_previously_changed?
 
     Labels::UpdateJob.perform_later(title, title_previously_was, account_id)
+  end
+
+  def team_belongs_to_same_account
+    return if team.blank?
+
+    errors.add(:team, :invalid) if team.account_id != account_id
   end
 end

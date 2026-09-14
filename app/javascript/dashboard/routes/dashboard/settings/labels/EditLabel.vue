@@ -5,10 +5,12 @@ import validations, { getLabelTitleErrorMessage } from './validations';
 import { useVuelidate } from '@vuelidate/core';
 
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import SelectInput from 'dashboard/components-next/select/Select.vue';
 
 export default {
   components: {
     NextButton,
+    SelectInput,
   },
   props: {
     selectedResponse: {
@@ -26,12 +28,14 @@ export default {
       description: '',
       showOnSidebar: true,
       color: '',
+      selectedTeamId: '',
     };
   },
   validations,
   computed: {
     ...mapGetters({
       uiFlags: 'labels/getUIFlags',
+      teams: 'teams/getTeams',
     }),
     pageTitle() {
       return `${this.$t('LABEL_MGMT.EDIT.TITLE')} - ${
@@ -41,6 +45,12 @@ export default {
     labelTitleErrorMessage() {
       const errorMessage = getLabelTitleErrorMessage(this.v$);
       return this.$t(errorMessage);
+    },
+    teamOptions() {
+      return [
+        { value: '', label: this.$t('LABEL_MGMT.FORM.TEAM.NONE') },
+        ...this.teams.map(team => ({ value: team.id, label: team.name })),
+      ];
     },
   },
   mounted() {
@@ -55,6 +65,7 @@ export default {
       this.description = this.selectedResponse.description;
       this.showOnSidebar = this.selectedResponse.show_on_sidebar;
       this.color = this.selectedResponse.color;
+      this.selectedTeamId = this.selectedResponse.team_id || '';
     },
     editLabel() {
       this.$store
@@ -64,6 +75,7 @@ export default {
           description: this.description,
           title: this.title.toLowerCase(),
           show_on_sidebar: this.showOnSidebar,
+          team_id: this.selectedTeamId || null,
         })
         .then(() => {
           useAlert(this.$t('LABEL_MGMT.EDIT.API.SUCCESS_MESSAGE'));
@@ -111,6 +123,17 @@ export default {
         <input v-model="showOnSidebar" type="checkbox" :value="true" />
         <label for="conversation_creation">
           {{ $t('LABEL_MGMT.FORM.SHOW_ON_SIDEBAR.LABEL') }}
+        </label>
+      </div>
+
+      <div class="w-full">
+        <label>
+          {{ $t('LABEL_MGMT.FORM.TEAM.LABEL') }}
+          <SelectInput
+            v-model="selectedTeamId"
+            :options="teamOptions"
+            :placeholder="$t('LABEL_MGMT.FORM.TEAM.PLACEHOLDER')"
+          />
         </label>
       </div>
       <div class="flex items-center justify-end w-full gap-2 px-0 py-2">

@@ -38,6 +38,11 @@
       "SHOW_ON_SIDEBAR": {
         "LABEL": "Show label on sidebar"
       },
+      "TEAM": {
+        "LABEL": "Team",
+        "PLACEHOLDER": "Select a team",
+        "NONE": "Global (all teams)"
+      },
       "EDIT": "Edit",
       "CREATE": "Create",
       "DELETE": "Delete",

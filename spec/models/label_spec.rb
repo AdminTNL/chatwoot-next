@@ -3,6 +3,41 @@ require 'rails_helper'
 RSpec.describe Label do
   describe 'associations' do
     it { is_expected.to belong_to(:account) }
+    it { is_expected.to belong_to(:team).optional }
+  end
+
+  describe 'team validations' do
+    it 'is valid without a team' do
+      label = FactoryBot.build(:label, team: nil)
+      expect(label.valid?).to be true
+    end
+
+    it 'is valid when the team belongs to the same account' do
+      account = create(:account)
+      team = create(:team, account: account)
+      label = FactoryBot.build(:label, account: account, team: team)
+
+      expect(label.valid?).to be true
+    end
+
+    it 'is invalid when the team belongs to a different account' do
+      account = create(:account)
+      other_account_team = create(:team, account: create(:account))
+      label = FactoryBot.build(:label, account: account, team: other_account_team)
+
+      expect(label.valid?).to be false
+      expect(label.errors[:team]).to be_present
+    end
+
+    it 'becomes global when its team is destroyed' do
+      account = create(:account)
+      team = create(:team, account: account)
+      label = create(:label, account: account, team: team)
+
+      team.destroy!
+
+      expect(label.reload.team_id).to be_nil
+    end
   end
 
   describe 'title validations' do
