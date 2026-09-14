@@ -36,7 +36,7 @@ export default [
         action_params: ['sales', 'billing'],
       },
       {
-        action_name: 'assign_team',
+        action_name: 'assign_agent',
         action_params: [1],
       },
       {

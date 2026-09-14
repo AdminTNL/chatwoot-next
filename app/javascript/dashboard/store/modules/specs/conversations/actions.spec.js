@@ -405,17 +405,6 @@ describe('#actions', () => {
     });
   });
 
-  describe('#assignTeam', () => {
-    it('sends correct mutations if assignment is successful', async () => {
-      axios.post.mockResolvedValue({
-        data: { id: 1, name: 'Team' },
-      });
-      await actions.assignTeam({ commit }, { conversationId: 1, teamId: 1 });
-      expect(commit).toHaveBeenCalledTimes(0);
-      expect(commit.mock.calls).toEqual([]);
-    });
-  });
-
   describe('#setCurrentChatTeam', () => {
     it('sends correct mutations if assignment is successful', async () => {
       axios.post.mockResolvedValue({

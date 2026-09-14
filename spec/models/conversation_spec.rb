@@ -25,6 +25,63 @@ RSpec.describe Conversation do
     it_behaves_like 'auto_assignment_handler'
   end
 
+  describe 'team derivation from inbox' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:other_team) { create(:team, account: account) }
+
+    it 'derives team_id from the inbox team on creation, even when nobody passed team_id' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox)
+
+      expect(conversation.team_id).to eq(team.id)
+    end
+
+    it 'creates a conversation with a nil team_id when the inbox has no team' do
+      inbox = create(:inbox, account: account)
+      conversation = create(:conversation, account: account, inbox: inbox)
+
+      expect(conversation.team_id).to be_nil
+    end
+
+    it 'ignores an explicitly assigned team_id in favor of the derived value' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox)
+
+      conversation.update(team_id: other_team.id)
+
+      expect(conversation.reload.team_id).to eq(team.id)
+    end
+
+    it 'ignores a team_id passed explicitly on creation' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox, team_id: other_team.id)
+
+      expect(conversation.team_id).to eq(team.id)
+    end
+
+    it 'reflects the inbox new team the next time the conversation is saved after the inbox changes team' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox)
+      expect(conversation.team_id).to eq(team.id)
+
+      inbox.update!(team: other_team)
+      conversation.save!
+
+      expect(conversation.reload.team_id).to eq(other_team.id)
+    end
+
+    it 'does not backfill team_id on an old conversation that is not saved' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox, team_id: nil)
+      conversation.update_column(:team_id, nil) # rubocop:disable Rails/SkipsModelValidations
+
+      inbox.update!(team: other_team)
+
+      expect(conversation.reload.team_id).to be_nil
+    end
+  end
+
   describe '.before_create' do
     let(:conversation) { build(:conversation, display_id: nil) }
 

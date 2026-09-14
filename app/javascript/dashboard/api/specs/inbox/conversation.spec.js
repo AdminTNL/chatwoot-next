@@ -11,7 +11,6 @@ describe('#ConversationAPI', () => {
     expect(conversationAPI).toHaveProperty('delete');
     expect(conversationAPI).toHaveProperty('toggleStatus');
     expect(conversationAPI).toHaveProperty('assignAgent');
-    expect(conversationAPI).toHaveProperty('assignTeam');
     expect(conversationAPI).toHaveProperty('markMessageRead');
     expect(conversationAPI).toHaveProperty('toggleTyping');
     expect(conversationAPI).toHaveProperty('mute');
@@ -123,16 +122,6 @@ describe('#ConversationAPI', () => {
         {
           assignee_id: 34,
           assignee_type: 'AgentBot',
-        }
-      );
-    });
-
-    it('#assignTeam', () => {
-      conversationAPI.assignTeam({ conversationId: 12, teamId: 1 });
-      expect(axiosMock.post).toHaveBeenCalledWith(
-        `/api/v1/conversations/12/assignments`,
-        {
-          team_id: 1,
         }
       );
     });

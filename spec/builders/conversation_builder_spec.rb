@@ -29,6 +29,28 @@ describe ConversationBuilder do
       expect(conversation.contact_inbox_id).to eq(contact_api_inbox.id)
     end
 
+    it 'derives team_id from the inbox team, ignoring any team_id passed in params' do
+      team = create(:team, account: account)
+      other_team = create(:team, account: account)
+      api_inbox.update!(team: team)
+
+      conversation = described_class.new(
+        contact_inbox: contact_api_inbox,
+        params: { team_id: other_team.id }
+      ).perform
+
+      expect(conversation.team_id).to eq(team.id)
+    end
+
+    it 'creates a conversation with a nil team_id when the inbox has no team' do
+      conversation = described_class.new(
+        contact_inbox: contact_api_inbox,
+        params: {}
+      ).perform
+
+      expect(conversation.team_id).to be_nil
+    end
+
     context 'when lock_to_single_conversation is true for sms inbox' do
       before do
         sms_inbox.update!(lock_to_single_conversation: true)

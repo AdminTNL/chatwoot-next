@@ -71,11 +71,6 @@ class ConversationApi extends ApiClient {
     });
   }
 
-  assignTeam({ conversationId, teamId }) {
-    const params = { team_id: teamId };
-    return axios.post(`${this.url}/${conversationId}/assignments`, params);
-  }
-
   markMessageRead({ id }) {
     return axios.post(`${this.url}/${id}/update_last_seen`);
   }

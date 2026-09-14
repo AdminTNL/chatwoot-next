@@ -75,6 +75,7 @@ class Conversation < ApplicationRecord
   validates :contact_id, presence: true
   before_validation :validate_additional_attributes
   before_validation :reset_agent_bot_when_assignee_present
+  before_validation :derive_team_from_inbox
   validates :additional_attributes, jsonb_attributes_length: true
   validates :custom_attributes, jsonb_attributes_length: true
   validates :uuid, uniqueness: true
@@ -284,6 +285,13 @@ class Conversation < ApplicationRecord
     return if assignee_id.blank?
 
     self.assignee_agent_bot_id = nil
+  end
+
+  # A conversation's team is always derived from its inbox's team.
+  # There is no manual team assignment or transfer between teams: whatever
+  # gets written to team_id is overridden here before save.
+  def derive_team_from_inbox
+    self.team_id = inbox&.team_id
   end
 
   def determine_conversation_status

@@ -65,20 +65,7 @@ export default {
     ...mapGetters({
       currentChat: 'getSelectedChat',
       currentUser: 'getCurrentUser',
-      teams: 'teams/getTeams',
     }),
-    hasAnAssignedTeam() {
-      return !!this.currentChat?.meta?.team;
-    },
-    teamsList() {
-      if (this.hasAnAssignedTeam) {
-        return [
-          { id: 0, name: this.$t('TEAMS_SETTINGS.LIST.NONE') },
-          ...this.teams,
-        ];
-      }
-      return this.teams;
-    },
     assignedAgent: {
       get() {
         const assignee = this.currentChat.meta.assignee;
@@ -105,21 +92,6 @@ export default {
           })
           .then(() => {
             useAlert(this.$t('CONVERSATION.CHANGE_AGENT'));
-          });
-      },
-    },
-    assignedTeam: {
-      get() {
-        return this.currentChat.meta.team;
-      },
-      set(team) {
-        const conversationId = this.currentChat.id;
-        const teamId = team ? team.id : 0;
-        this.$store.dispatch('setCurrentChatTeam', { team, conversationId });
-        this.$store
-          .dispatch('assignTeam', { conversationId, teamId })
-          .then(() => {
-            useAlert(this.$t('CONVERSATION.CHANGE_TEAM'));
           });
       },
     },
@@ -206,14 +178,6 @@ export default {
       }
     },
 
-    onClickAssignTeam(selectedItemTeam) {
-      if (this.assignedTeam && this.assignedTeam.id === selectedItemTeam.id) {
-        this.assignedTeam = null;
-      } else {
-        this.assignedTeam = selectedItemTeam;
-      }
-    },
-
     onClickAssignPriority(selectedPriorityItem) {
       const isSamePriority =
         this.assignedPriority &&
@@ -258,26 +222,6 @@ export default {
           $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.PLACEHOLDER.AGENT')
         "
         @select="onClickAssignAgent"
-      />
-    </div>
-    <div>
-      <ContactDetailsItem
-        compact
-        :title="$t('CONVERSATION_SIDEBAR.TEAM_LABEL')"
-      />
-      <MultiselectDropdown
-        :options="teamsList"
-        :selected-item="assignedTeam"
-        show-emoji-icon
-        :multiselector-title="$t('AGENT_MGMT.MULTI_SELECTOR.TITLE.TEAM')"
-        :multiselector-placeholder="$t('AGENT_MGMT.MULTI_SELECTOR.PLACEHOLDER')"
-        :no-search-result="
-          $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.NO_RESULTS.TEAM')
-        "
-        :input-placeholder="
-          $t('AGENT_MGMT.MULTI_SELECTOR.SEARCH.PLACEHOLDER.TEAM')
-        "
-        @select="onClickAssignTeam"
       />
     </div>
     <div>

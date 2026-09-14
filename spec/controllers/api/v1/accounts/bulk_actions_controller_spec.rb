@@ -6,15 +6,18 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
   let(:agent_1) { create(:user, account: account, role: :agent) }
   let(:agent_2) { create(:user, account: account, role: :agent) }
   let(:team_1) { create(:team, account: account) }
+  let(:team_inbox) { create(:inbox, account: account, team: team_1) }
 
   before do
-    create(:conversation, account_id: account.id, status: :open, team_id: team_1.id)
-    create(:conversation, account_id: account.id, status: :open, team_id: team_1.id)
+    # team_id is derived from the inbox's team, so conversations get a team by
+    # being created in an inbox that belongs to that team.
+    create(:conversation, account_id: account.id, status: :open, inbox: team_inbox)
+    create(:conversation, account_id: account.id, status: :open, inbox: team_inbox)
     create(:conversation, account_id: account.id, status: :open)
     create(:conversation, account_id: account.id, status: :open)
-    Conversation.all.find_each do |conversation|
-      create(:inbox_member, inbox: conversation.inbox, user: agent_1)
-      create(:inbox_member, inbox: conversation.inbox, user: agent_2)
+    Inbox.where(id: Conversation.all.select(:inbox_id)).find_each do |inbox|
+      create(:inbox_member, inbox: inbox, user: agent_1)
+      create(:inbox_member, inbox: inbox, user: agent_2)
     end
   end
 
@@ -35,7 +38,7 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
       let!(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        Conversation.all.find_each { |conversation| create(:inbox_member, inbox: conversation.inbox, user: agent) }
+        Inbox.where(id: Conversation.all.select(:inbox_id)).find_each { |inbox| create(:inbox_member, inbox: inbox, user: agent) }
       end
 
       it 'Ignores bulk_actions for wrong type' do
@@ -64,9 +67,9 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
         expect(Conversation.first.assignee_id).to be_nil
       end
 
-      it 'Bulk update conversation team id to none' do
+      it 'does not change conversation team_id via bulk actions, since team is derived from the inbox' do
         params = { type: 'Conversation', fields: { team_id: 0 }, ids: Conversation.first(1).pluck(:display_id) }
-        expect(Conversation.first.team).not_to be_nil
+        expect(Conversation.first.team).to eq(team_1)
 
         perform_enqueued_jobs do
           post "/api/v1/accounts/#{account.id}/bulk_actions",
@@ -76,14 +79,10 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
           expect(response).to have_http_status(:success)
         end
 
-        expect(Conversation.first.team).to be_nil
-
-        last_activity_message = Conversation.first.messages.activity.last
-
-        expect(last_activity_message.content).to eq("Unassigned from #{team_1.name} by #{agent.name}")
+        expect(Conversation.first.team).to eq(team_1)
       end
 
-      it 'Bulk update conversation team id to team' do
+      it 'ignores a team_id sent for a conversation whose inbox has no team' do
         params = { type: 'Conversation', fields: { team_id: team_1.id }, ids: Conversation.last(2).pluck(:display_id) }
         expect(Conversation.last.team_id).to be_nil
 
@@ -95,11 +94,7 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
           expect(response).to have_http_status(:success)
         end
 
-        expect(Conversation.last.team).to eq(team_1)
-
-        last_activity_message = Conversation.last.messages.activity.last
-
-        expect(last_activity_message.content).to eq("Assigned to #{team_1.name} by #{agent.name}")
+        expect(Conversation.last.team_id).to be_nil
       end
 
       it 'Bulk update conversation assignee id' do
@@ -207,7 +202,7 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
       let!(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        Conversation.all.find_each { |conversation| create(:inbox_member, inbox: conversation.inbox, user: agent) }
+        Inbox.where(id: Conversation.all.select(:inbox_id)).find_each { |inbox| create(:inbox_member, inbox: inbox, user: agent) }
       end
 
       it 'Bulk delete conversation labels' do

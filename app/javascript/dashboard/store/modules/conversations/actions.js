@@ -236,18 +236,6 @@ const actions = {
     commit(types.ASSIGN_AGENT, { conversationId, assignee, assigneeType });
   },
 
-  assignTeam: async ({ dispatch }, { conversationId, teamId }) => {
-    try {
-      const response = await ConversationApi.assignTeam({
-        conversationId,
-        teamId,
-      });
-      dispatch('setCurrentChatTeam', { team: response.data, conversationId });
-    } catch (error) {
-      // Handle error
-    }
-  },
-
   setCurrentChatTeam({ commit }, { team, conversationId }) {
     commit(types.ASSIGN_TEAM, { team, conversationId });
   },

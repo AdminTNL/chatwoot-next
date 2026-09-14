@@ -9,7 +9,6 @@ import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/cons
 import {
   mockAssignableAgents,
   mockCurrentChat,
-  mockTeamsList,
   mockActiveLabels,
   mockInactiveLabels,
 } from './fixtures';
@@ -31,7 +30,6 @@ describe('useConversationHotKeys', () => {
         getSelectedChat: mockCurrentChat,
         'draftMessages/getReplyEditorMode': REPLY_EDITOR_MODES.REPLY,
         getContextMenuChatId: null,
-        'teams/getTeams': mockTeamsList,
         'draftMessages/get': vi.fn(),
       },
     };
@@ -152,14 +150,13 @@ describe('useConversationHotKeys', () => {
     expect(removeLabelAction).toBeUndefined();
   });
 
-  it('should return the correct team assignment actions', () => {
+  it('should not return team assignment actions, since team is derived from the inbox', () => {
     const { conversationHotKeys } = useConversationHotKeys();
     const assignTeamAction = conversationHotKeys.value.find(
       action => action.id === 'assign_a_team'
     );
 
-    expect(assignTeamAction).toBeDefined();
-    expect(assignTeamAction.children.length).toBe(mockTeamsList.length);
+    expect(assignTeamAction).toBeUndefined();
   });
 
   it('should return the correct priority assignment actions', () => {

@@ -93,16 +93,8 @@ export const AUTOMATIONS = {
         name: 'ASSIGN_AGENT',
       },
       {
-        key: 'assign_team',
-        name: 'ASSIGN_TEAM',
-      },
-      {
         key: 'remove_assigned_agent',
         name: 'REMOVE_ASSIGNED_AGENT',
-      },
-      {
-        key: 'remove_assigned_team',
-        name: 'REMOVE_ASSIGNED_TEAM',
       },
       {
         key: 'add_label',
@@ -235,16 +227,8 @@ export const AUTOMATIONS = {
         name: 'ASSIGN_AGENT',
       },
       {
-        key: 'assign_team',
-        name: 'ASSIGN_TEAM',
-      },
-      {
         key: 'remove_assigned_agent',
         name: 'REMOVE_ASSIGNED_AGENT',
-      },
-      {
-        key: 'remove_assigned_team',
-        name: 'REMOVE_ASSIGNED_TEAM',
       },
       {
         key: 'assign_agent',
@@ -381,16 +365,8 @@ export const AUTOMATIONS = {
         name: 'ASSIGN_AGENT',
       },
       {
-        key: 'assign_team',
-        name: 'ASSIGN_TEAM',
-      },
-      {
         key: 'remove_assigned_agent',
         name: 'REMOVE_ASSIGNED_AGENT',
-      },
-      {
-        key: 'remove_assigned_team',
-        name: 'REMOVE_ASSIGNED_TEAM',
       },
       {
         key: 'assign_agent',
@@ -521,16 +497,8 @@ export const AUTOMATIONS = {
         name: 'ASSIGN_AGENT',
       },
       {
-        key: 'assign_team',
-        name: 'ASSIGN_TEAM',
-      },
-      {
         key: 'remove_assigned_agent',
         name: 'REMOVE_ASSIGNED_AGENT',
-      },
-      {
-        key: 'remove_assigned_team',
-        name: 'REMOVE_ASSIGNED_TEAM',
       },
       {
         key: 'assign_agent',
@@ -651,16 +619,8 @@ export const AUTOMATIONS = {
         name: 'ASSIGN_AGENT',
       },
       {
-        key: 'assign_team',
-        name: 'ASSIGN_TEAM',
-      },
-      {
         key: 'remove_assigned_agent',
         name: 'REMOVE_ASSIGNED_AGENT',
-      },
-      {
-        key: 'remove_assigned_team',
-        name: 'REMOVE_ASSIGNED_TEAM',
       },
       {
         key: 'send_email_to_team',
@@ -716,18 +676,8 @@ export const AUTOMATION_ACTION_TYPES = [
     inputType: 'search_select',
   },
   {
-    key: 'assign_team',
-    label: 'ASSIGN_TEAM',
-    inputType: 'search_select',
-  },
-  {
     key: 'remove_assigned_agent',
     label: 'REMOVE_ASSIGNED_AGENT',
-    inputType: null,
-  },
-  {
-    key: 'remove_assigned_team',
-    label: 'REMOVE_ASSIGNED_TEAM',
     inputType: null,
   },
   {
