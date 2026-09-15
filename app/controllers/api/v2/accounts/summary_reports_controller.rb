@@ -15,7 +15,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   end
 
   def label
-    render_report_with(V2::Reports::LabelSummaryBuilder)
+    render_report_with(V2::Reports::LabelSummaryBuilder, type: :label)
   end
 
   def channel
@@ -38,10 +38,35 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
     }
   end
 
+  # Mirrors Api::V2::Accounts::ReportsHelper#accessible_agents/inboxes/teams
+  # and #accessible_label_titles, which already scope the CSV export of
+  # these same reports. Kept here instead of in the builders so they stay
+  # unaware of access scoping, same as the CSV path.
+  DIMENSION_ID_READERS = {
+    agent: :agent_ids,
+    team: :team_ids,
+    inbox: :inbox_ids,
+    label: :label_ids
+  }.freeze
+
   def render_report_with(builder_class, type: nil)
     builder_params = type.present? ? @builder_params.merge(type: type) : @builder_params
     builder = builder_class.new(account: Current.account, params: builder_params)
-    render json: builder.build
+    render json: filter_by_access_scope(builder.build, type)
+  end
+
+  def filter_by_access_scope(report, type)
+    return report if access_scope.unrestricted?
+
+    reader = DIMENSION_ID_READERS[type]
+    return report unless reader
+
+    accessible_ids = access_scope.public_send(reader)
+    report.select { |row| accessible_ids.include?(row[:id]) }
+  end
+
+  def access_scope
+    @access_scope ||= Reports::AccessScope.new(account: Current.account, user: Current.user, account_user: Current.account_user)
   end
 
   def permitted_params

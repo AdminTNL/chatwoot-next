@@ -57,8 +57,8 @@ const isLoading = computed(() => uiFlags.value[flagMap[props.type]] ?? false);
 const rowItems = useMapGetter([props.getterKey]) || [];
 const reportMetrics = useMapGetter([props.summaryKey]) || [];
 
-const getMetrics = id =>
-  reportMetrics.value.find(metrics => metrics.id === Number(id)) || {};
+const getRowItem = id =>
+  rowItems.value.find(item => item.id === Number(id)) || {};
 const columnHelper = createColumnHelper();
 const { t } = useI18n();
 
@@ -118,8 +118,8 @@ const renderAvgTime = value => (value ? formatTime(value) : '--');
 const renderCount = value => (value ? value.toLocaleString() : '--');
 
 const tableData = computed(() =>
-  rowItems.value.map(row => {
-    const rowMetrics = getMetrics(row.id);
+  reportMetrics.value.map(rowMetrics => {
+    const row = getRowItem(rowMetrics.id);
     const {
       conversationsCount,
       avgFirstResponseTime,
@@ -129,7 +129,7 @@ const tableData = computed(() =>
       participatedConversationsCount,
     } = rowMetrics;
     return {
-      id: row.id,
+      id: rowMetrics.id,
       // we fallback on title, label for instance does not have a name property
       name: row.name ?? row.title,
       type: props.type,
