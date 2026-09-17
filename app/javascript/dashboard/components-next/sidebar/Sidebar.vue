@@ -2,6 +2,7 @@
 import { h, ref, computed, onMounted, watch } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useStore } from 'vuex';
@@ -42,7 +43,7 @@ const emit = defineEmits([
   'closeMobileSidebar',
 ]);
 
-const { accountScopedRoute, isOnChatwootCloud } = useAccount();
+const { accountScopedRoute, isOnChatwootCloud, route } = useAccount();
 const store = useStore();
 const searchShortcut = useKbd([`$mod`, 'k']);
 const { t } = useI18n();
@@ -228,7 +229,10 @@ const unattendedUnreadCount = useMapGetter(
 const getFolderUnreadCount = useMapGetter(
   'conversationUnreadCounts/getFolderUnreadCount'
 );
-const teams = useMapGetter('teams/getMyTeams');
+const myTeams = useMapGetter('teams/getMyTeams');
+const allTeams = useMapGetter('teams/getTeams');
+const { isAdmin } = useAdmin();
+const teams = computed(() => (isAdmin.value ? allTeams.value : myTeams.value));
 const contactCustomViews = useMapGetter('customViews/getContactCustomViews');
 const conversationCustomViews = useMapGetter(
   'customViews/getConversationCustomViews'
@@ -302,13 +306,27 @@ const sortedTeams = computed(() =>
   })
 );
 
-const sortedInboxes = computed(() =>
-  sortSidebarItems(inboxes.value, {
+const activeTeamId = computed(() => {
+  const isOnTeamRoute = [
+    'team_conversations',
+    'conversations_through_team',
+  ].includes(route.name);
+  if (!isOnTeamRoute) return null;
+  return Number(route.params.teamId);
+});
+
+const sortedInboxes = computed(() => {
+  const baseInboxes =
+    activeTeamId.value !== null
+      ? inboxes.value.filter(inbox => inbox.team_id === activeTeamId.value)
+      : inboxes.value;
+
+  return sortSidebarItems(baseInboxes, {
     sortBy: getSortForSection(SIDEBAR_SORT_SECTIONS.CHANNELS),
     labelKey: inbox => inbox.name,
     unreadCountKey: inbox => getInboxUnreadCount.value(inbox.id),
-  })
-);
+  });
+});
 
 const sortedLabels = computed(() =>
   sortSidebarItems(labels.value, {
