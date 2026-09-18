@@ -1344,4 +1344,107 @@ RSpec.describe 'Conversations API', type: :request do
       end
     end
   end
+
+  describe 'DELETE /api/v1/accounts/{account.id}/conversations/:id/clear_ai_history' do
+    let(:contact) { create(:contact, account: account, phone_number: '+5511999990000') }
+    let(:conversation) { create(:conversation, account: account, contact: contact) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:administrator) { create(:user, account: account, role: :administrator) }
+    let(:gateway) { instance_double(AiSuggestionGateway) }
+    let(:chatbot_result) do
+      { 'messages_deleted' => 3, 'suggestions_deleted' => 1, 'human_override_deleted' => true, 'notes_deleted' => 2, 'notes_failed' => 0 }
+    end
+    let(:path) { "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/clear_ai_history" }
+
+    before { allow(AiSuggestionGateway).to receive(:new).and_return(gateway) }
+
+    context 'when it is an unauthenticated user' do
+      it 'returns unauthorized' do
+        delete path
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when the agent has no access to the conversation' do
+      it 'does not call the gateway and is denied' do
+        expect(gateway).not_to receive(:delete_context)
+
+        delete path, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when the user has access' do
+      before { create(:inbox_member, user: agent, inbox: conversation.inbox) }
+
+      it 'calls the gateway with the conversation data and passes the response through' do
+        expect(gateway).to receive(:delete_context).with(
+          inbox_id: conversation.inbox_id, phone: '+5511999990000',
+          conversation_id: conversation.display_id, operator_id: agent.id.to_s
+        ).and_return(chatbot_result)
+
+        expect do
+          delete path, headers: agent.create_new_auth_token, as: :json
+        end.not_to(change { conversation.messages.count })
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body).to eq(chatbot_result)
+        expect(response.parsed_body.keys.size).to eq(5)
+      end
+
+      it 'allows administrators' do
+        allow(gateway).to receive(:delete_context).and_return(chatbot_result)
+
+        delete path, headers: administrator.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(gateway).to have_received(:delete_context).with(hash_including(operator_id: administrator.id.to_s))
+      end
+
+      it 'returns 422 without calling the gateway when the contact has no phone' do
+        contact.update!(phone_number: nil)
+        expect(gateway).not_to receive(:delete_context)
+
+        delete path, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to be_present
+      end
+
+      it 'returns zeroed 200 when the thread is not found' do
+        allow(gateway).to receive(:delete_context)
+          .and_raise(AiSuggestionGateway::RequestError.new('nope', code: 'thread_not_found', status: 404))
+
+        delete path, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body).to eq(
+          'messages_deleted' => 0, 'suggestions_deleted' => 0, 'human_override_deleted' => false,
+          'notes_deleted' => 0, 'notes_failed' => 0
+        )
+      end
+
+      it 'returns 422 when the inbox has no bot' do
+        allow(gateway).to receive(:delete_context)
+          .and_raise(AiSuggestionGateway::RequestError.new('nope', code: 'bot_not_found', status: 404))
+
+        delete path, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to eq('This inbox is not linked to the AI assistant')
+      end
+
+      it 'returns 422 with the message for other errors' do
+        allow(gateway).to receive(:delete_context)
+          .and_raise(AiSuggestionGateway::RequestError.new('boom', status: 500))
+
+        delete path, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.body).to include('boom')
+      end
+    end
+  end
 end
