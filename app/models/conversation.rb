@@ -258,6 +258,7 @@ class Conversation < ApplicationRecord
     create_activity
     invalidate_filtered_unread_count_conversation
     notify_conversation_updation
+    propagate_label_changes
   end
 
   def handle_resolved_status_change
@@ -402,6 +403,21 @@ class Conversation < ApplicationRecord
 
     create_label_added(user_name, current_labels - previous_labels)
     create_label_removed(user_name, previous_labels - current_labels)
+  end
+
+  # Propagates label additions/removals to sibling conversations (same contact, same team)
+  # and to the contact itself. See Labels::PropagationService for the actual propagation logic.
+  def propagate_label_changes
+    return if team_id.blank?
+
+    previous_labels, current_labels = previous_changes[:label_list]
+    return unless (previous_labels.is_a? Array) && (current_labels.is_a? Array)
+
+    added = current_labels - previous_labels
+    removed = previous_labels - current_labels
+    return if added.blank? && removed.blank?
+
+    Labels::PropagateJob.perform_later(conversation_id: id, added_labels: added, removed_labels: removed)
   end
 
   def validate_referer_url

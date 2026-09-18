@@ -119,7 +119,7 @@ const CUSTOM_ROLE_NO_REPORTS_USER = {
 
 const buildStore = (
   currentUser,
-  { myTeams = [], teams = [], inboxes = [] } = {}
+  { myTeams = [], teams = [], inboxes = [], labels = [] } = {}
 ) =>
   createStore({
     getters: {
@@ -134,7 +134,7 @@ const buildStore = (
       'globalConfig/isACustomBrandedInstance': () => false,
       'globalConfig/isOnChatwootCloud': () => false,
       'inboxes/getInboxes': () => inboxes,
-      'labels/getLabelsOnSidebar': () => [],
+      'labels/getLabelsOnSidebar': () => labels,
       'teams/getMyTeams': () => myTeams,
       'teams/getTeams': () => teams,
       'customViews/getContactCustomViews': () => [],
@@ -573,5 +573,100 @@ describe('Sidebar - Channels section filtered by active team route', () => {
     });
 
     expect(findChannelLabels(wrapper)).toEqual(['High Unread', 'Low Unread']);
+  });
+});
+
+// Label leaves render through the default SidebarGroupLeaf (`div.truncate`),
+// same as Team leaves - but the exact same label titles are also rendered,
+// unfiltered, by the unrelated "Tagged with" contacts section. Scope the
+// lookup to the "Labels" conversations sub-group (found via its header text)
+// so this only asserts on the section under test.
+const findLabelLeafLabels = wrapper => {
+  const header = wrapper
+    .findAll('span.truncate')
+    .find(el => el.text().trim() === 'Labels');
+  if (!header) return [];
+
+  const section = header.element.closest('li.group\\/sidebar-section');
+  if (!section) return [];
+
+  return Array.from(section.querySelectorAll('div.truncate'))
+    .map(el => el.textContent.trim())
+    .filter(Boolean);
+};
+
+describe('Sidebar - Labels section filtered by active team route', () => {
+  const teamX = { id: 10, name: 'Team X', is_member: true };
+  const teamY = { id: 20, name: 'Team Y', is_member: true };
+
+  const labelOfX = {
+    id: 1,
+    title: 'urgent-x',
+    team_id: 10,
+    show_on_sidebar: true,
+  };
+  const otherLabelOfX = {
+    id: 2,
+    title: 'billing-x',
+    team_id: 10,
+    show_on_sidebar: true,
+  };
+  const labelOfY = {
+    id: 3,
+    title: 'urgent-y',
+    team_id: 20,
+    show_on_sidebar: true,
+  };
+  const globalLabel = {
+    id: 4,
+    title: 'vip',
+    team_id: null,
+    show_on_sidebar: true,
+  };
+
+  const allTeams = [teamX, teamY];
+  const allLabels = [labelOfX, otherLabelOfX, labelOfY, globalLabel];
+
+  it('shows all labels, including global ones, when the active route is not a team route', () => {
+    const wrapper = mountSidebar(
+      ADMIN_USER,
+      { myTeams: allTeams, teams: allTeams, labels: allLabels },
+      { name: 'home' }
+    );
+
+    expect(findLabelLeafLabels(wrapper)).toEqual(
+      expect.arrayContaining(['urgent-x', 'billing-x', 'urgent-y', 'vip'])
+    );
+  });
+
+  it('shows only the labels of the active team on the team_conversations route, hiding global labels', () => {
+    const wrapper = mountSidebar(
+      ADMIN_USER,
+      { myTeams: allTeams, teams: allTeams, labels: allLabels },
+      { name: 'team_conversations', params: { accountId: '1', teamId: '10' } }
+    );
+
+    const labels = findLabelLeafLabels(wrapper);
+    expect(labels).toEqual(expect.arrayContaining(['urgent-x', 'billing-x']));
+    expect(labels).not.toContain('urgent-y');
+    expect(labels).not.toContain('vip');
+  });
+
+  it('restores the full label list, including global ones, after leaving the team route', async () => {
+    const { wrapper, route } = mountSidebarWithReactiveRoute(
+      ADMIN_USER,
+      { myTeams: allTeams, teams: allTeams, labels: allLabels },
+      { name: 'team_conversations', params: { accountId: '1', teamId: '10' } }
+    );
+
+    expect(findLabelLeafLabels(wrapper)).not.toContain('vip');
+
+    route.name = 'home';
+    route.params = { accountId: '1' };
+    await wrapper.vm.$nextTick();
+
+    expect(findLabelLeafLabels(wrapper)).toEqual(
+      expect.arrayContaining(['urgent-x', 'billing-x', 'urgent-y', 'vip'])
+    );
   });
 });

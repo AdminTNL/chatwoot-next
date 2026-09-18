@@ -6,5 +6,6 @@ json.payload do
     json.color label.color
     json.show_on_sidebar label.show_on_sidebar
     json.team_id label.team_id
+    json.label_group_id label.label_group_id
   end
 end

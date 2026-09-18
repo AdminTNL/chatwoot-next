@@ -328,13 +328,18 @@ const sortedInboxes = computed(() => {
   });
 });
 
-const sortedLabels = computed(() =>
-  sortSidebarItems(labels.value, {
+const sortedLabels = computed(() => {
+  const baseLabels =
+    activeTeamId.value !== null
+      ? labels.value.filter(label => label.team_id === activeTeamId.value)
+      : labels.value;
+
+  return sortSidebarItems(baseLabels, {
     sortBy: getSortForSection(SIDEBAR_SORT_SECTIONS.LABELS),
     labelKey: label => label.title,
     unreadCountKey: label => getLabelUnreadCount.value(label.id),
-  })
-);
+  });
+});
 
 const closeMobileSidebar = () => {
   if (!props.isMobileSidebarOpen) return;

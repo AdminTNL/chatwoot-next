@@ -39,12 +39,16 @@ export const actions = {
       });
     }
   },
-  update: async ({ commit }, { contactId, labels }) => {
+  update: async ({ commit }, { contactId, labels, teamId }) => {
     commit(types.SET_CONTACT_LABELS_UI_FLAG, {
       isUpdating: true,
     });
     try {
-      const response = await ContactAPI.updateContactLabels(contactId, labels);
+      const response = await ContactAPI.updateContactLabels(
+        contactId,
+        labels,
+        teamId
+      );
       commit(types.SET_CONTACT_LABELS, {
         id: contactId,
         data: response.data.payload,

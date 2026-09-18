@@ -71,6 +71,23 @@ RSpec.describe 'Conversation Label API', type: :request do
         expect(response.body).to include('label3')
         expect(response.body).to include('label4')
       end
+
+      it 'removes another label from the same label_group on the conversation itself when a new one is added' do
+        team = create(:team, account: account)
+        label_group = create(:label_group, account: account, team: team)
+        old_label = create(:label, account: account, team: team, label_group: label_group)
+        new_label = create(:label, account: account, team: team, label_group: label_group)
+        conversation.update!(team: team)
+        conversation.update_labels([old_label.title])
+
+        post api_v1_account_conversation_labels_url(account_id: account.id, conversation_id: conversation.display_id),
+             params: { labels: [new_label.title] },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(conversation.reload.label_list).to contain_exactly(new_label.title)
+      end
     end
   end
 end

@@ -173,7 +173,8 @@ RSpec.describe Conversation do
       create(:conversation, status: 'open', account: account, assignee: old_assignee)
     end
     let(:assignment_mailer) { instance_double(AssignmentMailer, deliver: true) }
-    let(:label) { create(:label, account: account) }
+    let!(:team) { create(:team, account: account) }
+    let(:label) { create(:label, account: account, team: team) }
     let(:filtered_store) { Conversations::UnreadCounts::FilteredCountStore }
 
     before do
@@ -357,10 +358,11 @@ RSpec.describe Conversation do
     let(:agent) do
       create(:user, email: 'agent@example.com', account: account, role: :agent)
     end
-    let(:first_label) { create(:label, account: account) }
-    let(:second_label) { create(:label, account: account) }
-    let(:third_label) { create(:label, account: account) }
-    let(:fourth_label) { create(:label, account: account) }
+    let!(:team) { create(:team, account: account) }
+    let(:first_label) { create(:label, account: account, team: team) }
+    let(:second_label) { create(:label, account: account, team: team) }
+    let(:third_label) { create(:label, account: account, team: team) }
+    let(:fourth_label) { create(:label, account: account, team: team) }
 
     before do
       conversation
@@ -403,6 +405,61 @@ RSpec.describe Conversation do
         .to(have_been_enqueued.at_least(:once)
         .with(conversation, { account_id: conversation.account_id, inbox_id: conversation.inbox_id,
                               message_type: :activity, content: "#{agent.name} removed #{labels.join(', ')}" }))
+    end
+
+    it 'removes another label from the same label_group on the conversation itself when a new one is added' do
+      label_group = create(:label_group, account: account, team: team)
+      old_label = create(:label, account: account, team: team, label_group: label_group)
+      new_label = create(:label, account: account, team: team, label_group: label_group)
+      conversation.update_labels([old_label.title])
+
+      conversation.add_labels([new_label.title])
+
+      expect(conversation.label_list).to contain_exactly(new_label.title)
+    end
+  end
+
+  describe '#propagate_label_changes' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:label) { create(:label, account: account, team: team) }
+    let(:other_label) { create(:label, account: account, team: team) }
+
+    context 'when the conversation has a team_id' do
+      let(:inbox) { create(:inbox, account: account, team: team) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+
+      before { conversation }
+
+      it 'enqueues a propagate job with the added labels' do
+        expect { conversation.update!(label_list: [label.title]) }
+          .to have_enqueued_job(Labels::PropagateJob)
+          .with(conversation_id: conversation.id, added_labels: [label.title], removed_labels: [])
+      end
+
+      it 'enqueues a propagate job with the removed labels' do
+        conversation.update!(label_list: [label.title, other_label.title])
+
+        expect { conversation.update!(label_list: [other_label.title]) }
+          .to have_enqueued_job(Labels::PropagateJob)
+          .with(conversation_id: conversation.id, added_labels: [], removed_labels: [label.title])
+      end
+
+      it 'does not enqueue a propagate job when label_list does not change' do
+        conversation.update!(label_list: [label.title])
+
+        expect { conversation.update!(status: :resolved) }
+          .not_to have_enqueued_job(Labels::PropagateJob)
+      end
+    end
+
+    context 'when the conversation has no team_id' do
+      let(:conversation) { create(:conversation, account: account) }
+
+      it 'does not enqueue a propagate job' do
+        expect { conversation.update!(label_list: [label.title]) }
+          .not_to have_enqueued_job(Labels::PropagateJob)
+      end
     end
   end
 
