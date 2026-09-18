@@ -45,6 +45,37 @@ RSpec.describe Team do
     end
   end
 
+  describe '#label_prefix' do
+    let(:account) { create(:account) }
+
+    it 'returns the name as-is when it only has letters and hyphens' do
+      team = create(:team, account: account, name: 'suporte')
+      expect(team.label_prefix).to eq('suporte')
+    end
+
+    it 'replaces spaces with a hyphen' do
+      team = create(:team, account: account, name: 'suporte vip')
+      expect(team.label_prefix).to eq('suporte-vip')
+    end
+
+    it 'collapses runs of punctuation/spaces into a single hyphen' do
+      team = create(:team, account: account, name: 'suporte  vip!!')
+      expect(team.label_prefix).to eq('suporte-vip')
+    end
+
+    it 'strips leading and trailing hyphens' do
+      team = create(:team, account: account, name: '  suporte  ')
+      expect(team.label_prefix).to eq('suporte')
+    end
+
+    it 'produces the same slug for names that only differ by punctuation' do
+      team_a = create(:team, account: account, name: 'Time A')
+      team_b = create(:team, account: account, name: 'time-a')
+      expect(team_a.label_prefix).to eq('time-a')
+      expect(team_b.label_prefix).to eq('time-a')
+    end
+  end
+
   describe '#add_members' do
     let(:team) { FactoryBot.create(:team) }
 

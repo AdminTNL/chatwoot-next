@@ -16,6 +16,26 @@ export const getLabelTitleErrorMessage = validation => {
   return errorMessage;
 };
 
+export const getLabelTeamErrorMessage = validation => {
+  let errorMessage = '';
+  if (!validation.selectedTeamId.$error) {
+    errorMessage = '';
+  } else if (!validation.selectedTeamId.required) {
+    errorMessage = 'LABEL_MGMT.FORM.TEAM.REQUIRED_ERROR';
+  }
+  return errorMessage;
+};
+
+export const getLabelGroupErrorMessage = validation => {
+  let errorMessage = '';
+  if (!validation.selectedLabelGroupId.$error) {
+    errorMessage = '';
+  } else if (!validation.selectedLabelGroupId.required) {
+    errorMessage = 'LABEL_MGMT.FORM.LABEL_GROUP.REQUIRED_ERROR';
+  }
+  return errorMessage;
+};
+
 export default {
   title: {
     required,
@@ -27,4 +47,10 @@ export default {
     required,
   },
   showOnSidebar: {},
+  selectedTeamId: {
+    required,
+  },
+  selectedLabelGroupId: {
+    required,
+  },
 };
