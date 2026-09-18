@@ -144,6 +144,10 @@ class ConversationApi extends ApiClient {
     return axios.get(`${this.url}/${conversationId}/inbox_assistant`);
   }
 
+  clearAiHistory(conversationId) {
+    return axios.delete(`${this.url}/${conversationId}/clear_ai_history`);
+  }
+
   delete(conversationId) {
     return axios.delete(`${this.url}/${conversationId}`);
   }

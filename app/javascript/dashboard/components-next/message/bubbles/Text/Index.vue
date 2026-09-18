@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useStore } from 'dashboard/composables/store';
 import BaseBubble from 'next/message/bubbles/Base.vue';
 import FormattedContent from './FormattedContent.vue';
 import AttachmentChips from 'next/message/chips/AttachmentChips.vue';
@@ -14,6 +15,7 @@ import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import MessageApi from 'dashboard/api/inbox/message.js';
 
 const { t } = useI18n();
+const store = useStore();
 const {
   id,
   conversationId,
@@ -62,10 +64,23 @@ const isPendingAiSuggestion = computed(
 );
 const isProcessingAiSuggestion = ref(false);
 
+const removeIfAlreadyResolved = response => {
+  if (response?.data?.already_resolved === true) {
+    store.dispatch('removeMessage', {
+      conversationId: conversationId.value,
+      messageId: id.value,
+    });
+  }
+};
+
 const handleApproveAiSuggestion = async () => {
   isProcessingAiSuggestion.value = true;
   try {
-    await MessageApi.approveAiSuggestion(conversationId.value, id.value);
+    const response = await MessageApi.approveAiSuggestion(
+      conversationId.value,
+      id.value
+    );
+    removeIfAlreadyResolved(response);
   } catch (error) {
     useAlert(t('CONVERSATION.PRIVATE_NOTE.APPROVE_ERROR'));
   } finally {
@@ -76,7 +91,11 @@ const handleApproveAiSuggestion = async () => {
 const handleRejectAiSuggestion = async () => {
   isProcessingAiSuggestion.value = true;
   try {
-    await MessageApi.rejectAiSuggestion(conversationId.value, id.value);
+    const response = await MessageApi.rejectAiSuggestion(
+      conversationId.value,
+      id.value
+    );
+    removeIfAlreadyResolved(response);
   } catch (error) {
     useAlert(t('CONVERSATION.PRIVATE_NOTE.REJECT_ERROR'));
   } finally {

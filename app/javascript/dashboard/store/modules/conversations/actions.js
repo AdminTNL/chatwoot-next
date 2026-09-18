@@ -356,6 +356,16 @@ const actions = {
     }
   },
 
+  removeMessage({ commit }, { conversationId, messageId }) {
+    commit(types.REMOVE_MESSAGE, { conversationId, messageId });
+  },
+
+  clearAiHistory: async ({ commit }, { conversationId }) => {
+    const { data } = await ConversationApi.clearAiHistory(conversationId);
+    commit(types.REMOVE_AI_SUGGESTION_MESSAGES, { conversationId });
+    return data;
+  },
+
   deleteConversation: async ({ commit, dispatch }, conversationId) => {
     try {
       await ConversationApi.delete(conversationId);

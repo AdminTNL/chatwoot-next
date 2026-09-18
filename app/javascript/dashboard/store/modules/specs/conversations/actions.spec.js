@@ -616,6 +616,48 @@ describe('#deleteMessage', () => {
     });
   });
 
+  describe('#removeMessage', () => {
+    it('commits REMOVE_MESSAGE', () => {
+      actions.removeMessage({ commit }, { conversationId: 3, messageId: 4 });
+      expect(commit.mock.calls).toEqual([
+        [types.REMOVE_MESSAGE, { conversationId: 3, messageId: 4 }],
+      ]);
+    });
+  });
+
+  describe('#clearAiHistory', () => {
+    it('calls the API, commits the mutation and returns the data', async () => {
+      const data = {
+        messages_deleted: 2,
+        suggestions_deleted: 1,
+        human_override_deleted: 0,
+        notes_deleted: 1,
+        notes_failed: 0,
+      };
+      axios.delete.mockResolvedValue({ data });
+      const result = await actions.clearAiHistory(
+        { commit },
+        { conversationId: 7 }
+      );
+      expect(axios.delete).toHaveBeenCalledWith(
+        expect.stringContaining('/conversations/7/clear_ai_history')
+      );
+      expect(commit.mock.calls).toEqual([
+        [types.REMOVE_AI_SUGGESTION_MESSAGES, { conversationId: 7 }],
+      ]);
+      expect(result).toEqual(data);
+    });
+
+    it('does not commit and propagates the error on failure', async () => {
+      const error = { response: { status: 422, data: { error: 'x' } } };
+      axios.delete.mockRejectedValue(error);
+      await expect(
+        actions.clearAiHistory({ commit }, { conversationId: 7 })
+      ).rejects.toEqual(error);
+      expect(commit.mock.calls).toEqual([]);
+    });
+  });
+
   describe('#updateCustomAttributes', () => {
     it('update conversation custom attributes', async () => {
       axios.post.mockResolvedValue({

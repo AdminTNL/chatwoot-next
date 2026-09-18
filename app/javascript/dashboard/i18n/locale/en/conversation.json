@@ -107,6 +107,17 @@
       "APPROVE_ERROR": "Could not approve the suggestion, please try again",
       "REJECT_ERROR": "Could not reject the suggestion, please try again"
     },
+    "CLEAR_AI_HISTORY": {
+      "BUTTON": "Clear AI history",
+      "TITLE": "Clear AI history?",
+      "DESCRIPTION": "This clears the context the AI uses for this contact on this channel and removes the AI suggestions. Conversation messages are not affected.",
+      "CONFIRM": "Clear",
+      "CANCEL": "Cancel",
+      "SUCCESS": "AI history cleared",
+      "SUCCESS_EMPTY": "There was no AI history to clear",
+      "ERROR": "Could not clear the AI history",
+      "ERROR_NOT_LINKED": "This channel is not linked to the AI assistant"
+    },
     "HEADER": {
       "RESOLVE_ACTION": "Resolve",
       "REOPEN_ACTION": "Reopen",
