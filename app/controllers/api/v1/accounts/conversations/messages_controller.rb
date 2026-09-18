@@ -1,4 +1,7 @@
 class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::Conversations::BaseController
+  # O chatbot responde suggestion_not_dismissable (e não suggestion_not_pending) ao rejeitar uma sugestão já resolvida.
+  AI_SUGGESTION_RESOLVED_CODES = %w[suggestion_not_found suggestion_not_pending suggestion_not_dismissable].freeze
+
   before_action :ensure_api_inbox, only: :update
 
   def index
@@ -19,6 +22,8 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   end
 
   def destroy
+    return message.destroy! if message.content_attributes['ai_suggestion_id'].present?
+
     ActiveRecord::Base.transaction do
       message.update!(content: I18n.t('conversations.messages.deleted'), content_type: :text, content_attributes: { deleted: true })
       message.attachments.destroy_all
@@ -75,7 +80,14 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
     message.update!(content_attributes: message.content_attributes.merge('ai_suggestion_status' => status))
     render json: { content_attributes: message.content_attributes }
   rescue AiSuggestionGateway::RequestError => e
+    return resolve_missing_ai_suggestion if AI_SUGGESTION_RESOLVED_CODES.include?(e.code)
+
     render_could_not_create_error(e.message)
+  end
+
+  def resolve_missing_ai_suggestion
+    message.destroy!
+    render json: { already_resolved: true }
   end
 
   def ai_suggestion_gateway
