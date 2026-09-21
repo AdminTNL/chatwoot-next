@@ -187,13 +187,124 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
       end
     end
 
-    context 'when authenticated but not authorized' do
-      it 'returns forbidden' do
+    context 'when authenticated as an agent with no accessible inboxes' do
+      it 'returns success with zeroed out data, not an error' do
         get "/api/v2/accounts/#{account.id}/reports",
+            params: {
+              metric: 'conversations_count',
+              type: 'account',
+              since: 1.week.ago.to_i.to_s,
+              until: Time.current.to_i.to_s,
+              group_by: 'day'
+            },
             headers: agent.create_new_auth_token,
             as: :json
-        expect(response).to have_http_status(:unauthorized)
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body.sum { |e| e['value'] }).to eq(0)
       end
+    end
+  end
+
+  describe 'team-scoped access to reports' do
+    let!(:team_a) { create(:team, account: account) }
+    let!(:team_b) { create(:team, account: account) }
+    let!(:inbox_a) { create(:inbox, account: account, team: team_a) }
+    let!(:inbox_b) { create(:inbox, account: account, team: team_b) }
+    let!(:agent_a) { create(:user, account: account, role: :agent) }
+    let!(:label_a) { create(:label, account: account, team: team_a, title: 'team-a-label') }
+    let!(:label_b) { create(:label, account: account, team: team_b, title: 'team-b-label') }
+
+    let(:current_time) { Time.zone.parse('2026-05-20 12:00') }
+    let(:since_param) { (current_time - 1.week).to_i.to_s }
+    let(:until_param) { current_time.to_i.to_s }
+
+    before do
+      travel_to current_time
+
+      team_a.add_members([agent_a.id])
+
+      conversation_a = create(:conversation, account: account, inbox: inbox_a, created_at: current_time - 1.day)
+      conversation_b = create(:conversation, account: account, inbox: inbox_b, created_at: current_time - 1.day)
+
+      conversation_a.label_list.add(label_a.title)
+      conversation_a.save!
+      conversation_b.label_list.add(label_b.title)
+      conversation_b.save!
+    end
+
+    it "sums only the agent's own team inboxes for an account-type report, not the whole account" do
+      get "/api/v2/accounts/#{account.id}/reports",
+          params: {
+            metric: 'conversations_count', type: 'account', since: since_param, until: until_param, group_by: 'day'
+          },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      agent_total = response.parsed_body.sum { |e| e['value'] }
+
+      get "/api/v2/accounts/#{account.id}/reports",
+          params: {
+            metric: 'conversations_count', type: 'account', since: since_param, until: until_param, group_by: 'day'
+          },
+          headers: admin.create_new_auth_token, as: :json
+
+      admin_total = response.parsed_body.sum { |e| e['value'] }
+
+      expect(agent_total).to eq(1)
+      expect(admin_total).to eq(2)
+    end
+
+    it 'returns success for an inbox the agent can access' do
+      get "/api/v2/accounts/#{account.id}/reports",
+          params: {
+            metric: 'conversations_count', type: 'inbox', id: inbox_a.id, since: since_param, until: until_param, group_by: 'day'
+          },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns not_found for an inbox of another team' do
+      get "/api/v2/accounts/#{account.id}/reports",
+          params: {
+            metric: 'conversations_count', type: 'inbox', id: inbox_b.id, since: since_param, until: until_param, group_by: 'day'
+          },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'returns not_found for a label of another team' do
+      get "/api/v2/accounts/#{account.id}/reports",
+          params: {
+            metric: 'conversations_count', type: 'label', id: label_b.id, since: since_param, until: until_param, group_by: 'day'
+          },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'returns not_found for a team the agent is not a member of' do
+      get "/api/v2/accounts/#{account.id}/reports",
+          params: {
+            metric: 'conversations_count', type: 'team', id: team_b.id, since: since_param, until: until_param, group_by: 'day'
+          },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'returns success for an agent with direct inbox_member access but no team' do
+      lone_agent = create(:user, account: account, role: :agent)
+      create(:inbox_member, inbox: inbox_a, user: lone_agent)
+
+      get "/api/v2/accounts/#{account.id}/reports",
+          params: {
+            metric: 'conversations_count', type: 'inbox', id: inbox_a.id, since: since_param, until: until_param, group_by: 'day'
+          },
+          headers: lone_agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
     end
   end
 
@@ -208,11 +319,49 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
       end
     end
 
-    context 'when authenticated as agent' do
-      it 'returns unauthorized' do
+    context 'when authenticated as agent with no accessible inboxes' do
+      it 'returns success with an empty matrix, not unauthorized' do
         get "/api/v2/accounts/#{account.id}/reports/inbox_label_matrix",
             headers: agent.create_new_auth_token, as: :json
-        expect(response).to have_http_status(:unauthorized)
+
+        expect(response).to have_http_status(:success)
+        body = response.parsed_body
+        # label_one is a global (team-less) label, so it stays visible per
+        # LabelPolicy::Scope even though the agent has no accessible inbox -
+        # but with no accessible inbox at all, the matrix itself has no rows.
+        expect(body['inboxes']).to eq([])
+        expect(body['labels']).to eq([{ 'id' => label_one.id, 'title' => 'bug' }])
+        expect(body['matrix']).to eq([])
+      end
+    end
+
+    context 'when authenticated as agent with accessible inboxes' do
+      let!(:team) { create(:team, account: account) }
+      let!(:other_team) { create(:team, account: account) }
+
+      before do
+        inbox_one.update!(team: team)
+        team.add_members([agent.id])
+
+        c1 = create(:conversation, account: account, inbox: inbox_one, created_at: 2.days.ago)
+        c1.update(label_list: [label_one.title])
+      end
+
+      it 'only includes inboxes and labels the agent can access' do
+        other_inbox = create(:inbox, account: account, name: 'Other Inbox', team: other_team)
+        other_label = create(:label, account: account, title: 'other-label', team: other_team)
+        c2 = create(:conversation, account: account, inbox: other_inbox, created_at: 1.day.ago)
+        c2.update(label_list: [other_label.title])
+
+        get "/api/v2/accounts/#{account.id}/reports/inbox_label_matrix",
+            params: { since: 1.week.ago.to_i.to_s, until: Time.current.to_i.to_s },
+            headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        body = response.parsed_body
+        expect(body['inboxes'].pluck('id')).to eq([inbox_one.id])
+        expect(body['labels'].pluck('id')).to eq([label_one.id])
+        expect(body['matrix']).to eq([[1]])
       end
     end
 
@@ -308,12 +457,41 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
       end
     end
 
-    context 'when authenticated as agent' do
-      it 'returns unauthorized' do
+    context 'when authenticated as agent with no accessible inboxes' do
+      it 'returns success with an empty result, not unauthorized' do
         get "/api/v2/accounts/#{account.id}/reports/outgoing_messages_count",
             params: { group_by: 'agent', since: since_epoch, until: until_epoch },
             headers: agent.create_new_auth_token, as: :json
-        expect(response).to have_http_status(:unauthorized)
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq([])
+      end
+    end
+
+    context 'when authenticated as agent with accessible inboxes' do
+      let!(:team) { create(:team, account: account) }
+      let(:other_inbox) { create(:inbox, account: account) }
+
+      before do
+        inbox.update!(team: team)
+        team.add_members([agent.id])
+
+        conv_in_scope = create(:conversation, account: account, inbox: inbox, assignee: agent)
+        conv_out_of_scope = create(:conversation, account: account, inbox: other_inbox, assignee: agent)
+
+        create(:message, account: account, conversation: conv_in_scope, inbox: inbox, message_type: :outgoing, sender: agent)
+        create(:message, account: account, conversation: conv_out_of_scope, inbox: other_inbox, message_type: :outgoing, sender: agent)
+      end
+
+      it 'only counts messages in the inboxes the agent can access' do
+        get "/api/v2/accounts/#{account.id}/reports/outgoing_messages_count",
+            params: { group_by: 'agent', since: since_epoch, until: until_epoch },
+            headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        data = response.parsed_body
+        agent_entry = data.find { |e| e['id'] == agent.id }
+        expect(agent_entry['outgoing_messages_count']).to eq(1)
       end
     end
 
@@ -321,17 +499,18 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
       let(:agent2) { create(:user, account: account, role: :agent) }
       let(:team) { create(:team, account: account) }
       let(:inbox2) { create(:inbox, account: account) }
+      let(:team_inbox) { create(:inbox, account: account, team: team) }
 
       # Separate conversations for agent and team grouping because
       # model callbacks clear assignee_id when team is set.
       before do
         conv_agent = create(:conversation, account: account, inbox: inbox, assignee: agent)
         conv_agent2 = create(:conversation, account: account, inbox: inbox2, assignee: agent2)
-        conv_team = create(:conversation, account: account, inbox: inbox, team: team)
+        conv_team = create(:conversation, account: account, inbox: team_inbox)
 
         create_list(:message, 3, account: account, conversation: conv_agent, inbox: inbox, message_type: :outgoing, sender: agent)
         create_list(:message, 2, account: account, conversation: conv_agent2, inbox: inbox2, message_type: :outgoing, sender: agent2)
-        create_list(:message, 4, account: account, conversation: conv_team, inbox: inbox, message_type: :outgoing)
+        create_list(:message, 4, account: account, conversation: conv_team, inbox: team_inbox, message_type: :outgoing)
         # incoming message should not be counted
         create(:message, account: account, conversation: conv_agent, inbox: inbox, message_type: :incoming)
       end
@@ -383,7 +562,7 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
 
         inbox_entry = data.find { |e| e['id'] == inbox.id }
         inbox2_entry = data.find { |e| e['id'] == inbox2.id }
-        expect(inbox_entry['outgoing_messages_count']).to eq(7)
+        expect(inbox_entry['outgoing_messages_count']).to eq(3)
         expect(inbox2_entry['outgoing_messages_count']).to eq(2)
       end
 
@@ -420,6 +599,79 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
         # 3 from before block; bot message excluded (sender_type != 'User')
         expect(agent_entry['outgoing_messages_count']).to eq(3)
       end
+    end
+  end
+
+  describe 'CSV exports row-level scoping' do
+    let!(:team_a) { create(:team, account: account) }
+    let!(:team_b) { create(:team, account: account) }
+    let!(:inbox_a) { create(:inbox, account: account, team: team_a, name: 'Team A Inbox') }
+    let!(:inbox_b) { create(:inbox, account: account, team: team_b, name: 'Team B Inbox') }
+    let!(:agent_a) { create(:user, account: account, role: :agent) }
+    let!(:agent_b) { create(:user, account: account, role: :agent) }
+
+    let(:since_param) { 1.week.ago.to_i.to_s }
+    let(:until_param) { Time.current.to_i.to_s }
+
+    before do
+      team_a.add_members([agent_a.id])
+      team_b.add_members([agent_b.id])
+
+      create(:conversation, account: account, inbox: inbox_a, assignee: agent_a)
+      create(:conversation, account: account, inbox: inbox_b, assignee: agent_b)
+    end
+
+    it 'only lists accessible inboxes in the inboxes CSV for a restricted agent' do
+      get "/api/v2/accounts/#{account.id}/reports/inboxes",
+          params: { since: since_param, until: until_param },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(inbox_a.name)
+      expect(response.body).not_to include(inbox_b.name)
+    end
+
+    it 'only lists accessible agents in the agents CSV for a restricted agent' do
+      get "/api/v2/accounts/#{account.id}/reports/agents",
+          params: { since: since_param, until: until_param },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(agent_a.name)
+      expect(response.body).not_to include(agent_b.name)
+    end
+
+    it 'only lists the accessible team in the teams CSV for a restricted agent' do
+      get "/api/v2/accounts/#{account.id}/reports/teams",
+          params: { since: since_param, until: until_param },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(team_a.name)
+      expect(response.body).not_to include(team_b.name)
+    end
+
+    it 'only lists accessible labels in the labels CSV for a restricted agent' do
+      label_a = create(:label, account: account, team: team_a, title: 'team-a-label')
+      label_b = create(:label, account: account, team: team_b, title: 'team-b-label')
+
+      get "/api/v2/accounts/#{account.id}/reports/labels",
+          params: { since: since_param, until: until_param },
+          headers: agent_a.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(label_a.title)
+      expect(response.body).not_to include(label_b.title)
+    end
+
+    it 'lists every inbox in the inboxes CSV for an admin (non-regression)' do
+      get "/api/v2/accounts/#{account.id}/reports/inboxes",
+          params: { since: since_param, until: until_param },
+          headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include(inbox_a.name)
+      expect(response.body).to include(inbox_b.name)
     end
   end
 end

@@ -82,7 +82,7 @@ export default {
     },
     appendNode() {
       this.macro.actions.push({
-        action_name: 'assign_team',
+        action_name: 'assign_agent',
         action_params: [],
       });
     },

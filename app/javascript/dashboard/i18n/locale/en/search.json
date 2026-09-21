@@ -62,7 +62,13 @@
       "INBOXES": "Inboxes",
       "NO_AGENTS": "No agents found",
       "NO_CONTACTS": "Start by searching to see results",
-      "NO_INBOXES": "No inboxes found"
+      "NO_INBOXES": "No inboxes found",
+      "VISIBILITY": "Visibility",
+      "VISIBILITY_OPTIONS": {
+        "PUBLIC": "Public messages",
+        "PRIVATE_NOTE": "Private note",
+        "AI_SUGGESTION": "AI suggestions"
+      }
     }
   }
 }

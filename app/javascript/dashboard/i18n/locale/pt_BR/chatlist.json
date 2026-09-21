@@ -14,9 +14,11 @@
       "INPUT": "Pesquisar pessoas, conversas, respostas salvas .."
     },
     "FILTER_ALL": "Todos",
-    "ASSIGNEE_TYPE_TABS": {
-      "me": "Minhas",
-      "unassigned": "Não atribuídas",
+    "READ_STATUS_TABS": {
+      "unread": "Não lidos",
+      "in_progress": "Atendendo",
+      "snoozed": "Adiados",
+      "resolved": "Resolvidos",
       "all": "Todos"
     },
     "CHAT_STATUS_FILTER_ITEMS": {

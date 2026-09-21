@@ -19,7 +19,9 @@ RSpec.describe ReportPolicy, type: :policy do
     end
 
     context 'when agent' do
-      it { expect(report_policy).not_to permit(agent_context, report) }
+      it 'permits access (data scoping is handled by Reports::AccessScope, not this policy)' do
+        expect(report_policy).to permit(agent_context, report)
+      end
     end
   end
 end

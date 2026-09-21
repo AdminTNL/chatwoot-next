@@ -1,3 +1,4 @@
+# rubocop:disable Metrics/ClassLength
 class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseController
   include Events::Types
   include DateRangeHelper
@@ -66,6 +67,18 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   def unmute
     @conversation.unmute!
     head :ok
+  end
+
+  def clear_ai_history
+    phone = @conversation.contact.phone_number
+    return render json: { error: 'Contact has no phone number' }, status: :unprocessable_entity if phone.blank?
+
+    render json: ai_suggestion_gateway.delete_context(
+      inbox_id: @conversation.inbox_id, phone: phone,
+      conversation_id: @conversation.display_id, operator_id: Current.user.id.to_s
+    )
+  rescue AiSuggestionGateway::RequestError => e
+    render_clear_ai_history_error(e)
   end
 
   def transcript
@@ -145,6 +158,25 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   end
 
   private
+
+  EMPTY_AI_HISTORY_RESULT = {
+    messages_deleted: 0, suggestions_deleted: 0, human_override_deleted: false, notes_deleted: 0, notes_failed: 0
+  }.freeze
+
+  def ai_suggestion_gateway
+    @ai_suggestion_gateway ||= AiSuggestionGateway.new
+  end
+
+  def render_clear_ai_history_error(error)
+    case error.code
+    when 'thread_not_found'
+      render json: EMPTY_AI_HISTORY_RESULT
+    when 'bot_not_found'
+      render json: { error: 'This inbox is not linked to the AI assistant' }, status: :unprocessable_entity
+    else
+      render_could_not_create_error(error.message)
+    end
+  end
 
   def permitted_update_params
     # TODO: Move the other conversation attributes to this method and remove specific endpoints for each attribute
@@ -239,3 +271,4 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
 end
 
 Api::V1::Accounts::ConversationsController.prepend_mod_with('Api::V1::Accounts::ConversationsController')
+# rubocop:enable Metrics/ClassLength

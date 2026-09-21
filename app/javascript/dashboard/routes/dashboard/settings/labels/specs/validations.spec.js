@@ -1,6 +1,7 @@
 import {
   validLabelCharacters,
   getLabelTitleErrorMessage,
+  getLabelGroupErrorMessage,
 } from '../validations';
 
 describe('#validLabelCharacters', () => {
@@ -69,6 +70,29 @@ describe('#getLabelTitleErrorMessage', () => {
 
     expect(getLabelTitleErrorMessage(validation)).toEqual(
       'LABEL_MGMT.FORM.NAME.VALID_ERROR'
+    );
+  });
+});
+
+describe('#getLabelGroupErrorMessage', () => {
+  const createValidation = labelGroupValidation => ({
+    selectedLabelGroupId: {
+      $error: labelGroupValidation.$error,
+      required: labelGroupValidation.required,
+    },
+  });
+
+  it('returns an empty string when there are no validation errors', () => {
+    const validation = createValidation({ $error: false, required: true });
+
+    expect(getLabelGroupErrorMessage(validation)).toEqual('');
+  });
+
+  it('returns a required error message when the category is required but not provided', () => {
+    const validation = createValidation({ $error: true, required: false });
+
+    expect(getLabelGroupErrorMessage(validation)).toEqual(
+      'LABEL_MGMT.FORM.LABEL_GROUP.REQUIRED_ERROR'
     );
   });
 });

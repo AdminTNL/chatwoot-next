@@ -134,16 +134,20 @@ class V2::Reports::DrilldownBuilder
     }.fetch(group_by)
   end
 
+  DIMENSION_TARGETS = { 'account' => :account, 'inbox' => :inbox, 'agent' => :user, 'label' => :label, 'team' => :team }.freeze
+
   def scope
-    case dimension_type
-    when 'account' then account
-    when 'inbox' then inbox
-    when 'agent' then user
-    when 'label' then label
-    when 'team' then team
-    else
-      raise ArgumentError, "Unsupported drilldown dimension type: #{dimension_type}"
-    end
+    ensure_dimension_permitted!
+    target = DIMENSION_TARGETS.fetch(dimension_type) { raise ArgumentError, "Unsupported drilldown dimension type: #{dimension_type}" }
+    access_scope.restrict(send(target))
+  end
+
+  def access_scope = params[:access_scope] || Reports::AccessScope::Null.instance
+
+  def ensure_dimension_permitted!
+    return if access_scope.unrestricted? || access_scope.permits_dimension?(dimension_type, params[:id])
+
+    raise ActiveRecord::RecordNotFound
   end
 
   def inbox = @inbox ||= account.inboxes.find(params[:id])

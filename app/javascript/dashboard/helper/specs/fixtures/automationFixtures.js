@@ -119,7 +119,7 @@ export const emptyAutomation = {
   ],
   actions: [
     {
-      action_name: 'assign_team',
+      action_name: 'assign_agent',
       action_params: [],
     },
   ],

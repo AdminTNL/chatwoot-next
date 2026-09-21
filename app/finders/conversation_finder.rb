@@ -53,7 +53,7 @@ class ConversationFinder
         assigned_count: assigned_count,
         unassigned_count: unassigned_count,
         all_count: all_count
-      }
+      }.merge(@read_status_counts)
     }
   end
 
@@ -69,7 +69,7 @@ class ConversationFinder
         assigned_count: assigned_count,
         unassigned_count: unassigned_count,
         all_count: all_count
-      }
+      }.merge(@read_status_counts)
     }
   end
 
@@ -81,11 +81,21 @@ class ConversationFinder
     set_assignee_type
 
     find_all_conversations
-    filter_by_status unless params[:q]
     filter_by_team
     filter_by_labels
     filter_by_query
     filter_by_source_id
+
+    # The 5 read-status counts (unread/in_progress/snoozed/resolved/all) need to be computed
+    # from the base query before status/read_status narrows @conversations down to a single
+    # category, since the categories are mutually exclusive by definition.
+    set_read_status_counts
+
+    if params[:read_status].present?
+      filter_by_read_status
+    else
+      filter_by_status unless params[:q]
+    end
   end
 
   def set_inboxes
@@ -165,6 +175,21 @@ class ConversationFinder
     @conversations = @conversations.where(status: params[:status] || DEFAULT_STATUS)
   end
 
+  def filter_by_read_status
+    case params[:read_status]
+    when 'unread'
+      @conversations = @conversations.where.not(status: [:resolved, :snoozed]).where(Conversation.unread_messages_count_arel.gt(0))
+    when 'in_progress'
+      @conversations = @conversations.where.not(status: [:resolved, :snoozed]).where(Conversation.unread_messages_count_arel.lteq(0))
+    when 'snoozed'
+      @conversations = @conversations.where(status: :snoozed)
+    when 'resolved'
+      @conversations = @conversations.where(status: :resolved)
+    end
+    # read_status == 'all' (or any unrecognized value) leaves @conversations unrestricted by status
+    @conversations
+  end
+
   def filter_by_team
     return unless @team
 
@@ -187,20 +212,51 @@ class ConversationFinder
   def set_count_for_all_conversations
     return legacy_count_for_all_conversations if @conversations.limit_value || @conversations.offset_value || @conversations.eager_loading?
 
+    resolved_status = Conversation.statuses[:resolved]
+    snoozed_status = Conversation.statuses[:snoozed]
+    unread_messages_sql = Conversation.unread_messages_count_arel.to_sql
+
     counts = @conversations.unscope(:order).pick(
       Arel.sql("COUNT(*) FILTER (WHERE assignee_id = #{current_user.id})"),
       Arel.sql('COUNT(*) FILTER (WHERE assignee_id IS NULL)'),
+      Arel.sql('COUNT(*)'),
+      Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND #{unread_messages_sql} > 0)"),
+      Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND #{unread_messages_sql} = 0)"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = #{snoozed_status})"),
+      Arel.sql("COUNT(*) FILTER (WHERE status = #{resolved_status})"),
       Arel.sql('COUNT(*)')
     )
-    counts || [0, 0, 0]
+    counts || [0, 0, 0, 0, 0, 0, 0, 0]
   end
 
   def legacy_count_for_all_conversations
+    not_resolved_or_snoozed = @conversations.where.not(status: [:resolved, :snoozed])
+    unread_count = not_resolved_or_snoozed.where(Conversation.unread_messages_count_arel.gt(0)).count
+    not_resolved_or_snoozed_count = not_resolved_or_snoozed.count
+
     [
       @conversations.assigned_to(current_user).count,
       @conversations.unassigned.count,
+      @conversations.count,
+      unread_count,
+      not_resolved_or_snoozed_count - unread_count,
+      @conversations.where(status: :snoozed).count,
+      @conversations.where(status: :resolved).count,
       @conversations.count
     ]
+  end
+
+  def set_read_status_counts
+    _mine_count, _unassigned_count, _all_count,
+      unread_count, in_progress_count, snoozed_count, resolved_count, all_conversations_count = set_count_for_all_conversations
+
+    @read_status_counts = {
+      unread_conversations_count: unread_count,
+      in_progress_conversations_count: in_progress_count,
+      snoozed_conversations_count: snoozed_count,
+      resolved_conversations_count: resolved_count,
+      all_conversations_count: all_conversations_count
+    }
   end
 
   def current_page

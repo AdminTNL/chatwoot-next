@@ -149,6 +149,8 @@ Rails.application.routes.draw do
                 member do
                   post :translate
                   post :retry
+                  post :approve_ai_suggestion
+                  post :reject_ai_suggestion
                 end
               end
               resources :assignments, only: [:create]
@@ -160,6 +162,7 @@ Rails.application.routes.draw do
             member do
               post :mute
               post :unmute
+              delete :clear_ai_history
               post :transcript
               post :toggle_status
               post :toggle_priority
@@ -298,6 +301,7 @@ Rails.application.routes.draw do
             end
           end
           resources :labels, only: [:index, :show, :create, :update, :destroy]
+          resources :label_groups, only: [:index, :show, :create, :update, :destroy]
 
           resources :notifications, only: [:index, :update, :destroy] do
             collection do

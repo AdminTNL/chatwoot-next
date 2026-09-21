@@ -56,6 +56,19 @@ describe('#actions', () => {
       ]);
     });
 
+    it('sends the team_id along with the labels to the API', async () => {
+      axios.post.mockResolvedValue({ data: { payload: [] } });
+      await actions.update(
+        { commit },
+        { contactId: '1', labels: ['on-hold'], teamId: 5 }
+      );
+
+      expect(axios.post.mock.calls[0][1]).toEqual({
+        labels: ['on-hold'],
+        team_id: 5,
+      });
+    });
+
     it('sends correct actions if API is error', async () => {
       axios.post.mockRejectedValue({ message: 'Incorrect header' });
       await expect(

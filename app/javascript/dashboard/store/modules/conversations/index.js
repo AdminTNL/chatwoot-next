@@ -2,6 +2,7 @@ import types from '../../mutation-types';
 import getters, { getSelectedChatConversation } from './getters';
 import actions from './actions';
 import { findPendingMessageIndex } from './helpers';
+import { withoutAiSuggestions } from 'dashboard/helper/aiSuggestionHelpers';
 import { MESSAGE_STATUS } from 'shared/constants/messages';
 import wootConstants from 'dashboard/constants/globals';
 import { BUS_EVENTS } from '../../../../shared/constants/busEvents';
@@ -226,6 +227,18 @@ export const mutations = {
         emitter.emit(BUS_EVENTS.SCROLL_TO_MESSAGE);
       }
     }
+  },
+
+  [types.REMOVE_MESSAGE](_state, { conversationId, messageId }) {
+    const chat = _state.allConversations.find(c => c.id === conversationId);
+    if (!chat || !Array.isArray(chat.messages)) return;
+    chat.messages = chat.messages.filter(m => m.id !== messageId);
+  },
+
+  [types.REMOVE_AI_SUGGESTION_MESSAGES](_state, { conversationId }) {
+    const chat = _state.allConversations.find(c => c.id === conversationId);
+    if (!chat || !Array.isArray(chat.messages)) return;
+    chat.messages = withoutAiSuggestions(chat.messages);
   },
 
   [types.ADD_CONVERSATION](_state, conversation) {

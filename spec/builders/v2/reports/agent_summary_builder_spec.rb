@@ -75,7 +75,8 @@ RSpec.describe V2::Reports::AgentSummaryBuilder do
                 resolved_conversations_count: 0,
                 avg_resolution_time: nil,
                 avg_first_response_time: 20.0,
-                avg_reply_time: 35.0
+                avg_reply_time: 35.0,
+                participated_conversations_count: 0
               },
               {
                 id: user2.id,
@@ -83,7 +84,8 @@ RSpec.describe V2::Reports::AgentSummaryBuilder do
                 resolved_conversations_count: 1,
                 avg_resolution_time: 50.0,
                 avg_first_response_time: nil,
-                avg_reply_time: nil
+                avg_reply_time: nil,
+                participated_conversations_count: 0
               }
             ]
           )
@@ -104,7 +106,8 @@ RSpec.describe V2::Reports::AgentSummaryBuilder do
                 resolved_conversations_count: 0,
                 avg_resolution_time: nil,
                 avg_first_response_time: 10.0,
-                avg_reply_time: 20.0
+                avg_reply_time: 20.0,
+                participated_conversations_count: 0
               },
               {
                 id: user2.id,
@@ -112,7 +115,8 @@ RSpec.describe V2::Reports::AgentSummaryBuilder do
                 resolved_conversations_count: 1,
                 avg_resolution_time: 40.0,
                 avg_first_response_time: nil,
-                avg_reply_time: nil
+                avg_reply_time: nil,
+                participated_conversations_count: 0
               }
             ]
           )
@@ -134,9 +138,32 @@ RSpec.describe V2::Reports::AgentSummaryBuilder do
             resolved_conversations_count: 0,
             avg_resolution_time: nil,
             avg_first_response_time: nil,
-            avg_reply_time: nil
+            avg_reply_time: nil,
+            participated_conversations_count: 0
           }
         )
+      end
+    end
+
+    context 'when there is agent participation data' do
+      let(:business_hours) { false }
+
+      it 'counts participated conversations, deduplicating by conversation for the same agent' do
+        c1 = create(:conversation, account: account, assignee: user1, created_at: Time.current)
+        c2 = create(:conversation, account: account, assignee: user1, created_at: Time.current)
+
+        # Same agent, same conversation, two separate care cycles (e.g. reopened and resolved
+        # again) - must still count as a single participated conversation.
+        create(:reporting_event, account: account, conversation: c1, user: user1, name: 'agent_participation', value: 0, created_at: Time.current)
+        create(:reporting_event, account: account, conversation: c1, user: user1, name: 'agent_participation', value: 0, created_at: Time.current)
+
+        # Different conversation, same agent - counts as a second participated conversation.
+        create(:reporting_event, account: account, conversation: c2, user: user1, name: 'agent_participation', value: 0, created_at: Time.current)
+
+        report = builder.build
+        user1_stats = report.find { |stat| stat[:id] == user1.id }
+
+        expect(user1_stats[:participated_conversations_count]).to eq 2
       end
     end
   end

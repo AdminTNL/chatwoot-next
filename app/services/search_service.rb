@@ -1,6 +1,8 @@
 class SearchService
   pattr_initialize [:current_user!, :current_account!, :params!, :search_type!]
 
+  ALLOWED_MESSAGE_VISIBILITIES = %w[public private_note ai_suggestion].freeze
+
   def account_user
     @account_user ||= current_account.account_users.find_by(user: current_user)
   end
@@ -107,7 +109,31 @@ class SearchService
   def message_base_query
     query = current_account.messages.where('created_at >= ?', 3.months.ago)
     query = query.where(inbox_id: accessable_inbox_ids) unless should_skip_inbox_filtering?
-    query
+    apply_message_visibility_filter(query)
+  end
+
+  # `content_attributes` is a `json` column backed by `store ..., coder: JSON` (see Message
+  # model), which JSON-encodes the hash a second time before Postgres stores it. That means
+  # the column holds a JSON *string* scalar, not a JSON *object* - a plain `->>'` extraction
+  # always returns NULL. `#>> '{}'` unwraps that outer string first, then `::json` parses it
+  # as an object so `->>'` can reach the actual key.
+  AI_SUGGESTION_ID_PRESENT_SQL = "(content_attributes #>> '{}')::json ->> 'ai_suggestion_id' IS NOT NULL".freeze
+  AI_SUGGESTION_ID_ABSENT_SQL = "(content_attributes #>> '{}')::json ->> 'ai_suggestion_id' IS NULL".freeze
+
+  def apply_message_visibility_filter(query)
+    visibility = params[:message_visibility]
+    return query if visibility.blank?
+
+    raise ArgumentError, "invalid message_visibility: #{visibility}" unless ALLOWED_MESSAGE_VISIBILITIES.include?(visibility)
+
+    case visibility
+    when 'ai_suggestion'
+      query.where(AI_SUGGESTION_ID_PRESENT_SQL)
+    when 'private_note'
+      query.where(private: true).where(AI_SUGGESTION_ID_ABSENT_SQL)
+    when 'public'
+      query.where(private: false).where(AI_SUGGESTION_ID_ABSENT_SQL)
+    end
   end
 
   def apply_message_filters(query)

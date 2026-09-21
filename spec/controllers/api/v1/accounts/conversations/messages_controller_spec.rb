@@ -254,6 +254,32 @@ RSpec.describe 'Conversation Messages API', type: :request do
         expect(response).to have_http_status(:success)
         expect(interactive_message.reload.deleted).to be true
       end
+
+      it 'keeps the record and removes attachments when deleting a regular message with attachment' do
+        attachment = message.attachments.new(account_id: account.id, file_type: :image)
+        attachment.file.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
+        attachment.save!
+
+        delete "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/messages/#{message.id}",
+               headers: agent.create_new_auth_token,
+               as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(Message.exists?(message.id)).to be true
+        expect(message.reload.attachments.count).to eq 0
+      end
+
+      it 'permanently deletes AI suggestion notes' do
+        note = create(:message, account: account, conversation: conversation, private: true,
+                                content_attributes: { ai_suggestion_id: 55 })
+
+        delete "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/messages/#{note.id}",
+               headers: agent.create_new_auth_token,
+               as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(Message.exists?(note.id)).to be false
+      end
     end
 
     context 'when the message id is invalid' do
@@ -315,6 +341,132 @@ RSpec.describe 'Conversation Messages API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
       end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/conversations/:conversation_id/messages/:id/approve_ai_suggestion' do
+    let(:message) do
+      create(:message, account: account, private: true, content_attributes: { ai_suggestion_id: 55 })
+    end
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:gateway) { instance_double(AiSuggestionGateway) }
+
+    before do
+      create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+      allow(AiSuggestionGateway).to receive(:new).and_return(gateway)
+    end
+
+    context 'when it is an unauthenticated user' do
+      it 'returns unauthorized' do
+        post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion"
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    it 'approves the suggestion and marks the message as approved' do
+      allow(gateway).to receive(:approve).with(suggestion_id: 55, operator_id: agent.id.to_s).and_return({})
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(message.reload.content_attributes['ai_suggestion_status']).to eq('approved')
+    end
+
+    it 'returns unprocessable_entity when the message is not an AI suggestion' do
+      other_message = create(:message, account: account, private: true, conversation: message.conversation)
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{other_message.id}/approve_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'returns unprocessable_entity when the gateway call fails' do
+      allow(gateway).to receive(:approve).and_raise(AiSuggestionGateway::RequestError, 'boom')
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(message.reload.content_attributes['ai_suggestion_status']).to be_nil
+    end
+
+    %w[suggestion_not_found suggestion_not_pending].each do |code|
+      it "deletes the note and returns already_resolved when the gateway returns #{code}" do
+        allow(gateway).to receive(:approve).and_raise(AiSuggestionGateway::RequestError.new('gone', code: code, status: 404))
+
+        post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion",
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq('already_resolved' => true)
+        expect(Message.exists?(message.id)).to be false
+      end
+    end
+
+    it 'keeps the note when the gateway fails with a different code' do
+      allow(gateway).to receive(:approve).and_raise(AiSuggestionGateway::RequestError.new('boom', code: 'other', status: 500))
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/approve_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(Message.exists?(message.id)).to be true
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/conversations/:conversation_id/messages/:id/reject_ai_suggestion' do
+    let(:message) do
+      create(:message, account: account, private: true, content_attributes: { ai_suggestion_id: 55 })
+    end
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:gateway) { instance_double(AiSuggestionGateway) }
+
+    before do
+      create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+      allow(AiSuggestionGateway).to receive(:new).and_return(gateway)
+    end
+
+    it 'rejects the suggestion and marks the message as dismissed' do
+      allow(gateway).to receive(:reject).with(suggestion_id: 55, operator_id: agent.id.to_s).and_return({})
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/reject_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(message.reload.content_attributes['ai_suggestion_status']).to eq('dismissed')
+    end
+
+    %w[suggestion_not_found suggestion_not_pending suggestion_not_dismissable].each do |code|
+      it "deletes the note and returns already_resolved when the gateway returns #{code}" do
+        allow(gateway).to receive(:reject).and_raise(AiSuggestionGateway::RequestError.new('gone', code: code, status: 409))
+
+        post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/reject_ai_suggestion",
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq('already_resolved' => true)
+        expect(Message.exists?(message.id)).to be false
+      end
+    end
+
+    it 'keeps the note and returns an error for other gateway errors' do
+      allow(gateway).to receive(:reject).and_raise(AiSuggestionGateway::RequestError.new('boom', code: 'other', status: 500))
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/reject_ai_suggestion",
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(Message.exists?(message.id)).to be true
     end
   end
 

@@ -17,9 +17,12 @@
         "NAME": "Name",
         "DESCRIPTION": "Description",
         "COLOR": "Color",
+        "TEAM": "Team",
         "ACTION": "Actions"
-      }
+      },
+      "GLOBAL_TEAM_LABEL": "Global"
     },
+    "MANAGE_CATEGORIES": "Manage categories",
     "FORM": {
       "NAME": {
         "LABEL": "Label Name",
@@ -37,6 +40,16 @@
       },
       "SHOW_ON_SIDEBAR": {
         "LABEL": "Show label on sidebar"
+      },
+      "TEAM": {
+        "LABEL": "Team",
+        "PLACEHOLDER": "Select a team",
+        "REQUIRED_ERROR": "Team is required"
+      },
+      "LABEL_GROUP": {
+        "LABEL": "Category",
+        "PLACEHOLDER": "Select a category",
+        "REQUIRED_ERROR": "Category is required"
       },
       "EDIT": "Edit",
       "CREATE": "Create",
@@ -76,6 +89,69 @@
       "BUTTON_TEXT": "Delete",
       "API": {
         "SUCCESS_MESSAGE": "Label deleted successfully",
+        "ERROR_MESSAGE": "There was an error, please try again"
+      },
+      "CONFIRM": {
+        "TITLE": "Confirm Deletion",
+        "MESSAGE": "Are you sure to delete ",
+        "YES": "Yes, Delete ",
+        "NO": "No, Keep "
+      }
+    }
+  },
+  "LABEL_GROUP_MGMT": {
+    "HEADER": "Label categories",
+    "HEADER_BTN_TXT": "Add category",
+    "LOADING": "Fetching categories",
+    "DESCRIPTION": "Label categories let you group mutually exclusive labels, scoped to a team.",
+    "COUNT": "{n} category | {n} categories",
+    "SEARCH_PLACEHOLDER": "Search categories...",
+    "NO_RESULTS": "No categories found matching your search",
+    "BACK_TO_LABELS": "Back to Labels",
+    "LIST": {
+      "404": "There are no label categories available in this account.",
+      "TABLE_HEADER": {
+        "NAME": "Name",
+        "TEAM": "Team",
+        "ACTION": "Actions"
+      }
+    },
+    "FORM": {
+      "NAME": {
+        "LABEL": "Category Name",
+        "PLACEHOLDER": "Category name",
+        "REQUIRED_ERROR": "Category name is required",
+        "MINIMUM_LENGTH_ERROR": "Minimum length 2 is required"
+      },
+      "TEAM": {
+        "LABEL": "Team",
+        "PLACEHOLDER": "Select a team",
+        "REQUIRED_ERROR": "Team is required"
+      },
+      "EDIT": "Edit",
+      "CREATE": "Create",
+      "DELETE": "Delete",
+      "CANCEL": "Cancel"
+    },
+    "ADD": {
+      "TITLE": "Add category",
+      "DESC": "Categories let you group mutually exclusive labels.",
+      "API": {
+        "SUCCESS_MESSAGE": "Category added successfully",
+        "ERROR_MESSAGE": "There was an error, please try again"
+      }
+    },
+    "EDIT": {
+      "TITLE": "Edit category",
+      "API": {
+        "SUCCESS_MESSAGE": "Category updated successfully",
+        "ERROR_MESSAGE": "There was an error, please try again"
+      }
+    },
+    "DELETE": {
+      "BUTTON_TEXT": "Delete",
+      "API": {
+        "SUCCESS_MESSAGE": "Category deleted successfully",
         "ERROR_MESSAGE": "There was an error, please try again"
       },
       "CONFIRM": {

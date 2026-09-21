@@ -255,6 +255,122 @@ RSpec.describe User do
     end
   end
 
+  describe '#accessible_inboxes' do
+    let(:account) { create(:account) }
+    let(:other_account) { create(:account) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+
+    it 'returns inboxes the user is a direct member of via inbox_members (no team)' do
+      inbox = create(:inbox, account: account)
+      create(:inbox_member, user: agent, inbox: inbox)
+
+      result = agent.accessible_inboxes(account)
+
+      expect(result).to be_a(ActiveRecord::Relation)
+      expect(result).to contain_exactly(inbox)
+    end
+
+    it 'returns inboxes owned by a team the user belongs to, with no direct inbox_members row' do
+      team = create(:team, account: account)
+      create(:team_member, user: agent, team: team)
+      inbox = create(:inbox, account: account, team: team)
+
+      result = agent.accessible_inboxes(account)
+
+      expect(result).to contain_exactly(inbox)
+    end
+
+    it 'does not grant access to an inbox with no team even if the user belongs to some team' do
+      team = create(:team, account: account)
+      create(:team_member, user: agent, team: team)
+      create(:inbox, account: account) # team_id is nil
+
+      result = agent.accessible_inboxes(account)
+
+      expect(result).to be_empty
+    end
+
+    it 'does not grant access to an inbox owned by a different team than the user belongs to' do
+      team_a = create(:team, account: account)
+      team_b = create(:team, account: account)
+      create(:team_member, user: agent, team: team_a)
+      create(:inbox, account: account, team: team_b)
+
+      result = agent.accessible_inboxes(account)
+
+      expect(result).to be_empty
+    end
+
+    it 'returns the inbox once, without duplicates, when both access paths apply' do
+      team = create(:team, account: account)
+      create(:team_member, user: agent, team: team)
+      inbox = create(:inbox, account: account, team: team)
+      create(:inbox_member, user: agent, inbox: inbox)
+
+      result = agent.accessible_inboxes(account)
+
+      expect(result.to_a).to eq([inbox])
+    end
+
+    it 'does not leak access across accounts even when a same-named team exists elsewhere' do
+      team = create(:team, account: account, name: 'support')
+      create(:team_member, user: agent, team: team)
+      inbox = create(:inbox, account: account, team: team)
+
+      other_team = create(:team, account: other_account, name: 'support')
+      other_inbox = create(:inbox, account: other_account, team: other_team)
+      create(:team_member, user: agent, team: other_team)
+
+      result = agent.accessible_inboxes(other_account)
+
+      expect(result).to contain_exactly(other_inbox)
+      expect(result).not_to include(inbox)
+    end
+
+    it 'is retroactive: conversations already in the inbox become visible once the inbox joins the team' do
+      team = create(:team, account: account)
+      create(:team_member, user: agent, team: team)
+      inbox = create(:inbox, account: account)
+
+      expect(agent.accessible_inboxes(account)).to be_empty
+
+      inbox.update!(team: team)
+
+      expect(agent.accessible_inboxes(account)).to contain_exactly(inbox)
+    end
+
+    it 'returns an empty relation for a user with no team and no inbox_members' do
+      create(:inbox, account: account)
+
+      expect(agent.accessible_inboxes(account)).to be_empty
+    end
+  end
+
+  describe '#assigned_inboxes' do
+    let(:account) { create(:account) }
+
+    before { Current.account = account }
+    after { Current.account = nil }
+
+    it 'returns all account inboxes for an administrator, regardless of team/inbox membership' do
+      admin = create(:user, account: account, role: :administrator)
+      create(:inbox, account: account)
+      create(:inbox, account: account)
+
+      expect(admin.assigned_inboxes.count).to eq(2)
+    end
+
+    it 'returns accessible_inboxes for a non-admin, including team-inherited inboxes' do
+      agent = create(:user, account: account, role: :agent)
+      team = create(:team, account: account)
+      create(:team_member, user: agent, team: team)
+      inbox = create(:inbox, account: account, team: team)
+      create(:inbox) # unrelated inbox in another account, should not appear
+
+      expect(agent.assigned_inboxes).to contain_exactly(inbox)
+    end
+  end
+
   describe 'sync_user_sessions callback' do
     let(:user_with_tokens) do
       u = create(:user)

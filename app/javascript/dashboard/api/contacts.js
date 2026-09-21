@@ -61,8 +61,11 @@ class ContactAPI extends ApiClient {
     });
   }
 
-  updateContactLabels(contactId, labels) {
-    return axios.post(`${this.url}/${contactId}/labels`, { labels });
+  updateContactLabels(contactId, labels, teamId) {
+    return axios.post(`${this.url}/${contactId}/labels`, {
+      labels,
+      team_id: teamId,
+    });
   }
 
   search(search = '', page = 1, sortAttr = 'name', label = '', options = {}) {

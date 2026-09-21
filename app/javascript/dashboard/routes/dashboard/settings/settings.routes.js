@@ -16,6 +16,7 @@ import canned from './canned/canned.routes';
 import inbox from './inbox/inbox.routes';
 import integrations from './integrations/integrations.routes';
 import labels from './labels/labels.routes';
+import labelGroups from './labels/labelGroups.routes';
 import macros from './macros/macros.routes';
 import reports from './reports/reports.routes';
 import store from '../../../store';
@@ -60,6 +61,7 @@ export default {
     ...integrations.routes,
     ...data.routes,
     ...labels.routes,
+    ...labelGroups.routes,
     ...macros.routes,
     ...reports.routes,
     ...sla.routes,

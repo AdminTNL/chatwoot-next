@@ -114,6 +114,18 @@ class MessageApi extends ApiClient {
       }
     );
   }
+
+  approveAiSuggestion(conversationId, messageId) {
+    return axios.post(
+      `${this.url}/${conversationId}/messages/${messageId}/approve_ai_suggestion`
+    );
+  }
+
+  rejectAiSuggestion(conversationId, messageId) {
+    return axios.post(
+      `${this.url}/${conversationId}/messages/${messageId}/reject_ai_suggestion`
+    );
+  }
 }
 
 export default new MessageApi();

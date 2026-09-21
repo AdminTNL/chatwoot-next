@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 import { useElementSize } from '@vueuse/core';
@@ -7,6 +7,8 @@ import BackButton from '../BackButton.vue';
 import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
 import Avatar from 'next/avatar/Avatar.vue';
+import ButtonV4 from 'dashboard/components-next/button/Button.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
 import wootConstants from 'dashboard/constants/globals';
@@ -16,6 +18,10 @@ import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
+import {
+  hasAiSuggestion,
+  hasResolvedAiSuggestion,
+} from 'dashboard/helper/aiSuggestionHelpers';
 
 const props = defineProps({
   chat: {
@@ -97,6 +103,61 @@ const hasSlaPolicyId = computed(
   () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
 );
 
+const showResolvedAiSuggestions = inject(
+  'showResolvedAiSuggestions',
+  ref(false)
+);
+const toggleResolvedAiSuggestions = () => {
+  showResolvedAiSuggestions.value = !showResolvedAiSuggestions.value;
+};
+
+const canClearAiHistory = computed(() =>
+  hasAiSuggestion(currentChat.value?.messages)
+);
+const canToggleResolvedAiSuggestions = computed(() =>
+  hasResolvedAiSuggestion(currentChat.value?.messages)
+);
+
+watch(canToggleResolvedAiSuggestions, hasResolved => {
+  if (!hasResolved) showResolvedAiSuggestions.value = false;
+});
+
+const clearAiHistoryDialogRef = ref(null);
+const isClearingAiHistory = ref(false);
+
+const openClearAiHistoryDialog = () => {
+  clearAiHistoryDialogRef.value?.open();
+};
+
+const clearAiHistory = async () => {
+  if (isClearingAiHistory.value) return;
+  isClearingAiHistory.value = true;
+  try {
+    const data = await store.dispatch('clearAiHistory', {
+      conversationId: currentChat.value.id,
+    });
+    const isEmpty =
+      data?.messages_deleted === 0 && data?.suggestions_deleted === 0;
+    if (isEmpty) {
+      useAlert(t('CONVERSATION.CLEAR_AI_HISTORY.SUCCESS_EMPTY'));
+    } else {
+      useAlert(t('CONVERSATION.CLEAR_AI_HISTORY.SUCCESS'));
+    }
+  } catch (error) {
+    const apiError = error?.response?.data?.error;
+    const notLinked =
+      typeof apiError === 'string' && apiError.includes('not linked');
+    if (notLinked) {
+      useAlert(t('CONVERSATION.CLEAR_AI_HISTORY.ERROR_NOT_LINKED'));
+    } else {
+      useAlert(t('CONVERSATION.CLEAR_AI_HISTORY.ERROR'));
+    }
+  } finally {
+    isClearingAiHistory.value = false;
+    clearAiHistoryDialogRef.value?.close();
+  }
+};
+
 const copyConversationId = async () => {
   try {
     await copyTextToClipboard(String(props.chat.id));
@@ -174,8 +235,44 @@ const copyConversationId = async () => {
         :parent-width="width"
         class="hidden md:flex"
       />
+      <ButtonV4
+        v-if="canClearAiHistory"
+        v-tooltip="$t('CONVERSATION.CLEAR_AI_HISTORY.BUTTON')"
+        size="sm"
+        variant="ghost"
+        color="slate"
+        icon="i-lucide-eraser"
+        class="rounded-md"
+        :is-loading="isClearingAiHistory"
+        :disabled="isClearingAiHistory"
+        @click="openClearAiHistoryDialog"
+      />
+      <ButtonV4
+        v-if="canToggleResolvedAiSuggestions"
+        v-tooltip="
+          showResolvedAiSuggestions
+            ? $t('CONVERSATION.HEADER.HIDE_AI_SUGGESTIONS')
+            : $t('CONVERSATION.HEADER.SHOW_AI_SUGGESTIONS')
+        "
+        size="sm"
+        :variant="showResolvedAiSuggestions ? 'faded' : 'ghost'"
+        color="slate"
+        icon="i-lucide-sparkles"
+        class="rounded-md"
+        @click="toggleResolvedAiSuggestions"
+      />
       <ConversationCallButton :inbox="inbox" :chat="currentChat" />
       <MoreActions :conversation-id="currentChat.id" />
     </div>
+    <Dialog
+      ref="clearAiHistoryDialogRef"
+      type="alert"
+      :title="t('CONVERSATION.CLEAR_AI_HISTORY.TITLE')"
+      :description="t('CONVERSATION.CLEAR_AI_HISTORY.DESCRIPTION')"
+      :confirm-button-label="t('CONVERSATION.CLEAR_AI_HISTORY.CONFIRM')"
+      :cancel-button-label="t('CONVERSATION.CLEAR_AI_HISTORY.CANCEL')"
+      :is-loading="isClearingAiHistory"
+      @confirm="clearAiHistory"
+    />
   </div>
 </template>

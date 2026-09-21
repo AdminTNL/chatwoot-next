@@ -54,7 +54,7 @@ const actions = {
         { commit, dispatch },
         params,
         data,
-        params.assigneeType
+        params.readStatus
       );
     } catch (error) {
       // Handle error
@@ -194,6 +194,7 @@ const actions = {
   async setActiveChat({ commit, dispatch }, { data, after }) {
     commit(types.SET_CURRENT_CHAT_WINDOW, data);
     commit(types.CLEAR_ALL_MESSAGES_LOADED, data.id);
+    dispatch('markMessagesRead', { id: data.id }, { root: true });
     if (data.dataFetched === undefined) {
       try {
         await dispatch('fetchPreviousMessages', {
@@ -233,18 +234,6 @@ const actions = {
     { conversationId, assignee, assigneeType }
   ) {
     commit(types.ASSIGN_AGENT, { conversationId, assignee, assigneeType });
-  },
-
-  assignTeam: async ({ dispatch }, { conversationId, teamId }) => {
-    try {
-      const response = await ConversationApi.assignTeam({
-        conversationId,
-        teamId,
-      });
-      dispatch('setCurrentChatTeam', { team: response.data, conversationId });
-    } catch (error) {
-      // Handle error
-    }
   },
 
   setCurrentChatTeam({ commit }, { team, conversationId }) {
@@ -365,6 +354,16 @@ const actions = {
     } catch (error) {
       throw new Error(error);
     }
+  },
+
+  removeMessage({ commit }, { conversationId, messageId }) {
+    commit(types.REMOVE_MESSAGE, { conversationId, messageId });
+  },
+
+  clearAiHistory: async ({ commit }, { conversationId }) => {
+    const { data } = await ConversationApi.clearAiHistory(conversationId);
+    commit(types.REMOVE_AI_SUGGESTION_MESSAGES, { conversationId });
+    return data;
   },
 
   deleteConversation: async ({ commit, dispatch }, conversationId) => {

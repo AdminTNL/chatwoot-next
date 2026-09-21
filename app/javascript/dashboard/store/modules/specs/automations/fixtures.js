@@ -29,7 +29,7 @@ export default [
         filter_operator: 'equal_to',
       },
     ],
-    actions: [{ action_name: 'assign_team', action_params: [1] }],
+    actions: [{ action_name: 'assign_agent', action_params: [1] }],
     created_on: '2022-02-08T11:19:44.714Z',
     active: true,
   },

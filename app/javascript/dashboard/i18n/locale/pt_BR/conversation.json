@@ -97,6 +97,17 @@
       "TRANSCRIPT_SHOW_MORE": "Ver mais",
       "TRANSCRIPT_SHOW_LESS": "Mostrar menos"
     },
+    "CLEAR_AI_HISTORY": {
+      "BUTTON": "Apagar histórico da IA",
+      "TITLE": "Apagar histórico da IA?",
+      "DESCRIPTION": "Isso apaga o contexto que a IA usa para este contato neste canal e remove as sugestões da IA. As mensagens da conversa não são afetadas.",
+      "CONFIRM": "Apagar",
+      "CANCEL": "Cancelar",
+      "SUCCESS": "Histórico da IA apagado",
+      "SUCCESS_EMPTY": "Não havia histórico da IA para apagar",
+      "ERROR": "Não foi possível apagar o histórico da IA",
+      "ERROR_NOT_LINKED": "Este canal não está vinculado à IA"
+    },
     "HEADER": {
       "RESOLVE_ACTION": "Resolver",
       "REOPEN_ACTION": "Reabrir",

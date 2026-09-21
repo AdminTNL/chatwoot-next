@@ -433,6 +433,86 @@ describe SearchService do
     end
   end
 
+  describe '#apply_message_visibility_filter' do
+    let(:search_type) { 'Message' }
+    let!(:public_message) { create(:message, account: account, inbox: inbox, content: 'wizard public', private: false) }
+    let!(:private_note_message) { create(:message, account: account, inbox: inbox, content: 'wizard private', private: true) }
+    let!(:ai_suggestion_public_message) do
+      create(:message, account: account, inbox: inbox, content: 'wizard ai suggestion', private: false,
+                       content_attributes: { ai_suggestion_id: 1 })
+    end
+    let!(:ai_suggestion_private_message) do
+      create(:message, account: account, inbox: inbox, content: 'wizard ai suggestion private', private: true,
+                       content_attributes: { ai_suggestion_id: 2 })
+    end
+
+    it 'returns only public messages without ai_suggestion_id when filtering by public' do
+      params = { q: 'wizard', message_visibility: 'public' }
+      search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+      results = search.perform[:messages]
+
+      expect(results.map(&:id)).to include(public_message.id)
+      expect(results.map(&:id)).not_to include(private_note_message.id, ai_suggestion_public_message.id, ai_suggestion_private_message.id)
+    end
+
+    it 'returns only private notes without ai_suggestion_id when filtering by private_note' do
+      params = { q: 'wizard', message_visibility: 'private_note' }
+      search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+      results = search.perform[:messages]
+
+      expect(results.map(&:id)).to include(private_note_message.id)
+      expect(results.map(&:id)).not_to include(public_message.id, ai_suggestion_public_message.id, ai_suggestion_private_message.id)
+    end
+
+    it 'returns all messages with ai_suggestion_id present regardless of private flag when filtering by ai_suggestion' do
+      params = { q: 'wizard', message_visibility: 'ai_suggestion' }
+      search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+      results = search.perform[:messages]
+
+      expect(results.map(&:id)).to include(ai_suggestion_public_message.id, ai_suggestion_private_message.id)
+      expect(results.map(&:id)).not_to include(public_message.id, private_note_message.id)
+    end
+
+    it 'treats a private message with ai_suggestion_id as ai_suggestion, not private_note (mutual exclusivity)' do
+      params = { q: 'wizard', message_visibility: 'ai_suggestion' }
+      ai_suggestion_search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+      expect(ai_suggestion_search.perform[:messages].map(&:id)).to include(ai_suggestion_private_message.id)
+
+      params = { q: 'wizard', message_visibility: 'private_note' }
+      private_note_search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+      expect(private_note_search.perform[:messages].map(&:id)).not_to include(ai_suggestion_private_message.id)
+    end
+
+    it 'returns all message categories together when message_visibility is not provided (default behavior unchanged)' do
+      params = { q: 'wizard' }
+      search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+      results = search.perform[:messages]
+
+      expect(results.map(&:id)).to include(
+        public_message.id, private_note_message.id, ai_suggestion_public_message.id, ai_suggestion_private_message.id
+      )
+    end
+
+    it 'raises ArgumentError for an invalid message_visibility value' do
+      params = { q: 'wizard', message_visibility: 'invalid_value' }
+      search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+
+      expect { search.perform }.to raise_error(ArgumentError)
+    end
+
+    it 'applies the filter even when advanced_search feature is disabled' do
+      allow(account).to receive(:feature_enabled?).and_call_original
+      allow(account).to receive(:feature_enabled?).with('advanced_search').and_return(false)
+
+      params = { q: 'wizard', message_visibility: 'ai_suggestion' }
+      search = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+      results = search.perform[:messages]
+
+      expect(results.map(&:id)).to include(ai_suggestion_public_message.id, ai_suggestion_private_message.id)
+      expect(results.map(&:id)).not_to include(public_message.id, private_note_message.id)
+    end
+  end
+
   describe '#use_gin_search' do
     let(:params) { { q: 'test' } }
 

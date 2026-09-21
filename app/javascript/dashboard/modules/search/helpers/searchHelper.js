@@ -10,10 +10,13 @@ export const DATE_RANGE_TYPES = {
 };
 
 export const generateURLParams = (
-  { from, in: inboxId, dateRange },
+  { from, in: inboxId, dateRange, visibility },
   isAdvancedSearchEnabled = true
 ) => {
   const params = {};
+
+  // Visibility filter is always available, regardless of advanced search flag
+  if (visibility) params.message_visibility = visibility;
 
   // Only include filter params if advanced search is enabled
   if (isAdvancedSearchEnabled) {
@@ -33,7 +36,10 @@ export const generateURLParams = (
 };
 
 export const parseURLParams = (query, isAdvancedSearchEnabled = true) => {
+  const { message_visibility: visibility } = query;
+
   // If advanced search is disabled, return empty filters
+  // (visibility filter is always available, regardless of advanced search flag)
   if (!isAdvancedSearchEnabled) {
     return {
       from: null,
@@ -43,6 +49,7 @@ export const parseURLParams = (query, isAdvancedSearchEnabled = true) => {
         from: null,
         to: null,
       },
+      visibility: visibility || null,
     };
   }
 
@@ -61,6 +68,7 @@ export const parseURLParams = (query, isAdvancedSearchEnabled = true) => {
       from: since ? Number(since) : null,
       to: until ? Number(until) : null,
     },
+    visibility: visibility || null,
   };
 };
 

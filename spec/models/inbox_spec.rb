@@ -15,6 +15,8 @@ RSpec.describe Inbox do
 
     it { is_expected.to belong_to(:channel) }
 
+    it { is_expected.to belong_to(:team).optional }
+
     it { is_expected.to have_many(:contact_inboxes).dependent(:destroy_async) }
 
     it { is_expected.to have_many(:contacts).through(:contact_inboxes) }
@@ -39,6 +41,44 @@ RSpec.describe Inbox do
   describe 'concerns' do
     it_behaves_like 'out_of_offisable'
     it_behaves_like 'avatarable'
+  end
+
+  describe 'team association' do
+    let(:account) { create(:account) }
+
+    it 'is valid without a team' do
+      inbox = build(:inbox, account: account, team: nil)
+
+      expect(inbox).to be_valid
+      expect(inbox.team).to be_nil
+    end
+
+    it 'is valid with a team from the same account' do
+      team = create(:team, account: account)
+      inbox = build(:inbox, account: account, team: team)
+
+      expect(inbox).to be_valid
+      expect(inbox.team).to eq(team)
+    end
+
+    it 'is invalid with a team from another account' do
+      other_account = create(:account)
+      team = create(:team, account: other_account)
+      inbox = build(:inbox, account: account, team: team)
+
+      expect(inbox).to be_invalid
+      expect(inbox.errors[:team]).to be_present
+    end
+
+    it 'nullifies the team_id when the team is destroyed' do
+      team = create(:team, account: account)
+      inbox = create(:inbox, account: account, team: team)
+
+      team.destroy!
+
+      expect { inbox.reload }.not_to raise_error
+      expect(inbox.reload.team_id).to be_nil
+    end
   end
 
   describe 'account teardown' do

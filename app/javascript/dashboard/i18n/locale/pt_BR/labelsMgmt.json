@@ -17,9 +17,12 @@
         "NAME": "Nome",
         "DESCRIPTION": "Descrição",
         "COLOR": "Cor",
+        "TEAM": "Time",
         "ACTION": "Ações"
-      }
+      },
+      "GLOBAL_TEAM_LABEL": "Global"
     },
+    "MANAGE_CATEGORIES": "Gerenciar categorias",
     "FORM": {
       "NAME": {
         "LABEL": "Nome da Etiqueta",
@@ -37,6 +40,16 @@
       },
       "SHOW_ON_SIDEBAR": {
         "LABEL": "Exibir etiqueta na barra lateral"
+      },
+      "TEAM": {
+        "LABEL": "Time",
+        "PLACEHOLDER": "Selecione um time",
+        "REQUIRED_ERROR": "O time é obrigatório"
+      },
+      "LABEL_GROUP": {
+        "LABEL": "Categoria",
+        "PLACEHOLDER": "Selecione uma categoria",
+        "REQUIRED_ERROR": "A categoria é obrigatória"
       },
       "EDIT": "Alterar",
       "CREATE": "Criar",
@@ -76,6 +89,69 @@
       "BUTTON_TEXT": "Excluir",
       "API": {
         "SUCCESS_MESSAGE": "Etiqueta excluída com sucesso",
+        "ERROR_MESSAGE": "Ocorreu um erro, por favor tente novamente"
+      },
+      "CONFIRM": {
+        "TITLE": "Confirmar exclusão",
+        "MESSAGE": "Você tem certeza que deseja excluir ",
+        "YES": "Sim, excluir ",
+        "NO": "Não, Mantenha "
+      }
+    }
+  },
+  "LABEL_GROUP_MGMT": {
+    "HEADER": "Categorias de etiquetas",
+    "HEADER_BTN_TXT": "Adicionar categoria",
+    "LOADING": "Buscando categorias",
+    "DESCRIPTION": "Categorias de etiquetas permitem agrupar etiquetas mutuamente exclusivas, restritas a um time.",
+    "COUNT": "{n} categoria | {n} categorias",
+    "SEARCH_PLACEHOLDER": "Pesquisar categorias...",
+    "NO_RESULTS": "Nenhuma categoria encontrada correspondente à sua busca",
+    "BACK_TO_LABELS": "Voltar para Etiquetas",
+    "LIST": {
+      "404": "Não há categorias de etiquetas disponíveis nesta conta.",
+      "TABLE_HEADER": {
+        "NAME": "Nome",
+        "TEAM": "Time",
+        "ACTION": "Ações"
+      }
+    },
+    "FORM": {
+      "NAME": {
+        "LABEL": "Nome da Categoria",
+        "PLACEHOLDER": "Nome da categoria",
+        "REQUIRED_ERROR": "O nome da categoria é obrigatório",
+        "MINIMUM_LENGTH_ERROR": "Tamanho mínimo 2 é necessário"
+      },
+      "TEAM": {
+        "LABEL": "Time",
+        "PLACEHOLDER": "Selecione um time",
+        "REQUIRED_ERROR": "O time é obrigatório"
+      },
+      "EDIT": "Alterar",
+      "CREATE": "Criar",
+      "DELETE": "Excluir",
+      "CANCEL": "Cancelar"
+    },
+    "ADD": {
+      "TITLE": "Adicionar categoria",
+      "DESC": "Categorias permitem agrupar etiquetas mutuamente exclusivas.",
+      "API": {
+        "SUCCESS_MESSAGE": "Categoria adicionada com sucesso",
+        "ERROR_MESSAGE": "Ocorreu um erro, por favor tente novamente"
+      }
+    },
+    "EDIT": {
+      "TITLE": "Alterar categoria",
+      "API": {
+        "SUCCESS_MESSAGE": "Categoria atualizada com sucesso",
+        "ERROR_MESSAGE": "Ocorreu um erro, por favor tente novamente"
+      }
+    },
+    "DELETE": {
+      "BUTTON_TEXT": "Excluir",
+      "API": {
+        "SUCCESS_MESSAGE": "Categoria excluída com sucesso",
         "ERROR_MESSAGE": "Ocorreu um erro, por favor tente novamente"
       },
       "CONFIRM": {

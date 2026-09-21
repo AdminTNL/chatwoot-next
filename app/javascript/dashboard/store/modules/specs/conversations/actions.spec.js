@@ -405,17 +405,6 @@ describe('#actions', () => {
     });
   });
 
-  describe('#assignTeam', () => {
-    it('sends correct mutations if assignment is successful', async () => {
-      axios.post.mockResolvedValue({
-        data: { id: 1, name: 'Team' },
-      });
-      await actions.assignTeam({ commit }, { conversationId: 1, teamId: 1 });
-      expect(commit).toHaveBeenCalledTimes(0);
-      expect(commit.mock.calls).toEqual([]);
-    });
-  });
-
   describe('#setCurrentChatTeam', () => {
     it('sends correct mutations if assignment is successful', async () => {
       axios.post.mockResolvedValue({
@@ -429,6 +418,92 @@ describe('#actions', () => {
       expect(commit.mock.calls).toEqual([
         ['ASSIGN_TEAM', { team: { id: 1, name: 'Team' }, conversationId: 1 }],
       ]);
+    });
+  });
+
+  describe('#fetchAllConversations', () => {
+    it('sends readStatus as read_status to the API and uses it as the pagination key', async () => {
+      // The real conversations#index endpoint wraps payload/meta one level
+      // deeper (see index.json.jbuilder: `json.data do ... end`), so the
+      // axios response shape is `{ data: { data: { meta, payload } } }`.
+      axios.get.mockResolvedValue({ data: { data: dataReceived } });
+      const localCommit = vi.fn();
+      const localDispatch = vi.fn();
+      const state = {
+        conversationFilters: {
+          inboxId: 1,
+          assigneeType: 'me',
+          readStatus: 'unread',
+          status: 'all',
+          page: 1,
+        },
+      };
+
+      await actions.fetchAllConversations({
+        commit: localCommit,
+        state,
+        dispatch: localDispatch,
+      });
+
+      // the HTTP request must carry read_status, not just assignee_type
+      expect(axios.get).toHaveBeenCalledWith(
+        '/api/v1/conversations',
+        expect.objectContaining({
+          params: expect.objectContaining({ read_status: 'unread' }),
+        })
+      );
+
+      // pagination bookkeeping must key off readStatus ('unread'), not
+      // assigneeType ('me')
+      expect(localDispatch).toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'unread', page: 1 },
+        { root: true }
+      );
+      expect(localDispatch).not.toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'me', page: 1 },
+        { root: true }
+      );
+    });
+
+    it('keeps read_status on the request across consecutive paginated fetches', async () => {
+      axios.get.mockResolvedValue({ data: { data: dataReceived } });
+      const localDispatch = vi.fn();
+      const buildState = page => ({
+        conversationFilters: {
+          readStatus: 'unread',
+          status: 'all',
+          page,
+        },
+      });
+
+      await actions.fetchAllConversations({
+        commit: vi.fn(),
+        state: buildState(1),
+        dispatch: localDispatch,
+      });
+      await actions.fetchAllConversations({
+        commit: vi.fn(),
+        state: buildState(2),
+        dispatch: localDispatch,
+      });
+
+      const readStatusSentPerCall = axios.get.mock.calls.map(
+        ([, config]) => config.params.read_status
+      );
+      expect(readStatusSentPerCall).toEqual(['unread', 'unread']);
+
+      expect(localDispatch).toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'unread', page: 1 },
+        { root: true }
+      );
+      expect(localDispatch).toHaveBeenCalledWith(
+        'conversationPage/setCurrentPage',
+        { filter: 'unread', page: 2 },
+        { root: true }
+      );
     });
   });
 
@@ -538,6 +613,48 @@ describe('#deleteMessage', () => {
       ).rejects.toThrow(Error);
       expect(commit.mock.calls).toEqual([]);
       expect(dispatch.mock.calls).toEqual([]);
+    });
+  });
+
+  describe('#removeMessage', () => {
+    it('commits REMOVE_MESSAGE', () => {
+      actions.removeMessage({ commit }, { conversationId: 3, messageId: 4 });
+      expect(commit.mock.calls).toEqual([
+        [types.REMOVE_MESSAGE, { conversationId: 3, messageId: 4 }],
+      ]);
+    });
+  });
+
+  describe('#clearAiHistory', () => {
+    it('calls the API, commits the mutation and returns the data', async () => {
+      const data = {
+        messages_deleted: 2,
+        suggestions_deleted: 1,
+        human_override_deleted: 0,
+        notes_deleted: 1,
+        notes_failed: 0,
+      };
+      axios.delete.mockResolvedValue({ data });
+      const result = await actions.clearAiHistory(
+        { commit },
+        { conversationId: 7 }
+      );
+      expect(axios.delete).toHaveBeenCalledWith(
+        expect.stringContaining('/conversations/7/clear_ai_history')
+      );
+      expect(commit.mock.calls).toEqual([
+        [types.REMOVE_AI_SUGGESTION_MESSAGES, { conversationId: 7 }],
+      ]);
+      expect(result).toEqual(data);
+    });
+
+    it('does not commit and propagates the error on failure', async () => {
+      const error = { response: { status: 422, data: { error: 'x' } } };
+      axios.delete.mockRejectedValue(error);
+      await expect(
+        actions.clearAiHistory({ commit }, { conversationId: 7 })
+      ).rejects.toEqual(error);
+      expect(commit.mock.calls).toEqual([]);
     });
   });
 
@@ -738,6 +855,11 @@ describe('#addMentions', () => {
         [types.CLEAR_ALL_MESSAGES_LOADED, 42],
         [types.SET_CHAT_DATA_FETCHED, 42],
       ]);
+      expect(localDispatch).toHaveBeenCalledWith(
+        'markMessagesRead',
+        { id: 42 },
+        { root: true }
+      );
       expect(localDispatch).toHaveBeenCalledWith('fetchPreviousMessages', {
         after: 99,
         before: 100,
@@ -759,7 +881,15 @@ describe('#addMentions', () => {
         [types.SET_CURRENT_CHAT_WINDOW, data],
         [types.CLEAR_ALL_MESSAGES_LOADED, 42],
       ]);
-      expect(localDispatch).not.toHaveBeenCalled();
+      expect(localDispatch).toHaveBeenCalledWith(
+        'markMessagesRead',
+        { id: 42 },
+        { root: true }
+      );
+      expect(localDispatch).not.toHaveBeenCalledWith(
+        'fetchPreviousMessages',
+        expect.anything()
+      );
     });
 
     it('should commit SET_CHAT_DATA_FETCHED by ID, not mutate the data object directly (race condition fix)', async () => {

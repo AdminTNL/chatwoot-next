@@ -226,5 +226,51 @@ RSpec.describe V2::Reports::DrilldownBuilder do
         expect(drilldown[:payload].first[:conversation][:id]).to eq(resolved_conversation.id)
       end
     end
+
+    context 'with Reports::AccessScope restriction' do
+      let(:team_a) { create(:team, account: account) }
+      let(:team_b) { create(:team, account: account) }
+      let(:inbox_a) { create(:inbox, account: account, team: team_a) }
+      let(:inbox_b) { create(:inbox, account: account, team: team_b) }
+      let(:agent) { create(:user, account: account, role: :agent) }
+      let(:access_scope) do
+        Reports::AccessScope.new(account: account, user: agent, account_user: account.account_users.find_by(user: agent))
+      end
+      let(:filter_type) { :account }
+      let(:filter_id) { nil }
+      let(:params) do
+        {
+          metric: metric,
+          type: filter_type,
+          id: filter_id,
+          since: bucket_start.to_i.to_s,
+          until: bucket_end.to_i.to_s,
+          bucket_timestamp: bucket_start.to_i.to_s,
+          group_by: 'day',
+          timezone_offset: '0',
+          business_hours: false,
+          access_scope: access_scope
+        }
+      end
+
+      before { team_a.add_members([agent.id]) }
+
+      it "only includes conversations in the agent's accessible inboxes for an account-type drilldown" do
+        create(:conversation, account: account, inbox: inbox_a, created_at: bucket_start + 1.hour)
+        create(:conversation, account: account, inbox: inbox_b, created_at: bucket_start + 1.hour)
+
+        expect(drilldown[:meta][:total_count]).to eq(1)
+        expect(drilldown[:payload].first[:conversation][:inbox_id]).to eq(inbox_a.id)
+      end
+
+      context "when requesting another team's inbox" do
+        let(:filter_type) { :inbox }
+        let(:filter_id) { inbox_b.id }
+
+        it 'raises RecordNotFound (default-deny)' do
+          expect { drilldown }.to raise_error(ActiveRecord::RecordNotFound)
+        end
+      end
+    end
   end
 end
