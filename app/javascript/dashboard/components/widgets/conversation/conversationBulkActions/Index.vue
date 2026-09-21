@@ -17,7 +17,6 @@ import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import BulkAgentActions from './BulkAgentActions.vue';
 import BulkUpdateActions from './BulkUpdateActions.vue';
 import BulkLabelActions from './BulkLabelActions.vue';
-import BulkTeamActions from './BulkTeamActions.vue';
 import CustomSnoozeModal from 'dashboard/components/CustomSnoozeModal.vue';
 
 const props = defineProps({
@@ -60,7 +59,6 @@ const {
   onAssignAgent,
   onAssignLabels,
   onRemoveLabels,
-  onAssignTeamsForBulk: onAssignTeam,
   onUpdateConversations,
 } = useBulkActions();
 
@@ -190,10 +188,6 @@ onUnmounted(() => {
             :selected-inboxes="selectedInboxes"
             :conversation-count="conversations.length"
             @select="onAssignAgent"
-          />
-          <BulkTeamActions
-            :conversation-count="conversations.length"
-            @select="onAssignTeam"
           />
         </div>
       </div>

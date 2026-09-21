@@ -13,8 +13,15 @@ class V2::Reports::OutgoingMessagesCountBuilder
 
   private
 
+  def access_scope
+    params[:access_scope] || Reports::AccessScope::Null.instance
+  end
+
   def base_messages
-    account.messages.outgoing.unscope(:order).where(created_at: range)
+    messages = account.messages.outgoing.unscope(:order).where(created_at: range)
+    return messages if access_scope.unrestricted?
+
+    messages.where(inbox_id: access_scope.inbox_ids)
   end
 
   def build_by_agent
@@ -24,11 +31,12 @@ class V2::Reports::OutgoingMessagesCountBuilder
              .group(:sender_id)
              .count
 
-    user_names = account.users.where(id: counts.keys).index_by(&:id)
+    agents = account.users
+    agents = agents.where(id: access_scope.agent_ids) unless access_scope.unrestricted?
+    user_names = agents.where(id: counts.keys).index_by(&:id)
 
-    counts.map do |user_id, count|
-      user = user_names[user_id]
-      { id: user_id, name: user&.name, outgoing_messages_count: count }
+    user_names.map do |user_id, user|
+      { id: user_id, name: user.name, outgoing_messages_count: counts[user_id] || 0 }
     end
   end
 
@@ -39,11 +47,12 @@ class V2::Reports::OutgoingMessagesCountBuilder
              .group('conversations.team_id')
              .count
 
-    team_names = account.teams.where(id: counts.keys).index_by(&:id)
+    teams = account.teams
+    teams = teams.where(id: access_scope.team_ids) unless access_scope.unrestricted?
+    team_names = teams.where(id: counts.keys).index_by(&:id)
 
-    counts.map do |team_id, count|
-      team = team_names[team_id]
-      { id: team_id, name: team&.name, outgoing_messages_count: count }
+    team_names.map do |team_id, team|
+      { id: team_id, name: team.name, outgoing_messages_count: counts[team_id] || 0 }
     end
   end
 
@@ -52,11 +61,12 @@ class V2::Reports::OutgoingMessagesCountBuilder
              .group(:inbox_id)
              .count
 
-    inbox_names = account.inboxes.where(id: counts.keys).index_by(&:id)
+    inboxes = account.inboxes
+    inboxes = inboxes.where(id: access_scope.inbox_ids) unless access_scope.unrestricted?
+    inbox_names = inboxes.where(id: counts.keys).index_by(&:id)
 
-    counts.map do |inbox_id, count|
-      inbox = inbox_names[inbox_id]
-      { id: inbox_id, name: inbox&.name, outgoing_messages_count: count }
+    inbox_names.map do |inbox_id, inbox|
+      { id: inbox_id, name: inbox.name, outgoing_messages_count: counts[inbox_id] || 0 }
     end
   end
 
@@ -69,11 +79,12 @@ class V2::Reports::OutgoingMessagesCountBuilder
              .group('tags.name')
              .count
 
-    label_ids = account.labels.where(title: counts.keys).index_by(&:title)
+    labels = account.labels
+    labels = labels.where(id: access_scope.label_ids) unless access_scope.unrestricted?
+    label_by_title = labels.where(title: counts.keys).index_by(&:title)
 
-    counts.map do |label_name, count|
-      label = label_ids[label_name]
-      { id: label&.id, name: label_name, outgoing_messages_count: count }
+    label_by_title.map do |label_name, label|
+      { id: label.id, name: label_name, outgoing_messages_count: counts[label_name] || 0 }
     end
   end
 end

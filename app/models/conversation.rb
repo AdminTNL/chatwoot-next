@@ -75,6 +75,7 @@ class Conversation < ApplicationRecord
   validates :contact_id, presence: true
   before_validation :validate_additional_attributes
   before_validation :reset_agent_bot_when_assignee_present
+  before_validation :derive_team_from_inbox
   validates :additional_attributes, jsonb_attributes_length: true
   validates :custom_attributes, jsonb_attributes_length: true
   validates :uuid, uniqueness: true
@@ -257,6 +258,7 @@ class Conversation < ApplicationRecord
     create_activity
     invalidate_filtered_unread_count_conversation
     notify_conversation_updation
+    propagate_label_changes
   end
 
   def handle_resolved_status_change
@@ -284,6 +286,13 @@ class Conversation < ApplicationRecord
     return if assignee_id.blank?
 
     self.assignee_agent_bot_id = nil
+  end
+
+  # A conversation's team is always derived from its inbox's team.
+  # There is no manual team assignment or transfer between teams: whatever
+  # gets written to team_id is overridden here before save.
+  def derive_team_from_inbox
+    self.team_id = inbox&.team_id
   end
 
   def determine_conversation_status
@@ -365,7 +374,8 @@ class Conversation < ApplicationRecord
   def dispatcher_dispatch(event_name, changed_attributes = nil)
     Rails.configuration.dispatcher.dispatch(event_name, Time.zone.now, conversation: self, notifiable_assignee_change: notifiable_assignee_change?,
                                                                        changed_attributes: changed_attributes,
-                                                                       performed_by: Current.executed_by)
+                                                                       performed_by: Current.executed_by,
+                                                                       current_user: Current.user)
   end
 
   def set_unread_count_deletion_data
@@ -393,6 +403,21 @@ class Conversation < ApplicationRecord
 
     create_label_added(user_name, current_labels - previous_labels)
     create_label_removed(user_name, previous_labels - current_labels)
+  end
+
+  # Propagates label additions/removals to sibling conversations (same contact, same team)
+  # and to the contact itself. See Labels::PropagationService for the actual propagation logic.
+  def propagate_label_changes
+    return if team_id.blank?
+
+    previous_labels, current_labels = previous_changes[:label_list]
+    return unless (previous_labels.is_a? Array) && (current_labels.is_a? Array)
+
+    added = current_labels - previous_labels
+    removed = previous_labels - current_labels
+    return if added.blank? && removed.blank?
+
+    Labels::PropagateJob.perform_later(conversation_id: id, added_labels: added, removed_labels: removed)
   end
 
   def validate_referer_url

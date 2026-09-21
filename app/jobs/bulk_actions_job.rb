@@ -40,7 +40,7 @@ class BulkActionsJob < ApplicationJob
   def available_params(params)
     return unless params[:fields]
 
-    params[:fields].delete_if { |key, value| value.nil? && key == 'status' }
+    params[:fields].delete_if { |key, value| (value.nil? && key == 'status') || key.to_s == 'team_id' }
   end
 
   def bulk_add_labels(conversation)

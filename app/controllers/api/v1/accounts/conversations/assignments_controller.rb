@@ -1,10 +1,9 @@
 class Api::V1::Accounts::Conversations::AssignmentsController < Api::V1::Accounts::Conversations::BaseController
-  # assigns agent/team to a conversation
+  # assigns an agent (or agent bot) to a conversation.
+  # Team is derived from the inbox and is not directly assignable (see Conversation#derive_team_from_inbox).
   def create
     if params.key?(:assignee_id) || agent_bot_assignment?
       set_agent
-    elsif params.key?(:team_id)
-      set_team
     else
       render json: nil
     end
@@ -31,12 +30,6 @@ class Api::V1::Accounts::Conversations::AssignmentsController < Api::V1::Account
     else
       render json: nil
     end
-  end
-
-  def set_team
-    @team = Current.account.teams.find_by(id: params[:team_id])
-    @conversation.update!(team: @team)
-    render json: @team
   end
 
   def agent_bot_assignment?

@@ -650,6 +650,47 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(inbox.reload.weekly_schedule.find { |schedule| schedule['day_of_week'] == 0 }['open_hour']).to eq 9
       end
 
+      context 'when updating team_id' do
+        let(:team) { create(:team, account: account) }
+
+        it 'updates the team of the inbox' do
+          patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+                headers: admin.create_new_auth_token,
+                params: { team_id: team.id },
+                as: :json
+
+          expect(response).to have_http_status(:success)
+          expect(response.parsed_body['team_id']).to eq(team.id)
+          expect(inbox.reload.team_id).to eq(team.id)
+        end
+
+        it 'clears the team of the inbox when team_id is nil' do
+          inbox.update!(team: team)
+
+          patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+                headers: admin.create_new_auth_token,
+                params: { team_id: nil },
+                as: :json
+
+          expect(response).to have_http_status(:success)
+          expect(response.parsed_body['team_id']).to be_nil
+          expect(inbox.reload.team_id).to be_nil
+        end
+
+        it 'does not allow assigning a team from another account' do
+          other_account = create(:account)
+          foreign_team = create(:team, account: other_account)
+
+          patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+                headers: admin.create_new_auth_token,
+                params: { team_id: foreign_team.id },
+                as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(inbox.reload.team_id).to be_nil
+        end
+      end
+
       it 'updates the webwidget inbox to disallow the messages after conversation is resolved' do
         patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
               headers: admin.create_new_auth_token,

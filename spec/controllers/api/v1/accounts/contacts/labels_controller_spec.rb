@@ -62,6 +62,32 @@ RSpec.describe 'Contact Label API', type: :request do
         expect(response.body).to include('label3')
         expect(response.body).to include('label4')
       end
+
+      it 'enqueues a propagation job to the team conversations when team_id is present' do
+        team = create(:team, account: account)
+
+        expect do
+          post api_v1_account_contact_labels_url(account_id: account.id, contact_id: contact.id),
+               params: { labels: %w[label3 label4], team_id: team.id },
+               headers: agent.create_new_auth_token,
+               as: :json
+        end.to have_enqueued_job(Labels::PropagateFromContactJob).with(
+          contact_id: contact.id, team_id: team.id, added_labels: %w[label3 label4], removed_labels: %w[label1 label2]
+        )
+
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'does not enqueue a propagation job when team_id is absent' do
+        expect do
+          post api_v1_account_contact_labels_url(account_id: account.id, contact_id: contact.id),
+               params: { labels: %w[label3 label4] },
+               headers: agent.create_new_auth_token,
+               as: :json
+        end.not_to have_enqueued_job(Labels::PropagateFromContactJob)
+
+        expect(response).to have_http_status(:success)
+      end
     end
   end
 end

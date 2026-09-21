@@ -3,6 +3,7 @@ import { useAlert } from 'dashboard/composables';
 import { computed, onBeforeMount, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStoreGetters, useStore } from 'dashboard/composables/store';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import { picoSearch } from '@scmmishra/pico-search';
 
 import AddLabel from './AddLabel.vue';
@@ -19,6 +20,7 @@ import {
 const getters = useStoreGetters();
 const store = useStore();
 const { t } = useI18n();
+const { isAdmin } = useAdmin();
 
 const loading = ref({});
 const showAddPopup = ref(false);
@@ -38,6 +40,12 @@ const filteredRecords = computed(() => {
   ]);
 });
 const uiFlags = computed(() => getters['labels/getUIFlags'].value);
+
+const getTeamName = teamId => {
+  if (!teamId) return t('LABEL_MGMT.LIST.GLOBAL_TEAM_LABEL');
+  const team = getters['teams/getTeamById'].value(teamId);
+  return team?.name || t('LABEL_MGMT.LIST.GLOBAL_TEAM_LABEL');
+};
 
 const deleteMessage = computed(() => ` ${selectedLabel.value.title}?`);
 
@@ -84,12 +92,16 @@ const confirmDeletion = () => {
 };
 
 const tableHeaders = computed(() => {
-  return [
+  const headers = [
     t('LABEL_MGMT.LIST.TABLE_HEADER.NAME'),
     t('LABEL_MGMT.LIST.TABLE_HEADER.DESCRIPTION'),
     t('LABEL_MGMT.LIST.TABLE_HEADER.COLOR'),
-    t('LABEL_MGMT.LIST.TABLE_HEADER.ACTION'),
+    t('LABEL_MGMT.LIST.TABLE_HEADER.TEAM'),
   ];
+  if (isAdmin.value) {
+    headers.push(t('LABEL_MGMT.LIST.TABLE_HEADER.ACTION'));
+  }
+  return headers;
 });
 
 onBeforeMount(() => {
@@ -118,7 +130,13 @@ onBeforeMount(() => {
             {{ $t('LABEL_MGMT.COUNT', { n: records.length }) }}
           </span>
         </template>
-        <template #actions>
+        <template v-if="isAdmin" #actions>
+          <router-link
+            :to="{ name: 'labels_categories_list' }"
+            class="text-sm font-medium text-n-blue-11 hover:underline"
+          >
+            {{ $t('LABEL_MGMT.MANAGE_CATEGORIES') }}
+          </router-link>
           <Button
             :label="$t('LABEL_MGMT.HEADER_BTN_TXT')"
             size="sm"
@@ -162,7 +180,13 @@ onBeforeMount(() => {
                 </div>
               </BaseTableCell>
 
-              <BaseTableCell align="end">
+              <BaseTableCell>
+                <span class="text-body-main text-n-slate-11">
+                  {{ getTeamName(label.team_id) }}
+                </span>
+              </BaseTableCell>
+
+              <BaseTableCell v-if="isAdmin" align="end">
                 <div class="flex gap-3 justify-end flex-shrink-0">
                   <Button
                     v-tooltip.top="$t('LABEL_MGMT.FORM.EDIT')"

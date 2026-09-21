@@ -26,13 +26,13 @@ RSpec.describe 'Summary Reports API', type: :request do
         }
       end
 
-      it 'returns unauthorized for agents' do
+      it 'returns success for agents, scoped to what they can access' do
         get "/api/v2/accounts/#{account.id}/summary_reports/agent",
             params: params,
             headers: agent.create_new_auth_token,
             as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:success)
       end
 
       it 'calls V2::Reports::AgentSummaryBuilder with the right params if the user is an admin' do
@@ -80,13 +80,13 @@ RSpec.describe 'Summary Reports API', type: :request do
         }
       end
 
-      it 'returns unauthorized for inbox' do
+      it 'returns success for agents, scoped to what they can access' do
         get "/api/v2/accounts/#{account.id}/summary_reports/inbox",
             params: params,
             headers: agent.create_new_auth_token,
             as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:success)
       end
 
       it 'calls V2::Reports::InboxSummaryBuilder with the right params if the user is an admin' do
@@ -134,13 +134,13 @@ RSpec.describe 'Summary Reports API', type: :request do
         }
       end
 
-      it 'returns unauthorized for agents' do
+      it 'returns success for agents, scoped to what they can access' do
         get "/api/v2/accounts/#{account.id}/summary_reports/team",
             params: params,
             headers: agent.create_new_auth_token,
             as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:success)
       end
 
       it 'calls V2::Reports::TeamSummaryBuilder with the right params if the user is an admin' do
@@ -187,13 +187,13 @@ RSpec.describe 'Summary Reports API', type: :request do
         }
       end
 
-      it 'returns unauthorized for agents' do
+      it 'returns success for agents' do
         get "/api/v2/accounts/#{account.id}/summary_reports/channel",
             params: params,
             headers: agent.create_new_auth_token,
             as: :json
 
-        expect(response).to have_http_status(:unauthorized)
+        expect(response).to have_http_status(:success)
       end
 
       it 'calls V2::Reports::ChannelSummaryBuilder with the right params if the user is an admin' do
@@ -231,6 +231,72 @@ RSpec.describe 'Summary Reports API', type: :request do
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['error']).to eq(I18n.t('errors.reports.date_range_too_long'))
       end
+    end
+  end
+
+  describe 'row-level scoping for restricted agents' do
+    let!(:team_a) { create(:team, account: account) }
+    let!(:team_b) { create(:team, account: account) }
+    let!(:inbox_a) { create(:inbox, account: account, team: team_a, name: 'Team A Inbox') }
+    let!(:inbox_b) { create(:inbox, account: account, team: team_b, name: 'Team B Inbox') }
+    let!(:agent_a) { create(:user, account: account, role: :agent) }
+    let!(:agent_b) { create(:user, account: account, role: :agent) }
+
+    let(:params) { { since: 1.week.ago.to_i.to_s, until: Time.current.to_i.to_s } }
+
+    before do
+      team_a.add_members([agent_a.id])
+      team_b.add_members([agent_b.id])
+
+      create(:conversation, account: account, inbox: inbox_a, assignee: agent_a)
+      create(:conversation, account: account, inbox: inbox_b, assignee: agent_b)
+    end
+
+    it 'only includes accessible agents for a restricted agent' do
+      get "/api/v2/accounts/#{account.id}/summary_reports/agent",
+          params: params, headers: agent_a.create_new_auth_token, as: :json
+
+      ids = response.parsed_body.pluck('id')
+      expect(ids).to include(agent_a.id)
+      expect(ids).not_to include(agent_b.id)
+    end
+
+    it 'only includes accessible teams for a restricted agent' do
+      get "/api/v2/accounts/#{account.id}/summary_reports/team",
+          params: params, headers: agent_a.create_new_auth_token, as: :json
+
+      ids = response.parsed_body.pluck('id')
+      expect(ids).to include(team_a.id)
+      expect(ids).not_to include(team_b.id)
+    end
+
+    it 'only includes accessible inboxes for a restricted agent' do
+      get "/api/v2/accounts/#{account.id}/summary_reports/inbox",
+          params: params, headers: agent_a.create_new_auth_token, as: :json
+
+      ids = response.parsed_body.pluck('id')
+      expect(ids).to include(inbox_a.id)
+      expect(ids).not_to include(inbox_b.id)
+    end
+
+    it 'only includes accessible labels for a restricted agent' do
+      label_a = create(:label, account: account, team: team_a, title: 'team-a-label')
+      label_b = create(:label, account: account, team: team_b, title: 'team-b-label')
+
+      get "/api/v2/accounts/#{account.id}/summary_reports/label",
+          params: params, headers: agent_a.create_new_auth_token, as: :json
+
+      names = response.parsed_body.pluck('name')
+      expect(names).to include(label_a.title)
+      expect(names).not_to include(label_b.title)
+    end
+
+    it 'includes every agent for an admin (non-regression)' do
+      get "/api/v2/accounts/#{account.id}/summary_reports/agent",
+          params: params, headers: admin.create_new_auth_token, as: :json
+
+      ids = response.parsed_body.pluck('id')
+      expect(ids).to include(agent_a.id, agent_b.id)
     end
   end
 end

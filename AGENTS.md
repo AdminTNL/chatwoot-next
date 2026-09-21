@@ -1,5 +1,20 @@
 # Chatwoot Development Guidelines
 
+## Lições aprendidas de sessões anteriores
+
+Antes de repetir um erro já mapeado, consulte `.claude/lessons/`:
+- [`.claude/lessons/git-worktree-isolation-fails.md`](.claude/lessons/git-worktree-isolation-fails.md) — `isolation: "worktree"` do Agent tool falha neste repo (redirect de `core.worktree`); rodar agentes paralelos direto na árvore principal, com escopo de arquivos disjunto.
+- [`.claude/lessons/subagent-background-execution.md`](.claude/lessons/subagent-background-execution.md) — agentes delegados devem aguardar ativamente a conclusão de testes antes de reportar, nunca encerrar o turno em estado de espera.
+- [`.claude/lessons/test-database-contamination.md`](.claude/lessons/test-database-contamination.md) — falhas inesperadas em specs Ruby podem vir de contaminação do `chatwoot_test` (linha órfã, processos `[bundle]` zumbis), não da mudança em si; confirmar revertendo e reproduzindo antes de investigar a mudança.
+- [`.claude/lessons/spec-file-list-scope-gaps.md`](.claude/lessons/spec-file-list-scope-gaps.md) — specs de execução devem instruir o agente a parar e reportar se a lista de "Arquivos a mudar" for insuficiente para o comportamento descrito, nunca reinterpretar o design silenciosamente.
+
+## Windows/Docker Dev Environment (this machine)
+
+- The Windows host has **no local Ruby/bundle** — Rails/Sidekiq/Postgres/Redis still run inside Docker Compose containers: `chatwoot-next-rails-1` (Ruby/Rails), `chatwoot-next-vite-1` (Node/Vite/JS), `chatwoot-next-postgres-1`, `chatwoot-next-redis-1`.
+- Run every Ruby command (`bundle exec rspec`, `rubocop`, `rails ...`) via `docker exec chatwoot-next-rails-1 <command>` — running it directly on the host fails immediately (no toolchain installed there).
+- The host **does** have `pnpm` installed locally now (pinned version from `package.json`'s `packageManager` field). Run JS/Vue commands (`pnpm test`, `pnpm eslint`, `pnpm vitest`, etc.) directly on the host instead of via `docker exec chatwoot-next-vite-1 <command>` — it's faster (no container exec overhead) and is the preferred way going forward. Run `pnpm install` first whenever dependencies may have changed (new package added, lockfile updated by a pull, etc.), otherwise commands can fail or run against stale `node_modules`.
+- The Bash tool in this Claude Code environment does **not** have `git` or standard Unix coreutils (`head`, etc.) on PATH here — those commands fail with "command not found". Use the PowerShell tool for `git` and any host-level shell command instead.
+
 ## Build / Test / Lint
 
 - **Setup**: `bundle install && pnpm install`

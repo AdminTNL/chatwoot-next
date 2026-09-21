@@ -52,8 +52,17 @@ class Api::V2::Accounts::LiveReportsController < Api::V1::Accounts::BaseControll
     @team ||= Current.account.teams.find(permitted_params[:team_id])
   end
 
+  def access_scope
+    @access_scope ||= Reports::AccessScope.new(
+      account: Current.account,
+      user: Current.user,
+      account_user: Current.account_user
+    )
+  end
+
   def load_conversations
     scope = Current.account.conversations
+    scope = scope.where(inbox_id: access_scope.inbox_ids) unless access_scope.unrestricted?
     scope = scope.where(team_id: team.id) if team.present?
     @conversations = scope
   end

@@ -43,5 +43,44 @@ RSpec.describe Conversations::PermissionFilterService do
         expect(result.count).to eq(2)
       end
     end
+
+    context 'when the agent has no inbox_members row but belongs to the inbox team' do
+      let(:team) { create(:team, account: account) }
+      let(:team_only_agent) { create(:user, account: account, role: :agent) }
+
+      before do
+        create(:team_member, user: team_only_agent, team: team)
+        inbox.update!(team: team)
+      end
+
+      it 'includes conversations of that inbox, including ones created before the team association (retroactive)' do
+        result = described_class.new(
+          account.conversations,
+          team_only_agent,
+          account
+        ).perform
+
+        expect(result).to include(conversation)
+        expect(result).to include(another_conversation)
+      end
+    end
+
+    context 'when the agent belongs to a team that does not own the inbox' do
+      let(:other_team) { create(:team, account: account) }
+      let(:outsider_agent) { create(:user, account: account, role: :agent) }
+
+      before { create(:team_member, user: outsider_agent, team: other_team) }
+
+      it 'excludes conversations of the inbox' do
+        result = described_class.new(
+          account.conversations,
+          outsider_agent,
+          account
+        ).perform
+
+        expect(result).not_to include(conversation)
+        expect(result).not_to include(another_conversation)
+      end
+    end
   end
 end

@@ -794,6 +794,12 @@
       "ENABLE_CONTINUITY_VIA_EMAIL_DISABLED_TEXT": "This feature is available on a paid plan. Upgrade to enable conversation continuity via email.",
       "LOCK_TO_SINGLE_CONVERSATION": "Conversation Routing",
       "LOCK_TO_SINGLE_CONVERSATION_SUB_TEXT": "Configure conversation creation for existing contacts",
+      "RESPONSIBLE_TEAM": {
+        "LABEL": "Responsible team",
+        "SUB_TEXT": "Choose the team responsible for this inbox",
+        "PLACEHOLDER": "Select a team",
+        "NONE": "No team"
+      },
       "INBOX_UPDATE_TITLE": "Inbox Settings",
       "INBOX_UPDATE_SUB_TEXT": "Update your inbox settings",
       "AUTO_ASSIGNMENT_SUB_TEXT": "Enable or disable the automatic assignment of new conversations to the agents added to this inbox.",

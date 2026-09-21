@@ -5,6 +5,7 @@ import { useMapGetter, useStore } from 'dashboard/composables/store';
 
 import LabelItem from 'dashboard/components-next/label/LabelItem.vue';
 import AddLabel from 'dashboard/components-next/label/AddLabel.vue';
+import SelectInput from 'dashboard/components-next/select/Select.vue';
 
 const props = defineProps({
   contactId: {
@@ -25,6 +26,26 @@ const hoveredLabel = ref(null);
 
 const allLabels = useMapGetter('labels/getLabels');
 const contactLabels = useMapGetter('contactLabels/getContactLabels');
+const myTeams = useMapGetter('teams/getMyTeams');
+
+const selectedTeamId = ref(null);
+
+const teamOptions = computed(() =>
+  myTeams.value.map(team => ({ value: team.id, label: team.name }))
+);
+
+watch(
+  myTeams,
+  teams => {
+    const isSelectedTeamStillMine = teams.some(
+      team => team.id === selectedTeamId.value
+    );
+    if (!isSelectedTeamStillMine) {
+      selectedTeamId.value = teams[0]?.id || null;
+    }
+  },
+  { immediate: true }
+);
 
 const savedLabels = computed(() => {
   const availableContactLabels = contactLabels.value(props.contactId);
@@ -78,6 +99,7 @@ const handleLabelAction = async ({ value }) => {
     await store.dispatch('contactLabels/update', {
       contactId: props.contactId,
       labels: updatedLabels,
+      teamId: selectedTeamId.value,
     });
 
     showDropdown.value = false;
@@ -99,6 +121,7 @@ watch(
   }
 );
 onMounted(() => {
+  store.dispatch('teams/get');
   if (route.params.contactId) {
     fetchLabels(route.params.contactId);
   }
@@ -120,6 +143,12 @@ const handleLabelHover = labelId => {
 
 <template>
   <div class="flex flex-wrap items-center gap-2" @mouseleave="handleMouseLeave">
+    <SelectInput
+      v-if="teamOptions.length"
+      v-model="selectedTeamId"
+      class="w-32"
+      :options="teamOptions"
+    />
     <LabelItem
       v-for="label in savedLabels"
       :key="label.id"

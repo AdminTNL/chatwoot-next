@@ -35,8 +35,47 @@ export const filterByUnattended = (
     : shouldFilter;
 };
 
+/**
+ * Filters a conversation by the 5 read-status categories introduced for the
+ * ChatList tabs (Unread/In progress/Snoozed/Resolved/All), mirroring
+ * ConversationFinder#filter_by_read_status on the backend.
+ *
+ * When `readStatus` is not provided (legacy callers such as `getMineChats`),
+ * this is a no-op that returns `shouldFilter` unchanged.
+ */
+export const filterByReadStatus = (
+  shouldFilter,
+  readStatus,
+  chatStatus,
+  unreadCount
+) => {
+  if (!readStatus || readStatus === 'all') return shouldFilter;
+
+  const isOpenOrPending = chatStatus !== 'resolved' && chatStatus !== 'snoozed';
+
+  switch (readStatus) {
+    case 'unread':
+      return shouldFilter && isOpenOrPending && unreadCount > 0;
+    case 'in_progress':
+      return shouldFilter && isOpenOrPending && unreadCount <= 0;
+    case 'snoozed':
+      return shouldFilter && chatStatus === 'snoozed';
+    case 'resolved':
+      return shouldFilter && chatStatus === 'resolved';
+    default:
+      return shouldFilter;
+  }
+};
+
 export const applyPageFilters = (conversation, filters) => {
-  const { inboxId, status, labels = [], teamId, conversationType } = filters;
+  const {
+    inboxId,
+    status,
+    labels = [],
+    teamId,
+    conversationType,
+    readStatus,
+  } = filters;
   const {
     status: chatStatus,
     inbox_id: chatInboxId,
@@ -44,6 +83,7 @@ export const applyPageFilters = (conversation, filters) => {
     meta = {},
     first_reply_created_at: firstReplyOn,
     waiting_since: waitingSince,
+    unread_count: unreadCount = 0,
   } = conversation;
   const team = meta.team || {};
   const { id: chatTeamId } = team;
@@ -57,6 +97,12 @@ export const applyPageFilters = (conversation, filters) => {
     conversationType,
     firstReplyOn,
     waitingSince
+  );
+  shouldFilter = filterByReadStatus(
+    shouldFilter,
+    readStatus,
+    chatStatus,
+    unreadCount
   );
 
   return shouldFilter;

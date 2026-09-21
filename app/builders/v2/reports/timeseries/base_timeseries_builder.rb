@@ -7,17 +7,19 @@ class V2::Reports::Timeseries::BaseTimeseriesBuilder
   pattr_initialize :account, :params
 
   def scope
+    ensure_dimension_permitted!
+
     case dimension_type.to_sym
     when :account
-      account
+      access_scope.restrict(account)
     when :inbox
-      inbox
+      access_scope.restrict(inbox)
     when :agent
-      user
+      access_scope.restrict(user)
     when :label
-      label
+      access_scope.restrict(label)
     when :team
-      team
+      access_scope.restrict(team)
     end
   end
 
@@ -60,6 +62,15 @@ class V2::Reports::Timeseries::BaseTimeseriesBuilder
   end
 
   private
+
+  def access_scope
+    params[:access_scope] || Reports::AccessScope::Null.instance
+  end
+
+  def ensure_dimension_permitted!
+    return if access_scope.unrestricted?
+    raise ActiveRecord::RecordNotFound unless access_scope.permits_dimension?(dimension_type, params[:id])
+  end
 
   def dimension_type
     (params[:type].presence || 'account').to_s

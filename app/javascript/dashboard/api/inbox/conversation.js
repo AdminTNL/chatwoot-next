@@ -10,6 +10,7 @@ class ConversationApi extends ApiClient {
     inboxId,
     status,
     assigneeType,
+    readStatus,
     page,
     labels,
     teamId,
@@ -23,6 +24,7 @@ class ConversationApi extends ApiClient {
         team_id: teamId,
         status,
         assignee_type: assigneeType,
+        read_status: readStatus,
         page,
         labels,
         conversation_type: conversationType,
@@ -69,11 +71,6 @@ class ConversationApi extends ApiClient {
     });
   }
 
-  assignTeam({ conversationId, teamId }) {
-    const params = { team_id: teamId };
-    return axios.post(`${this.url}/${conversationId}/assignments`, params);
-  }
-
   markMessageRead({ id }) {
     return axios.post(`${this.url}/${id}/update_last_seen`);
   }
@@ -97,12 +94,21 @@ class ConversationApi extends ApiClient {
     return axios.post(`${this.url}/${conversationId}/unmute`);
   }
 
-  meta({ inboxId, status, assigneeType, labels, teamId, conversationType }) {
+  meta({
+    inboxId,
+    status,
+    assigneeType,
+    readStatus,
+    labels,
+    teamId,
+    conversationType,
+  }) {
     return axios.get(`${this.url}/meta`, {
       params: {
         inbox_id: inboxId,
         status,
         assignee_type: assigneeType,
+        read_status: readStatus,
         labels,
         team_id: teamId,
         conversation_type: conversationType,
@@ -136,6 +142,10 @@ class ConversationApi extends ApiClient {
 
   getInboxAssistant(conversationId) {
     return axios.get(`${this.url}/${conversationId}/inbox_assistant`);
+  }
+
+  clearAiHistory(conversationId) {
+    return axios.delete(`${this.url}/${conversationId}/clear_ai_history`);
   }
 
   delete(conversationId) {

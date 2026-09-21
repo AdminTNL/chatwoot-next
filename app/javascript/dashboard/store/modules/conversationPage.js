@@ -2,14 +2,18 @@ import * as types from '../mutation-types';
 
 const state = {
   currentPage: {
-    me: 0,
-    unassigned: 0,
+    unread: 0,
+    in_progress: 0,
+    snoozed: 0,
+    resolved: 0,
     all: 0,
     appliedFilters: 0,
   },
   hasEndReached: {
-    me: false,
-    unassigned: false,
+    unread: false,
+    in_progress: false,
+    snoozed: false,
+    resolved: false,
     all: false,
   },
 };
@@ -49,8 +53,10 @@ export const mutations = {
     if (filter === 'all') {
       $state.hasEndReached = {
         ...$state.hasEndReached,
-        unassigned: true,
-        me: true,
+        unread: true,
+        in_progress: true,
+        snoozed: true,
+        resolved: true,
       };
     }
     $state.hasEndReached = {
@@ -60,15 +66,19 @@ export const mutations = {
   },
   [types.default.CLEAR_CONVERSATION_PAGE]: $state => {
     $state.currentPage = {
-      me: 0,
-      unassigned: 0,
+      unread: 0,
+      in_progress: 0,
+      snoozed: 0,
+      resolved: 0,
       all: 0,
       appliedFilters: 0,
     };
 
     $state.hasEndReached = {
-      me: false,
-      unassigned: false,
+      unread: false,
+      in_progress: false,
+      snoozed: false,
+      resolved: false,
       all: false,
       appliedFilters: false,
     };

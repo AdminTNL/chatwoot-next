@@ -19,7 +19,6 @@ const MENU = {
   STATUS: 'status',
   SNOOZE: 'snooze',
   AGENT: 'agent',
-  TEAM: 'team',
   LABEL: 'label',
   DELETE: 'delete',
   OPEN_NEW_TAB: 'open-new-tab',
@@ -72,7 +71,6 @@ export default {
     'markAsUnread',
     'markAsRead',
     'assignAgent',
-    'assignTeam',
     'assignLabel',
     'removeLabel',
     'deleteConversation',
@@ -155,11 +153,6 @@ export default {
         icon: 'person-add',
         label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.ASSIGN_AGENT'),
       },
-      teamMenuConfig: {
-        key: MENU.TEAM,
-        icon: 'people-team-add',
-        label: this.$t('CONVERSATION.CARD_CONTEXT_MENU.ASSIGN_TEAM'),
-      },
       deleteOption: {
         key: MENU.DELETE,
         icon: 'delete',
@@ -180,7 +173,6 @@ export default {
   computed: {
     ...mapGetters({
       labels: 'labels/getLabels',
-      teams: 'teams/getTeams',
       assignableAgentsUiFlags: 'inboxAssignableAgents/getUIFlags',
       currentUser: 'getCurrentUser',
       currentAccountId: 'getCurrentAccountId',
@@ -316,9 +308,7 @@ export default {
       />
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>
-    <template
-      v-if="isAllowed([MENU.PRIORITY, MENU.LABEL, MENU.AGENT, MENU.TEAM])"
-    >
+    <template v-if="isAllowed([MENU.PRIORITY, MENU.LABEL, MENU.AGENT])">
       <MenuItemWithSubmenu
         v-if="isAllowed([MENU.PRIORITY])"
         :option="priorityConfig"
@@ -366,18 +356,6 @@ export default {
             @click.stop="$emit('assignAgent', agent)"
           />
         </template>
-      </MenuItemWithSubmenu>
-      <MenuItemWithSubmenu
-        v-if="isAllowed([MENU.TEAM])"
-        :option="teamMenuConfig"
-        :sub-menu-available="!!teams.length"
-      >
-        <MenuItem
-          v-for="team in teams"
-          :key="team.id"
-          :option="generateMenuLabelConfig(team, 'team')"
-          @click.stop="$emit('assignTeam', team)"
-        />
       </MenuItemWithSubmenu>
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>

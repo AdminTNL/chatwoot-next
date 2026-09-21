@@ -1,4 +1,13 @@
 class Reports::RawDataSource < Reports::DataSource
+  # `Reports::DataSource#initialize` only stores the specific keys it
+  # already knows about (account, metric, dimension_type, ...), so we
+  # pick up `access_scope` here without needing to touch the shared
+  # parent class. Absent means unrestricted (see Reports::AccessScope::Null).
+  def initialize(**context)
+    super
+    @access_scope = context[:access_scope] || Reports::AccessScope::Null.instance
+  end
+
   def timeseries
     average_metric? ? average_timeseries : count_timeseries
   end
@@ -98,17 +107,26 @@ class Reports::RawDataSource < Reports::DataSource
   end
 
   def summary_scope
-    scope = account.reporting_events.where(created_at: range)
+    scope = restrict_to_accessible_inboxes(account.reporting_events).where(created_at: range)
     return scope.joins(:conversation) if dimension_type == 'team'
 
     scope
   end
 
   def summary_conversation_counts
-    account.conversations
-           .where(created_at: range)
-           .group(summary_conversation_group_by_key)
-           .count
+    restrict_to_accessible_inboxes(account.conversations)
+      .where(created_at: range)
+      .group(summary_conversation_group_by_key)
+      .count
+  end
+
+  # Restricts the *base* summary dataset (before grouping by whatever
+  # dimension is being summarized) to the accessible inboxes, per
+  # Reports::AccessScope. A no-op for unrestricted users/callers.
+  def restrict_to_accessible_inboxes(relation)
+    return relation if @access_scope.unrestricted?
+
+    relation.where(inbox_id: @access_scope.inbox_ids)
   end
 
   def merge_summary_results(metric_results, conversation_counts)
@@ -124,9 +142,17 @@ class Reports::RawDataSource < Reports::DataSource
 
   def summary_select_field(definition)
     if definition.count?
-      "COUNT(CASE WHEN name = '#{definition.raw_event_name}' THEN 1 END) as #{definition.summary_key}"
+      "#{summary_count_expression(definition)} as #{definition.summary_key}"
     else
       "AVG(CASE WHEN name = '#{definition.raw_event_name}' THEN #{average_value_key} END) as #{definition.summary_key}"
+    end
+  end
+
+  def summary_count_expression(definition)
+    if definition.raw_count_strategy == :distinct_conversation
+      "COUNT(DISTINCT CASE WHEN name = '#{definition.raw_event_name}' THEN conversation_id END)"
+    else
+      "COUNT(CASE WHEN name = '#{definition.raw_event_name}' THEN 1 END)"
     end
   end
 

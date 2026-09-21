@@ -32,6 +32,9 @@ describe Contacts::FilterService do
     create(:inbox_member, user: second_user, inbox: inbox)
     create(:conversation, account: account, inbox: inbox, assignee: first_user, contact: en_contact)
     create(:conversation, account: account, inbox: inbox, contact: el_contact)
+    # first_user/second_user are restricted agents (spec 12): every contact used across this
+    # file needs a conversation in an inbox they can access, or it becomes invisible to them.
+    create(:conversation, account: account, inbox: inbox, contact: cs_contact)
 
     create(:custom_attribute_definition,
            attribute_key: 'contact_additional_information',
@@ -130,6 +133,7 @@ describe Contacts::FilterService do
           blocked: true,
           email: Faker::Internet.unique.email
         )
+        create(:conversation, account: account, inbox: inbox, contact: blocked_contact)
         params = { payload: [{ attribute_key: 'blocked', filter_operator: 'equal_to', values: ['true'],
                                query_operator: nil }.with_indifferent_access] }
         result = filter_service.new(account, first_user, params).perform
@@ -473,6 +477,50 @@ describe Contacts::FilterService do
 
         expect { filter_service.new(account, first_user, params).perform }.to raise_error(CustomExceptions::CustomFilter::InvalidValue)
       end
+    end
+  end
+
+  # Spec 12: base_relation applies Contacts::AccessScope, so #perform (and therefore
+  # Segments/Custom Views, which run through the same base_relation) never leaks a
+  # contact outside the requesting agent's accessible inboxes.
+  describe 'contact access scope (spec 12)' do
+    let!(:other_inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+    let!(:unscoped_agent) { create(:user, account: account) }
+    let!(:admin) { create(:user, :administrator, account: account) }
+    let(:all_contacts_payload) do
+      [{ attribute_key: 'blocked', filter_operator: 'equal_to', values: [false], query_operator: nil }.with_indifferent_access]
+    end
+
+    it 'returns an empty result, not an error, for a restricted agent with no accessible inbox' do
+      result = filter_service.new(account, unscoped_agent, { payload: all_contacts_payload, page: 1 }).perform
+
+      expect(result[:contacts]).to be_empty
+      expect(result[:count]).to eq(0)
+    end
+
+    it 'returns every resolved contact for an administrator regardless of inbox access' do
+      result = filter_service.new(account, admin, { payload: all_contacts_payload, page: 1 }).perform
+
+      expect(result[:contacts].pluck(:id)).to contain_exactly(en_contact.id, el_contact.id, cs_contact.id)
+    end
+
+    it 'does not duplicate a contact with conversations in two inboxes accessible to the agent' do
+      create(:inbox_member, user: first_user, inbox: other_inbox)
+      create(:conversation, account: account, inbox: other_inbox, contact: en_contact)
+
+      result = filter_service.new(account, first_user, { payload: all_contacts_payload, page: 1 }).perform
+
+      expect(result[:contacts].pluck(:id).count(en_contact.id)).to eq(1)
+      expect(result[:count]).to eq(3)
+    end
+
+    it 'excludes a contact only linked via contact_inbox with no conversation, even in an accessible inbox' do
+      contact_inbox_only = create(:contact, account: account, email: Faker::Internet.unique.email)
+      create(:contact_inbox, contact: contact_inbox_only, inbox: inbox)
+
+      result = filter_service.new(account, first_user, { payload: all_contacts_payload, page: 1 }).perform
+
+      expect(result[:contacts].pluck(:id)).not_to include(contact_inbox_only.id)
     end
   end
 end

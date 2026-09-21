@@ -34,14 +34,7 @@ RSpec.describe AutomationRule do
             action_params: ['Welcome to the chatwoot platform.']
           },
           {
-            action_name: :assign_team,
-            action_params: [1]
-          },
-          {
             action_name: :remove_assigned_agent
-          },
-          {
-            action_name: :remove_assigned_team
           },
           {
             action_name: :add_label,
@@ -65,6 +58,16 @@ RSpec.describe AutomationRule do
       rule = FactoryBot.build(:automation_rule, params)
       expect(rule.valid?).to be false
       expect(rule.errors.messages[:conditions]).to eq(['Automation conditions should have query operator.'])
+    end
+
+    it 'returns invalid record when actions include the removed team assignment actions' do
+      params[:actions] = [
+        { action_name: :assign_team, action_params: [1] },
+        { action_name: :remove_assigned_team }
+      ]
+      rule = FactoryBot.build(:automation_rule, params)
+      expect(rule.valid?).to be false
+      expect(rule.errors.messages[:actions]).to eq(['Automation actions assign_team,remove_assigned_team not supported.'])
     end
 
     it 'allows labels as a valid condition attribute' do

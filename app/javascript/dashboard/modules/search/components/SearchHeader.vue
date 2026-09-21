@@ -6,6 +6,7 @@ import { ROLES } from 'dashboard/constants/permissions';
 
 import SearchInput from './SearchInput.vue';
 import SearchFilters from './SearchFilters.vue';
+import SearchMessageVisibilitySelector from './SearchMessageVisibilitySelector.vue';
 import Policy from 'dashboard/components/policy.vue';
 
 const props = defineProps({
@@ -40,6 +41,13 @@ const onSelectRecentSearch = query => {
       @search="onSearch"
       @select-recent-search="onSelectRecentSearch"
     >
+      <Policy :permissions="ROLES" class="w-full">
+        <SearchMessageVisibilitySelector
+          v-model="filters.visibility"
+          :label="$t('SEARCH.FILTERS.VISIBILITY')"
+          @change="$emit('filterChange')"
+        />
+      </Policy>
       <Policy
         :permissions="ROLES"
         :installation-types="[

@@ -36,7 +36,7 @@ class SearchAPI extends ApiClient {
     });
   }
 
-  messages({ q, page = 1, since, until, from, inboxId }) {
+  messages({ q, page = 1, since, until, from, inboxId, messageVisibility }) {
     return axios.get(`${this.url}/messages`, {
       params: {
         q,
@@ -45,6 +45,7 @@ class SearchAPI extends ApiClient {
         until,
         from,
         inbox_id: inboxId,
+        message_visibility: messageVisibility,
       },
     });
   }

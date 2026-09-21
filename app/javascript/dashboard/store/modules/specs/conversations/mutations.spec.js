@@ -13,6 +13,70 @@ vi.mock('shared/helpers/mitt', () => ({
 import { emitter } from 'shared/helpers/mitt';
 
 describe('#mutations', () => {
+  describe('#REMOVE_MESSAGE', () => {
+    it('removes only the given message from the target conversation', () => {
+      const state = {
+        allConversations: [
+          { id: 1, messages: [{ id: 10 }, { id: 11 }] },
+          { id: 2, messages: [{ id: 10 }] },
+        ],
+      };
+      mutations[types.REMOVE_MESSAGE](state, {
+        conversationId: 1,
+        messageId: 10,
+      });
+      expect(state.allConversations[0].messages).toEqual([{ id: 11 }]);
+      expect(state.allConversations[1].messages).toEqual([{ id: 10 }]);
+    });
+
+    it('does nothing if the conversation does not exist', () => {
+      const state = { allConversations: [] };
+      expect(() =>
+        mutations[types.REMOVE_MESSAGE](state, {
+          conversationId: 9,
+          messageId: 1,
+        })
+      ).not.toThrow();
+    });
+  });
+
+  describe('#REMOVE_AI_SUGGESTION_MESSAGES', () => {
+    const aiNote = id => ({
+      id,
+      content_attributes: { ai_suggestion_id: `s${id}` },
+    });
+
+    it('removes AI messages only from the target conversation', () => {
+      const state = {
+        allConversations: [
+          { id: 1, messages: [{ id: 10 }, aiNote(11), aiNote(12), { id: 13 }] },
+          { id: 2, messages: [aiNote(21), { id: 22 }] },
+        ],
+      };
+      mutations[types.REMOVE_AI_SUGGESTION_MESSAGES](state, {
+        conversationId: 1,
+      });
+      expect(state.allConversations[0].messages).toEqual([
+        { id: 10 },
+        { id: 13 },
+      ]);
+      expect(state.allConversations[1].messages).toEqual([
+        aiNote(21),
+        { id: 22 },
+      ]);
+    });
+
+    it('does nothing if the conversation does not exist', () => {
+      const state = { allConversations: [{ id: 1, messages: [aiNote(11)] }] };
+      expect(() =>
+        mutations[types.REMOVE_AI_SUGGESTION_MESSAGES](state, {
+          conversationId: 99,
+        })
+      ).not.toThrow();
+      expect(state.allConversations[0].messages).toEqual([aiNote(11)]);
+    });
+  });
+
   describe('#EMPTY_ALL_CONVERSATION', () => {
     it('empty conversations', () => {
       const state = { allConversations: [{ id: 1 }], selectedChatId: 1 };

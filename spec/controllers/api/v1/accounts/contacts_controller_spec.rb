@@ -526,6 +526,9 @@ RSpec.describe 'Contacts API', type: :request do
 
       it 'shows the contactable inboxes which the user has access to' do
         create(:inbox_member, user: agent, inbox: twilio_whatsapp_inbox)
+        # spec 12: the contact itself must be in the agent's scope (a conversation in an
+        # accessible inbox), or fetch_contact 404s before contactable_inboxes ever runs.
+        create(:conversation, account: account, inbox: twilio_whatsapp_inbox, contact: contact)
 
         inbox_service = double
         allow(Contacts::ContactableInboxesService).to receive(:new).and_return(inbox_service)
@@ -802,8 +805,14 @@ RSpec.describe 'Contacts API', type: :request do
     end
 
     context 'when it is an authenticated user' do
+      let(:inbox) { create(:inbox, account: account) }
+
       before do
         create(:contact, account: account)
+        # spec 12: give the agent access to the contact (a conversation in an accessible
+        # inbox), or fetch_contact 404s before the avatar is ever purged.
+        create(:inbox_member, user: agent, inbox: inbox)
+        create(:conversation, account: account, inbox: inbox, contact: contact)
         contact.avatar.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
       end
 
@@ -814,6 +823,190 @@ RSpec.describe 'Contacts API', type: :request do
 
         expect { contact.avatar.attachment.reload }.to raise_error(ActiveRecord::RecordNotFound)
         expect(response).to have_http_status(:success)
+      end
+    end
+  end
+
+  # Spec 12: contacts are scoped to agents by inbox access (via Contacts::AccessScope),
+  # reusing accessible_inboxes (spec 7). Admins remain unrestricted throughout.
+  describe 'contact access scope (spec 12)' do
+    let(:admin) { create(:user, account: account, role: :administrator) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:accessible_inbox) { create(:inbox, account: account) }
+    let(:inaccessible_inbox) { create(:inbox, account: account) }
+    # :with_email so these are "resolved" contacts (index/resolved_contacts requires a
+    # non-blank email/phone/identifier) and the index assertions below are meaningful.
+    let!(:contact_in_scope) { create(:contact, :with_email, account: account) }
+    let!(:contact_out_of_scope) { create(:contact, :with_email, account: account) }
+    let!(:contact_inbox_only) { create(:contact, :with_email, account: account) }
+
+    before do
+      create(:inbox_member, user: agent, inbox: accessible_inbox)
+      create(:conversation, account: account, inbox: accessible_inbox, contact: contact_in_scope)
+      create(:conversation, account: account, inbox: inaccessible_inbox, contact: contact_out_of_scope)
+      # linked via contact_inbox only (e.g. widget/import identity), no conversation:
+      # decision 1 says this must NOT be enough to become visible to the agent.
+      create(:contact_inbox, contact: contact_inbox_only, inbox: accessible_inbox)
+    end
+
+    describe 'GET index' do
+      it 'returns only contacts with a conversation in an inbox accessible to the agent' do
+        get "/api/v1/accounts/#{account.id}/contacts", headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        body = response.parsed_body
+        contact_ids = body['payload'].pluck('id')
+
+        expect(contact_ids).to include(contact_in_scope.id)
+        expect(contact_ids).not_to include(contact_out_of_scope.id, contact_inbox_only.id)
+        expect(body['meta']['count']).to eq(1)
+      end
+
+      it 'returns every resolved contact for an administrator, no regression' do
+        get "/api/v1/accounts/#{account.id}/contacts", headers: admin.create_new_auth_token, as: :json
+
+        contact_ids = response.parsed_body['payload'].pluck('id')
+        expect(contact_ids).to include(contact_in_scope.id, contact_out_of_scope.id, contact_inbox_only.id)
+      end
+
+      it 'returns an empty list, not a 500, for an agent with no accessible inbox' do
+        unscoped_agent = create(:user, account: account, role: :agent)
+
+        get "/api/v1/accounts/#{account.id}/contacts", headers: unscoped_agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['payload']).to eq([])
+      end
+    end
+
+    describe 'GET search' do
+      it 'restricts search results to the agent scope' do
+        contact_in_scope.update!(name: 'ScopedSearchTarget')
+        contact_out_of_scope.update!(name: 'ScopedSearchTarget')
+
+        get "/api/v1/accounts/#{account.id}/contacts/search",
+            params: { q: 'ScopedSearchTarget' },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        expect(response.parsed_body['payload'].pluck('id')).to eq([contact_in_scope.id])
+      end
+
+      it 'keeps meta count/has_more correct in search when scope narrows the results' do
+        in_scope_contacts = create_list(:contact, 16, account: account, name: 'pagination_target')
+        in_scope_contacts.each { |c| create(:conversation, account: account, inbox: accessible_inbox, contact: c) }
+
+        out_of_scope_contacts = create_list(:contact, 5, account: account, name: 'pagination_target')
+        out_of_scope_contacts.each { |c| create(:conversation, account: account, inbox: inaccessible_inbox, contact: c) }
+
+        get "/api/v1/accounts/#{account.id}/contacts/search",
+            params: { q: 'pagination_target' },
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        body = response.parsed_body
+        expect(body['meta']['count']).to eq(15)
+        expect(body['meta']['has_more']).to be(true)
+      end
+    end
+
+    describe 'GET active' do
+      it 'restricts online contacts to the agent scope' do
+        allow(OnlineStatusTracker).to receive(:get_available_contact_ids).and_return([contact_in_scope.id, contact_out_of_scope.id])
+
+        get "/api/v1/accounts/#{account.id}/contacts/active", headers: agent.create_new_auth_token, as: :json
+
+        expect(response.parsed_body['payload'].pluck('id')).to eq([contact_in_scope.id])
+      end
+    end
+
+    describe 'GET show' do
+      it 'returns 404 for a contact outside the agent scope' do
+        get "/api/v1/accounts/#{account.id}/contacts/#{contact_out_of_scope.id}", headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it 'returns 200 with the data for a contact inside the agent scope' do
+        get "/api/v1/accounts/#{account.id}/contacts/#{contact_in_scope.id}", headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['payload']['id']).to eq(contact_in_scope.id)
+      end
+
+      it 'returns 200 for an administrator regardless of scope, no regression' do
+        get "/api/v1/accounts/#{account.id}/contacts/#{contact_out_of_scope.id}", headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+      end
+    end
+
+    describe 'PATCH update' do
+      it 'returns 404 and does not modify a contact outside the agent scope' do
+        patch "/api/v1/accounts/#{account.id}/contacts/#{contact_out_of_scope.id}",
+              params: { name: 'Hacked name' },
+              headers: agent.create_new_auth_token,
+              as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(contact_out_of_scope.reload.name).not_to eq('Hacked name')
+      end
+    end
+
+    describe 'GET avatar' do
+      it 'returns 404 and does not purge the avatar of a contact outside the agent scope' do
+        contact_out_of_scope.avatar.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
+
+        delete "/api/v1/accounts/#{account.id}/contacts/#{contact_out_of_scope.id}/avatar",
+               headers: agent.create_new_auth_token,
+               as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(contact_out_of_scope.reload.avatar.attached?).to be(true)
+      end
+    end
+
+    describe 'GET contactable_inboxes' do
+      it 'returns 404 for a contact outside the agent scope' do
+        get "/api/v1/accounts/#{account.id}/contacts/#{contact_out_of_scope.id}/contactable_inboxes",
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe 'POST destroy_custom_attributes' do
+      it 'returns 404 and leaves custom attributes untouched for a contact outside the agent scope' do
+        contact_out_of_scope.update!(custom_attributes: { test: 'keep-me' })
+
+        post "/api/v1/accounts/#{account.id}/contacts/#{contact_out_of_scope.id}/destroy_custom_attributes",
+             params: { custom_attributes: ['test'] },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:not_found)
+        expect(contact_out_of_scope.reload.custom_attributes).to eq({ 'test' => 'keep-me' })
+      end
+    end
+
+    describe 'contact created by an agent with no conversation yet' do
+      it 'is created successfully but stays out of the creating agent index until a conversation exists in an accessible inbox' do
+        post "/api/v1/accounts/#{account.id}/contacts",
+             params: { name: 'Brand New Contact', email: 'brand-new-contact@example.com' },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        new_contact_id = response.parsed_body['payload']['contact']['id']
+
+        get "/api/v1/accounts/#{account.id}/contacts", headers: agent.create_new_auth_token, as: :json
+        expect(response.parsed_body['payload'].pluck('id')).not_to include(new_contact_id)
+
+        create(:conversation, account: account, inbox: accessible_inbox, contact_id: new_contact_id)
+
+        get "/api/v1/accounts/#{account.id}/contacts", headers: agent.create_new_auth_token, as: :json
+        expect(response.parsed_body['payload'].pluck('id')).to include(new_contact_id)
       end
     end
   end

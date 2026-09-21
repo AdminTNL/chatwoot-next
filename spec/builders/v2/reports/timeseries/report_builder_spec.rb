@@ -6,9 +6,9 @@ describe V2::Reports::Timeseries::ReportBuilder do
 
     let(:account) { create(:account) }
     let(:team) { create(:team, account: account) }
-    let(:inbox) { create(:inbox, account: account) }
+    let(:inbox) { create(:inbox, account: account, team: team) }
     let(:label) { create(:label, title: 'spec-billing', account: account) }
-    let!(:conversation) { create(:conversation, account: account, inbox: inbox, team: team) }
+    let!(:conversation) { create(:conversation, account: account, inbox: inbox) }
     let(:current_time) { '26.10.2020 10:00'.to_datetime }
 
     let(:params) do
@@ -347,6 +347,91 @@ describe V2::Reports::Timeseries::ReportBuilder do
     it 'excludes conversations that also had a bot handoff in the range' do
       expect(builder.aggregate_value).to eq(1)
       expect(builder.timeseries.sum { |row| row[:value] }).to eq(1)
+    end
+  end
+
+  describe 'Reports::AccessScope restriction' do
+    subject(:builder) { described_class.new(account, params) }
+
+    let(:account) { create(:account) }
+    let(:team_a) { create(:team, account: account) }
+    let(:team_b) { create(:team, account: account) }
+    let(:inbox_a) { create(:inbox, account: account, team: team_a) }
+    let(:inbox_b) { create(:inbox, account: account, team: team_b) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:administrator) { create(:user, :administrator, account: account) }
+    let(:current_time) { Time.current }
+
+    let(:access_scope) do
+      Reports::AccessScope.new(account: account, user: agent, account_user: account.account_users.find_by(user: agent))
+    end
+
+    let(:params) do
+      {
+        type: filter_type,
+        id: filter_id,
+        metric: 'conversations_count',
+        since: (current_time - 1.day).beginning_of_day.to_i.to_s,
+        until: current_time.end_of_day.to_i.to_s,
+        timezone_offset: nil,
+        group_by: 'day',
+        access_scope: access_scope
+      }
+    end
+    let(:filter_type) { 'account' }
+    let(:filter_id) { nil }
+
+    before do
+      travel_to current_time
+      team_a.add_members([agent.id])
+
+      create(:conversation, account: account, inbox: inbox_a, created_at: current_time)
+      create(:conversation, account: account, inbox: inbox_b, created_at: current_time)
+    end
+
+    it "sums only the agent's accessible inboxes for an account-type report" do
+      expect(builder.aggregate_value).to eq(1)
+    end
+
+    context 'when the account is unrestricted (administrator)' do
+      let(:access_scope) do
+        Reports::AccessScope.new(account: account, user: administrator, account_user: account.account_users.find_by(user: administrator))
+      end
+
+      it 'sums the whole account, exactly like before access scoping existed' do
+        expect(builder.aggregate_value).to eq(2)
+      end
+    end
+
+    context 'when requesting an inbox the agent can access' do
+      let(:filter_type) { 'inbox' }
+      let(:filter_id) { inbox_a.id }
+
+      it 'returns the inbox data' do
+        expect(builder.aggregate_value).to eq(1)
+      end
+    end
+
+    context "when requesting another team's inbox" do
+      let(:filter_type) { 'inbox' }
+      let(:filter_id) { inbox_b.id }
+
+      it 'raises RecordNotFound (default-deny)' do
+        expect { builder.aggregate_value }.to raise_error(ActiveRecord::RecordNotFound)
+      end
+    end
+
+    context 'when the agent has no accessible inboxes at all' do
+      let(:lone_agent) { create(:user, account: account, role: :agent) }
+      let(:access_scope) do
+        Reports::AccessScope.new(account: account, user: lone_agent, account_user: account.account_users.find_by(user: lone_agent))
+      end
+
+      before { lone_agent }
+
+      it 'returns zero instead of raising or leaking account-wide data' do
+        expect(builder.aggregate_value).to eq(0)
+      end
     end
   end
 end

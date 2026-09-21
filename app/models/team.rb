@@ -24,6 +24,9 @@ class Team < ApplicationRecord
   has_many :team_members, dependent: :destroy_async
   has_many :members, through: :team_members, source: :user
   has_many :conversations, dependent: :nullify
+  has_many :inboxes, dependent: :nullify
+  has_many :labels, dependent: :nullify
+  has_many :label_groups, dependent: :destroy
 
   before_destroy :capture_filtered_unread_count_member_ids, prepend: true
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
@@ -71,6 +74,13 @@ class Team < ApplicationRecord
       icon: icon,
       icon_color: icon_color
     }
+  end
+
+  # Slug derived from the team name, used to prefix label titles.
+  # Collapses any run of non-letter/non-number characters into a single
+  # hyphen and strips leading/trailing hyphens.
+  def label_prefix
+    name.to_s.gsub(/[^\p{L}\p{N}]+/, '-').gsub(/\A-+|-+\z/, '')
   end
 
   private

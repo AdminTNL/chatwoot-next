@@ -5,6 +5,19 @@ RSpec.describe Team do
     it { is_expected.to belong_to(:account) }
     it { is_expected.to have_many(:conversations) }
     it { is_expected.to have_many(:team_members) }
+    it { is_expected.to have_many(:inboxes) }
+  end
+
+  describe '#inboxes' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+
+    it 'returns only the inboxes belonging to that team' do
+      own_inbox = create(:inbox, account: account, team: team)
+      create(:inbox, account: account)
+
+      expect(team.inboxes).to contain_exactly(own_inbox)
+    end
   end
 
   describe 'name normalization' do
@@ -29,6 +42,37 @@ RSpec.describe Team do
       team = build(:team, account: account, name: "\t\n  ")
       expect(team).not_to be_valid
       expect(team.errors[:name]).to include(I18n.t('errors.validations.presence'))
+    end
+  end
+
+  describe '#label_prefix' do
+    let(:account) { create(:account) }
+
+    it 'returns the name as-is when it only has letters and hyphens' do
+      team = create(:team, account: account, name: 'suporte')
+      expect(team.label_prefix).to eq('suporte')
+    end
+
+    it 'replaces spaces with a hyphen' do
+      team = create(:team, account: account, name: 'suporte vip')
+      expect(team.label_prefix).to eq('suporte-vip')
+    end
+
+    it 'collapses runs of punctuation/spaces into a single hyphen' do
+      team = create(:team, account: account, name: 'suporte  vip!!')
+      expect(team.label_prefix).to eq('suporte-vip')
+    end
+
+    it 'strips leading and trailing hyphens' do
+      team = create(:team, account: account, name: '  suporte  ')
+      expect(team.label_prefix).to eq('suporte')
+    end
+
+    it 'produces the same slug for names that only differ by punctuation' do
+      team_a = create(:team, account: account, name: 'Time A')
+      team_b = create(:team, account: account, name: 'time-a')
+      expect(team_a.label_prefix).to eq('time-a')
+      expect(team_b.label_prefix).to eq('time-a')
     end
   end
 

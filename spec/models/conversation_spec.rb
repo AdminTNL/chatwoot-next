@@ -25,6 +25,63 @@ RSpec.describe Conversation do
     it_behaves_like 'auto_assignment_handler'
   end
 
+  describe 'team derivation from inbox' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:other_team) { create(:team, account: account) }
+
+    it 'derives team_id from the inbox team on creation, even when nobody passed team_id' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox)
+
+      expect(conversation.team_id).to eq(team.id)
+    end
+
+    it 'creates a conversation with a nil team_id when the inbox has no team' do
+      inbox = create(:inbox, account: account)
+      conversation = create(:conversation, account: account, inbox: inbox)
+
+      expect(conversation.team_id).to be_nil
+    end
+
+    it 'ignores an explicitly assigned team_id in favor of the derived value' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox)
+
+      conversation.update(team_id: other_team.id)
+
+      expect(conversation.reload.team_id).to eq(team.id)
+    end
+
+    it 'ignores a team_id passed explicitly on creation' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox, team_id: other_team.id)
+
+      expect(conversation.team_id).to eq(team.id)
+    end
+
+    it 'reflects the inbox new team the next time the conversation is saved after the inbox changes team' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox)
+      expect(conversation.team_id).to eq(team.id)
+
+      inbox.update!(team: other_team)
+      conversation.save!
+
+      expect(conversation.reload.team_id).to eq(other_team.id)
+    end
+
+    it 'does not backfill team_id on an old conversation that is not saved' do
+      inbox = create(:inbox, account: account, team: team)
+      conversation = create(:conversation, account: account, inbox: inbox, team_id: nil)
+      conversation.update_column(:team_id, nil) # rubocop:disable Rails/SkipsModelValidations
+
+      inbox.update!(team: other_team)
+
+      expect(conversation.reload.team_id).to be_nil
+    end
+  end
+
   describe '.before_create' do
     let(:conversation) { build(:conversation, display_id: nil) }
 
@@ -69,7 +126,7 @@ RSpec.describe Conversation do
       # send_events
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_CREATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: false,
-                                                                    changed_attributes: nil, performed_by: nil)
+                                                                    changed_attributes: nil, performed_by: nil, current_user: nil)
     end
   end
 
@@ -116,7 +173,8 @@ RSpec.describe Conversation do
       create(:conversation, status: 'open', account: account, assignee: old_assignee)
     end
     let(:assignment_mailer) { instance_double(AssignmentMailer, deliver: true) }
-    let(:label) { create(:label, account: account) }
+    let!(:team) { create(:team, account: account) }
+    let(:label) { create(:label, account: account, team: team) }
     let(:filtered_store) { Conversations::UnreadCounts::FilteredCountStore }
 
     before do
@@ -140,7 +198,8 @@ RSpec.describe Conversation do
           conversation: conversation,
           notifiable_assignee_change: false,
           changed_attributes: changed_attributes,
-          performed_by: nil
+          performed_by: nil,
+          current_user: old_assignee
         )
     end
 
@@ -182,16 +241,16 @@ RSpec.describe Conversation do
 
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_RESOLVED, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                     changed_attributes: status_change, performed_by: nil)
+                                                                     changed_attributes: status_change, performed_by: nil, current_user: old_assignee)
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_READ, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                 changed_attributes: nil, performed_by: nil)
+                                                                 changed_attributes: nil, performed_by: nil, current_user: old_assignee)
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::ASSIGNEE_CHANGED, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                changed_attributes: changed_attributes, performed_by: nil)
+                                                                changed_attributes: changed_attributes, performed_by: nil, current_user: old_assignee)
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_UPDATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: true,
-                                                                    changed_attributes: changed_attributes, performed_by: nil)
+                                                                    changed_attributes: changed_attributes, performed_by: nil, current_user: old_assignee)
     end
 
     it 'will not run conversation_updated event for empty updates' do
@@ -212,7 +271,7 @@ RSpec.describe Conversation do
 
       expect(Rails.configuration.dispatcher).to have_received(:dispatch)
         .with(described_class::CONVERSATION_UPDATED, kind_of(Time), conversation: conversation, notifiable_assignee_change: false,
-                                                                    changed_attributes: changed_attributes, performed_by: nil)
+                                                                    changed_attributes: changed_attributes, performed_by: nil, current_user: old_assignee)
     end
 
     it 'invalidates filtered counts without sending conversation_updated for filtered-only additional_attributes' do
@@ -299,10 +358,11 @@ RSpec.describe Conversation do
     let(:agent) do
       create(:user, email: 'agent@example.com', account: account, role: :agent)
     end
-    let(:first_label) { create(:label, account: account) }
-    let(:second_label) { create(:label, account: account) }
-    let(:third_label) { create(:label, account: account) }
-    let(:fourth_label) { create(:label, account: account) }
+    let!(:team) { create(:team, account: account) }
+    let(:first_label) { create(:label, account: account, team: team) }
+    let(:second_label) { create(:label, account: account, team: team) }
+    let(:third_label) { create(:label, account: account, team: team) }
+    let(:fourth_label) { create(:label, account: account, team: team) }
 
     before do
       conversation
@@ -345,6 +405,61 @@ RSpec.describe Conversation do
         .to(have_been_enqueued.at_least(:once)
         .with(conversation, { account_id: conversation.account_id, inbox_id: conversation.inbox_id,
                               message_type: :activity, content: "#{agent.name} removed #{labels.join(', ')}" }))
+    end
+
+    it 'removes another label from the same label_group on the conversation itself when a new one is added' do
+      label_group = create(:label_group, account: account, team: team)
+      old_label = create(:label, account: account, team: team, label_group: label_group)
+      new_label = create(:label, account: account, team: team, label_group: label_group)
+      conversation.update_labels([old_label.title])
+
+      conversation.add_labels([new_label.title])
+
+      expect(conversation.label_list).to contain_exactly(new_label.title)
+    end
+  end
+
+  describe '#propagate_label_changes' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:label) { create(:label, account: account, team: team) }
+    let(:other_label) { create(:label, account: account, team: team) }
+
+    context 'when the conversation has a team_id' do
+      let(:inbox) { create(:inbox, account: account, team: team) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+
+      before { conversation }
+
+      it 'enqueues a propagate job with the added labels' do
+        expect { conversation.update!(label_list: [label.title]) }
+          .to have_enqueued_job(Labels::PropagateJob)
+          .with(conversation_id: conversation.id, added_labels: [label.title], removed_labels: [])
+      end
+
+      it 'enqueues a propagate job with the removed labels' do
+        conversation.update!(label_list: [label.title, other_label.title])
+
+        expect { conversation.update!(label_list: [other_label.title]) }
+          .to have_enqueued_job(Labels::PropagateJob)
+          .with(conversation_id: conversation.id, added_labels: [], removed_labels: [label.title])
+      end
+
+      it 'does not enqueue a propagate job when label_list does not change' do
+        conversation.update!(label_list: [label.title])
+
+        expect { conversation.update!(status: :resolved) }
+          .not_to have_enqueued_job(Labels::PropagateJob)
+      end
+    end
+
+    context 'when the conversation has no team_id' do
+      let(:conversation) { create(:conversation, account: account) }
+
+      it 'does not enqueue a propagate job' do
+        expect { conversation.update!(label_list: [label.title]) }
+          .not_to have_enqueued_job(Labels::PropagateJob)
+      end
     end
   end
 

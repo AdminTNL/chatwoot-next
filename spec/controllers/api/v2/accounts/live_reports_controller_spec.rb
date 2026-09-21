@@ -15,12 +15,35 @@ RSpec.describe 'Api::V2::Accounts::LiveReports', type: :request do
       end
     end
 
-    context 'when authenticated but not authorized' do
-      it 'returns forbidden' do
+    context 'when authenticated as an agent with no accessible inboxes' do
+      it 'returns success with zeroed out metrics, not unauthorized' do
+        create(:conversation, :with_assignee, account: account, status: :open)
+
         get "/api/v2/accounts/#{account.id}/live_reports/conversation_metrics",
             headers: agent.create_new_auth_token,
             as: :json
-        expect(response).to have_http_status(:unauthorized)
+
+        expect(response).to have_http_status(:success)
+        response_data = response.parsed_body
+        expect(response_data['open']).to eq(0)
+      end
+    end
+
+    context 'when authenticated as an agent scoped to a team inbox' do
+      it 'only counts conversations in the accessible inbox' do
+        scoped_inbox = create(:inbox, account: account, team: team)
+        other_inbox = create(:inbox, account: account)
+        team.add_members([agent.id])
+
+        create(:conversation, :with_assignee, account: account, inbox: scoped_inbox, status: :open)
+        create(:conversation, :with_assignee, account: account, inbox: other_inbox, status: :open)
+
+        get "/api/v2/accounts/#{account.id}/live_reports/conversation_metrics",
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['open']).to eq(1)
       end
     end
 
@@ -49,8 +72,10 @@ RSpec.describe 'Api::V2::Accounts::LiveReports', type: :request do
       end
 
       context 'with team_id parameter' do
+        let(:team_inbox) { create(:inbox, account: account, team: team) }
+
         before do
-          create(:conversation, account: account, status: :open, team_id: team.id)
+          create(:conversation, account: account, status: :open, inbox: team_inbox)
           create(:conversation, account: account, status: :open)
         end
 
@@ -81,13 +106,17 @@ RSpec.describe 'Api::V2::Accounts::LiveReports', type: :request do
       end
     end
 
-    context 'when authenticated but not authorized' do
-      it 'returns forbidden' do
+    context 'when authenticated as an agent with no accessible inboxes' do
+      it 'returns success with an empty grouped result, not unauthorized' do
+        create(:conversation, account: account, status: :open, team_id: team.id)
+
         get "/api/v2/accounts/#{account.id}/live_reports/grouped_conversation_metrics",
             params: { group_by: 'team_id' },
             headers: agent.create_new_auth_token,
             as: :json
-        expect(response).to have_http_status(:unauthorized)
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq([])
       end
     end
 
@@ -105,11 +134,12 @@ RSpec.describe 'Api::V2::Accounts::LiveReports', type: :request do
 
     context 'when grouped by team_id' do
       let(:assignee1) { create(:user, account: account) }
+      let(:team_inbox) { create(:inbox, account: account, team: team) }
 
       before do
-        create(:conversation, account: account, status: :open, team_id: team.id)
-        create(:conversation, account: account, status: :open, team_id: team.id)
-        create(:conversation, account: account, status: :open, team_id: team.id) do |conversation|
+        create(:conversation, account: account, status: :open, inbox: team_inbox)
+        create(:conversation, account: account, status: :open, inbox: team_inbox)
+        create(:conversation, account: account, status: :open, inbox: team_inbox) do |conversation|
           create(:message, account: account, conversation: conversation, message_type: :outgoing)
         end
 

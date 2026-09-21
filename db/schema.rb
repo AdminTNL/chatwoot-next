@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_17_110000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -446,8 +446,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.integer "status", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["account_id", "assistant_id", "status", "language"], name: "idx_cap_faq_suggestions_on_account_assistant_status_language"
+    t.index ["account_id"], name: "index_captain_faq_suggestions_on_account_id"
     t.index ["assistant_id"], name: "index_captain_faq_suggestions_on_assistant_id"
     t.index ["embedding"], name: "vector_idx_captain_faq_suggestions_embedding", opclass: :vector_cosine_ops, using: :ivfflat
   end
@@ -1050,9 +1050,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.integer "sender_name_type", default: 0, null: false
     t.string "business_name"
     t.jsonb "csat_config", default: {}, null: false
+    t.bigint "team_id"
     t.index ["account_id"], name: "index_inboxes_on_account_id"
     t.index ["channel_id", "channel_type"], name: "index_inboxes_on_channel_id_and_channel_type"
     t.index ["portal_id"], name: "index_inboxes_on_portal_id"
+    t.index ["team_id"], name: "index_inboxes_on_team_id"
   end
 
   create_table "installation_configs", force: :cascade do |t|
@@ -1078,6 +1080,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.jsonb "settings", default: {}
   end
 
+  create_table "label_groups", force: :cascade do |t|
+    t.string "name", null: false
+    t.bigint "account_id", null: false
+    t.bigint "team_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_label_groups_on_account_id"
+    t.index ["team_id", "name"], name: "index_label_groups_on_team_id_and_name", unique: true
+    t.index ["team_id"], name: "index_label_groups_on_team_id"
+  end
+
   create_table "labels", force: :cascade do |t|
     t.string "title"
     t.text "description"
@@ -1086,7 +1099,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
     t.bigint "account_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "team_id"
+    t.bigint "label_group_id"
     t.index ["account_id"], name: "index_labels_on_account_id"
+    t.index ["label_group_id"], name: "index_labels_on_label_group_id"
+    t.index ["team_id"], name: "index_labels_on_team_id"
     t.index ["title", "account_id"], name: "index_labels_on_title_and_account_id", unique: true
   end
 
@@ -1493,6 +1510,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_13_184351) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "inboxes", "teams"
+  add_foreign_key "label_groups", "accounts"
+  add_foreign_key "label_groups", "teams"
+  add_foreign_key "labels", "label_groups"
+  add_foreign_key "labels", "teams"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").

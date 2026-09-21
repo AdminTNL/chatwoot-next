@@ -57,8 +57,8 @@ const isLoading = computed(() => uiFlags.value[flagMap[props.type]] ?? false);
 const rowItems = useMapGetter([props.getterKey]) || [];
 const reportMetrics = useMapGetter([props.summaryKey]) || [];
 
-const getMetrics = id =>
-  reportMetrics.value.find(metrics => metrics.id === Number(id)) || {};
+const getRowItem = id =>
+  rowItems.value.find(item => item.id === Number(id)) || {};
 const columnHelper = createColumnHelper();
 const { t } = useI18n();
 
@@ -102,6 +102,15 @@ const columns = computed(() => [
     width: 200,
     cell: defaulSpanRender,
   }),
+  ...(props.type === 'agent'
+    ? [
+        columnHelper.accessor('participatedConversationsCount', {
+          header: t('SUMMARY_REPORTS.PARTICIPATED_CONVERSATIONS'),
+          width: 200,
+          cell: defaulSpanRender,
+        }),
+      ]
+    : []),
 ]);
 
 const renderAvgTime = value => (value ? formatTime(value) : '--');
@@ -109,17 +118,18 @@ const renderAvgTime = value => (value ? formatTime(value) : '--');
 const renderCount = value => (value ? value.toLocaleString() : '--');
 
 const tableData = computed(() =>
-  rowItems.value.map(row => {
-    const rowMetrics = getMetrics(row.id);
+  reportMetrics.value.map(rowMetrics => {
+    const row = getRowItem(rowMetrics.id);
     const {
       conversationsCount,
       avgFirstResponseTime,
       avgResolutionTime,
       avgReplyTime,
       resolvedConversationsCount,
+      participatedConversationsCount,
     } = rowMetrics;
     return {
-      id: row.id,
+      id: rowMetrics.id,
       // we fallback on title, label for instance does not have a name property
       name: row.name ?? row.title,
       type: props.type,
@@ -128,6 +138,9 @@ const tableData = computed(() =>
       avgReplyTime: renderAvgTime(avgReplyTime),
       avgResolutionTime: renderAvgTime(avgResolutionTime),
       resolutionsCount: renderCount(resolvedConversationsCount),
+      participatedConversationsCount: renderCount(
+        participatedConversationsCount
+      ),
     };
   })
 );

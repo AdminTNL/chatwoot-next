@@ -1,15 +1,21 @@
 <script>
 import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';
-import validations, { getLabelTitleErrorMessage } from './validations';
+import validations, {
+  getLabelTitleErrorMessage,
+  getLabelTeamErrorMessage,
+  getLabelGroupErrorMessage,
+} from './validations';
 import { getRandomColor } from 'dashboard/helper/labelColor';
 import { useVuelidate } from '@vuelidate/core';
 
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import SelectInput from 'dashboard/components-next/select/Select.vue';
 
 export default {
   components: {
     NextButton,
+    SelectInput,
   },
   props: {
     prefillTitle: {
@@ -27,21 +33,54 @@ export default {
       description: '',
       title: '',
       showOnSidebar: true,
+      selectedTeamId: '',
+      selectedLabelGroupId: '',
     };
   },
   validations,
   computed: {
     ...mapGetters({
       uiFlags: 'labels/getUIFlags',
+      teams: 'teams/getTeams',
+      labelGroups: 'labelGroups/getLabelGroups',
     }),
     labelTitleErrorMessage() {
       const errorMessage = getLabelTitleErrorMessage(this.v$);
       return this.$t(errorMessage);
     },
+    labelTeamErrorMessage() {
+      const errorMessage = getLabelTeamErrorMessage(this.v$);
+      return this.$t(errorMessage);
+    },
+    labelGroupErrorMessage() {
+      const errorMessage = getLabelGroupErrorMessage(this.v$);
+      return this.$t(errorMessage);
+    },
+    teamOptions() {
+      return this.teams.map(team => ({ value: team.id, label: team.name }));
+    },
+    labelGroupOptions() {
+      return this.labelGroups
+        .filter(labelGroup => labelGroup.team_id === this.selectedTeamId)
+        .map(labelGroup => ({ value: labelGroup.id, label: labelGroup.name }));
+    },
+  },
+  watch: {
+    selectedTeamId(newTeamId) {
+      const isSelectedLabelGroupInNewTeam = this.labelGroups.some(
+        labelGroup =>
+          labelGroup.id === this.selectedLabelGroupId &&
+          labelGroup.team_id === newTeamId
+      );
+      if (!isSelectedLabelGroupInNewTeam) {
+        this.selectedLabelGroupId = '';
+      }
+    },
   },
   mounted() {
     this.color = getRandomColor();
     this.title = this.prefillTitle.toLowerCase();
+    this.$store.dispatch('labelGroups/get');
   },
   methods: {
     onClose() {
@@ -54,6 +93,8 @@ export default {
           description: this.description,
           title: this.title.toLowerCase(),
           show_on_sidebar: this.showOnSidebar,
+          team_id: this.selectedTeamId,
+          label_group_id: this.selectedLabelGroupId || null,
         });
         useAlert(this.$t('LABEL_MGMT.ADD.API.SUCCESS_MESSAGE'));
         this.onClose();
@@ -109,6 +150,32 @@ export default {
           {{ $t('LABEL_MGMT.FORM.SHOW_ON_SIDEBAR.LABEL') }}
         </label>
       </div>
+
+      <div class="w-full">
+        <label>
+          {{ $t('LABEL_MGMT.FORM.TEAM.LABEL') }}
+          <SelectInput
+            v-model="selectedTeamId"
+            :options="teamOptions"
+            :placeholder="$t('LABEL_MGMT.FORM.TEAM.PLACEHOLDER')"
+            :error="labelTeamErrorMessage"
+            @update:model-value="v$.selectedTeamId.$touch"
+          />
+        </label>
+      </div>
+
+      <div class="w-full">
+        <label>
+          {{ $t('LABEL_MGMT.FORM.LABEL_GROUP.LABEL') }}
+          <SelectInput
+            v-model="selectedLabelGroupId"
+            :options="labelGroupOptions"
+            :placeholder="$t('LABEL_MGMT.FORM.LABEL_GROUP.PLACEHOLDER')"
+            :error="labelGroupErrorMessage"
+            @update:model-value="v$.selectedLabelGroupId.$touch"
+          />
+        </label>
+      </div>
       <div class="flex items-center justify-end w-full gap-2 px-0 py-2">
         <NextButton
           faded
@@ -121,7 +188,7 @@ export default {
           type="submit"
           data-testid="label-submit"
           :label="$t('LABEL_MGMT.FORM.CREATE')"
-          :disabled="v$.title.$invalid || uiFlags.isCreating"
+          :disabled="v$.$invalid || uiFlags.isCreating"
           :is-loading="uiFlags.isCreating"
         />
       </div>

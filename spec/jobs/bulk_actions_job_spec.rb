@@ -78,6 +78,23 @@ RSpec.describe BulkActionsJob do
       expect(conversation_3.reload.snoozed_until).to be_present
     end
 
+    it 'does not change team_id when fields include team_id, since team is derived from the inbox' do
+      team = create(:team, account: account)
+      params = {
+        type: 'Conversation',
+        fields: { status: 'snoozed', team_id: team.id },
+        ids: conversation_ids
+      }
+
+      expect(conversation_1.team_id).to be_nil
+
+      described_class.perform_now(account: account, params: params, user: agent)
+
+      expect(conversation_1.reload.team_id).to be_nil
+      expect(conversation_2.reload.team_id).to be_nil
+      expect(conversation_3.reload.team_id).to be_nil
+    end
+
     it 'skips conversations whose inbox the agent does not belong to' do
       forbidden_conversation = create(:conversation, account_id: account.id, status: :open)
       params = {

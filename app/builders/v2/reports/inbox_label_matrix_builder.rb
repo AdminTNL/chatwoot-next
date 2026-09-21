@@ -18,9 +18,14 @@ class V2::Reports::InboxLabelMatrixBuilder
 
   private
 
+  def access_scope
+    params[:access_scope] || Reports::AccessScope::Null.instance
+  end
+
   def filtered_inboxes
     @filtered_inboxes ||= begin
       inboxes = account.inboxes
+      inboxes = inboxes.where(id: access_scope.inbox_ids) unless access_scope.unrestricted?
       inboxes = inboxes.where(id: params[:inbox_ids]) if params[:inbox_ids].present?
       inboxes.order(:name).to_a
     end
@@ -29,6 +34,7 @@ class V2::Reports::InboxLabelMatrixBuilder
   def filtered_labels
     @filtered_labels ||= begin
       labels = account.labels
+      labels = labels.where(id: access_scope.label_ids) unless access_scope.unrestricted?
       labels = labels.where(id: params[:label_ids]) if params[:label_ids].present?
       labels.order(:title).to_a
     end
@@ -37,8 +43,20 @@ class V2::Reports::InboxLabelMatrixBuilder
   def conversation_filter
     filter = { account_id: account.id }
     filter[:created_at] = range if range.present?
-    filter[:inbox_id] = params[:inbox_ids] if params[:inbox_ids].present?
+    inbox_id_filter = accessible_inbox_ids_filter(params[:inbox_ids])
+    filter[:inbox_id] = inbox_id_filter unless inbox_id_filter.nil?
     filter
+  end
+
+  # Combines the requested `inbox_ids` (if any) with the accessible
+  # inbox ids for restricted users, so the raw grouped-count query never
+  # touches conversations outside the caller's scope - regardless of
+  # what `filtered_inboxes` ends up rendering in the response.
+  def accessible_inbox_ids_filter(requested_inbox_ids)
+    return requested_inbox_ids if access_scope.unrestricted?
+    return access_scope.inbox_ids if requested_inbox_ids.blank?
+
+    Array(requested_inbox_ids).map(&:to_i) & access_scope.inbox_ids
   end
 
   def fetch_grouped_counts

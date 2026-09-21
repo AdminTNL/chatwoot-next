@@ -117,6 +117,58 @@ RSpec.describe V2::Reports::InboxLabelMatrixBuilder do
       end
     end
 
+    context 'with Reports::AccessScope restriction' do
+      let!(:team_a) { create(:team, account: account) }
+      let!(:team_b) { create(:team, account: account) }
+      let!(:agent) { create(:user, account: account, role: :agent) }
+      let(:access_scope) do
+        Reports::AccessScope.new(account: account, user: agent, account_user: account.account_users.find_by(user: agent))
+      end
+      let(:params) do
+        {
+          since: 1.week.ago.beginning_of_day.to_i.to_s,
+          until: Time.current.end_of_day.to_i.to_s,
+          access_scope: access_scope
+        }
+      end
+
+      before do
+        inbox_one.update!(team: team_a)
+        inbox_two.update!(team: team_b)
+        team_a.add_members([agent.id])
+
+        c1 = create(:conversation, account: account, inbox: inbox_one, created_at: 2.days.ago)
+        c1.update(label_list: [label_one.title])
+
+        c2 = create(:conversation, account: account, inbox: inbox_two, created_at: 2.days.ago)
+        c2.update(label_list: [label_two.title])
+      end
+
+      it 'only includes accessible inboxes and their counts, without requiring inbox_ids/label_ids params' do
+        expect(report[:inboxes]).to eq([{ id: inbox_one.id, name: 'Email Support' }])
+        expect(report[:matrix]).to eq([[1, 0]])
+      end
+
+      it 'does not leak counts from inaccessible inboxes even when requested explicitly' do
+        builder = described_class.new(account: account, params: params.merge(inbox_ids: [inbox_one.id, inbox_two.id]))
+        expect(builder.build[:inboxes].pluck(:id)).to eq([inbox_one.id])
+      end
+
+      context 'when the agent has no accessible inboxes at all' do
+        let(:lone_agent) { create(:user, account: account, role: :agent) }
+        let(:access_scope) do
+          Reports::AccessScope.new(account: account, user: lone_agent, account_user: account.account_users.find_by(user: lone_agent))
+        end
+
+        before { lone_agent }
+
+        it 'returns an empty matrix instead of raising or leaking account-wide data' do
+          expect(report[:inboxes]).to eq([])
+          expect(report[:matrix]).to eq([])
+        end
+      end
+    end
+
     context 'when conversations belong to another account' do
       let(:other_account) { create(:account) }
       let(:other_inbox) { create(:inbox, account: other_account) }

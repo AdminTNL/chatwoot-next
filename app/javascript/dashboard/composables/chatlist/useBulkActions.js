@@ -140,22 +140,6 @@ export function useBulkActions() {
     }
   }
 
-  async function onAssignTeamsForBulk(team) {
-    try {
-      await store.dispatch('bulkActions/process', {
-        type: 'Conversation',
-        ids: selectedConversations.value,
-        fields: {
-          team_id: team.id,
-        },
-      });
-      store.dispatch('bulkActions/clearSelectedConversationIds');
-      useAlert(t('BULK_ACTION.TEAMS.ASSIGN_SUCCESFUL'));
-    } catch (err) {
-      useAlert(t('BULK_ACTION.TEAMS.ASSIGN_FAILED'));
-    }
-  }
-
   async function onUpdateConversations(status, snoozedUntil) {
     if (selectedConversations.value.length === 0) return;
 
@@ -230,7 +214,6 @@ export function useBulkActions() {
     onAssignAgent,
     onAssignLabels,
     onRemoveLabels,
-    onAssignTeamsForBulk,
     onUpdateConversations,
   };
 }

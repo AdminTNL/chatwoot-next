@@ -15,9 +15,12 @@ RSpec.describe V2::Reports::TeamSummaryBuilder do
 
   describe '#build' do
     context 'when there is team data' do
+      let(:inbox1) { create(:inbox, account: account, team: team1) }
+      let(:inbox2) { create(:inbox, account: account, team: team2) }
+
       before do
-        c1 = create(:conversation, account: account, team: team1, created_at: Time.current)
-        c2 = create(:conversation, account: account, team: team2, created_at: Time.current)
+        c1 = create(:conversation, account: account, inbox: inbox1, created_at: Time.current)
+        c2 = create(:conversation, account: account, inbox: inbox2, created_at: Time.current)
         create(
           :reporting_event,
           account: account,

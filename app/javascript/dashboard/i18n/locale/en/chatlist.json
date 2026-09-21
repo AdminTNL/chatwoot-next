@@ -14,9 +14,11 @@
       "INPUT": "Search for People, Chats, Saved Replies .."
     },
     "FILTER_ALL": "All",
-    "ASSIGNEE_TYPE_TABS": {
-      "me": "Mine",
-      "unassigned": "Unassigned",
+    "READ_STATUS_TABS": {
+      "unread": "Unread",
+      "in_progress": "In progress",
+      "snoozed": "Snoozed",
+      "resolved": "Resolved",
       "all": "All"
     },
     "CHAT_STATUS_FILTER_ITEMS": {
