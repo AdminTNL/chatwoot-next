@@ -97,6 +97,14 @@
       "TRANSCRIPT_SHOW_MORE": "Ver mais",
       "TRANSCRIPT_SHOW_LESS": "Mostrar menos"
     },
+    "PRIVATE_NOTE": {
+      "APPROVE_SUGGESTION": "Aprovar",
+      "REJECT_SUGGESTION": "Rejeitar",
+      "COPY_SUGGESTION": "Copiar",
+      "COPY_SUCCESS": "Sugestão copiada para a área de transferência",
+      "APPROVE_ERROR": "Não foi possível aprovar a sugestão, tente novamente",
+      "REJECT_ERROR": "Não foi possível rejeitar a sugestão, tente novamente"
+    },
     "CLEAR_AI_HISTORY": {
       "BUTTON": "Apagar histórico da IA",
       "TITLE": "Apagar histórico da IA?",
@@ -113,6 +121,8 @@
       "REOPEN_ACTION": "Reabrir",
       "OPEN_ACTION": "Abrir",
       "MORE_ACTIONS": "Mais ações",
+      "SHOW_AI_SUGGESTIONS": "Mostrar sugestões de IA resolvidas",
+      "HIDE_AI_SUGGESTIONS": "Esconder sugestões de IA resolvidas",
       "OPEN": "Mais",
       "CLOSE": "Fechar",
       "DETAILS": "detalhes",

@@ -6,7 +6,7 @@ class Conversations::UnreadCounts::BroadcastScope
   end
 
   def perform
-    return [conversation.account, conversation.inbox.members] if conversation.present?
+    return [conversation.account, conversation.inbox.all_member_users] if conversation.present?
 
     deleted_conversation_scope
   end
@@ -31,6 +31,6 @@ class Conversations::UnreadCounts::BroadcastScope
     inbox = account.inboxes.find_by(id: inbox_id)
     return User.none if inbox.blank?
 
-    inbox.members
+    inbox.all_member_users
   end
 end
