@@ -177,6 +177,11 @@ class Inbox < ApplicationRecord
     (account.users.where(id: members.select(:user_id)) + account.administrators).uniq
   end
 
+  # Users with access via direct membership or the inbox's team
+  def all_member_users
+    account.users.where(id: members.pluck(:id) + (team&.members&.pluck(:id) || []))
+  end
+
   def active_bot?
     agent_bot_inbox&.active? || hooks.where(app_id: %w[dialogflow],
                                             status: 'enabled').count.positive?
