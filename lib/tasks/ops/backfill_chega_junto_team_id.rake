@@ -24,7 +24,7 @@ namespace :chatwoot do
   namespace :ops do
     desc 'Backfill conversations.team_id for the Chega Junto team conversations whose inbox already has a team but the conversation itself was never re-saved since'
     task backfill_chega_junto_team_id: :environment do
-      team = Team.find_by!(name: 'Chega Junto')
+      team = Team.find_by!(name: 'chega junto')
       inbox_ids = Inbox.where(team_id: team.id).pluck(:id)
       puts "Time: #{team.name} (id #{team.id}) — #{inbox_ids.size} inboxes"
 
