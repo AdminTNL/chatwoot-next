@@ -2,6 +2,7 @@
 import { computed, watch, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 
 import LabelItem from 'dashboard/components-next/label/LabelItem.vue';
 import AddLabel from 'dashboard/components-next/label/AddLabel.vue';
@@ -27,21 +28,30 @@ const hoveredLabel = ref(null);
 const allLabels = useMapGetter('labels/getLabels');
 const contactLabels = useMapGetter('contactLabels/getContactLabels');
 const myTeams = useMapGetter('teams/getMyTeams');
+const contactTeams = useMapGetter('contactTeams/getTeams');
+const { isAdmin } = useAdmin();
 
 const selectedTeamId = ref(null);
 
-const teamOptions = computed(() =>
-  myTeams.value.map(team => ({ value: team.id, label: team.name }))
-);
+const teamOptions = computed(() => {
+  const teamsOfContact = contactTeams.value(props.contactId);
+  const teamsForSelector = isAdmin.value
+    ? teamsOfContact
+    : teamsOfContact.filter(contactTeam =>
+        myTeams.value.some(myTeam => myTeam.id === contactTeam.id)
+      );
+
+  return teamsForSelector.map(team => ({ value: team.id, label: team.name }));
+});
 
 watch(
-  myTeams,
+  teamOptions,
   teams => {
-    const isSelectedTeamStillMine = teams.some(
-      team => team.id === selectedTeamId.value
+    const isSelectedTeamStillAnOption = teams.some(
+      team => team.value === selectedTeamId.value
     );
-    if (!isSelectedTeamStillMine) {
-      selectedTeamId.value = teams[0]?.id || null;
+    if (!isSelectedTeamStillAnOption) {
+      selectedTeamId.value = teams[0]?.value || null;
     }
   },
   { immediate: true }
@@ -73,6 +83,13 @@ const fetchLabels = async contactId => {
     return;
   }
   store.dispatch('contactLabels/get', contactId);
+};
+
+const fetchTeams = async contactId => {
+  if (!contactId) {
+    return;
+  }
+  store.dispatch('contactTeams/get', contactId);
 };
 
 const handleLabelAction = async ({ value }) => {
@@ -117,6 +134,7 @@ watch(
   (newVal, oldVal) => {
     if (newVal !== oldVal) {
       fetchLabels(newVal);
+      fetchTeams(newVal);
     }
   }
 );
@@ -124,6 +142,7 @@ onMounted(() => {
   store.dispatch('teams/get');
   if (route.params.contactId) {
     fetchLabels(route.params.contactId);
+    fetchTeams(route.params.contactId);
   }
 });
 
