@@ -403,11 +403,17 @@ class Message < ApplicationRecord
 
   def reopen_conversation
     return if conversation.muted?
-    return unless incoming?
+    return unless reopens_conversation?
 
     conversation.open! if conversation.snoozed?
 
     reopen_resolved_conversation if conversation.resolved?
+  end
+
+  def reopens_conversation?
+    return false if private?
+
+    incoming? || outgoing?
   end
 
   def mark_pending_conversation_as_open_for_human_response
@@ -424,7 +430,7 @@ class Message < ApplicationRecord
 
   def reopen_resolved_conversation
     # mark resolved bot conversation as pending to be reopened by bot processor service
-    if conversation.inbox.active_bot?
+    if incoming? && conversation.inbox.active_bot?
       conversation.pending!
     elsif conversation.inbox.api?
       Current.executed_by = sender if reopened_by_contact?
