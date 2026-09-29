@@ -418,4 +418,55 @@ describe Whatsapp::IncomingMessageWhatsappCloudService do
   def expect_message_has_attachment
     expect(whatsapp_channel.inbox.messages.first.attachments.present?).to be true
   end
+
+  describe 'status updates' do
+    let!(:whatsapp_channel) { create(:channel_whatsapp, provider: 'whatsapp_cloud', sync_templates: false, validate_provider_config: false) }
+    let(:conversation) { create(:conversation, inbox: whatsapp_channel.inbox, account: whatsapp_channel.account) }
+    let(:message) do
+      create(:message, conversation: conversation, account: whatsapp_channel.account, inbox: whatsapp_channel.inbox,
+                       message_type: :outgoing, source_id: 'wamid.status1', status: :sent)
+    end
+
+    def status_params(source_id, status, errors: nil)
+      status_payload = { id: source_id, status: status, recipient_id: '2423423243' }
+      status_payload[:errors] = errors if errors
+      {
+        phone_number: whatsapp_channel.phone_number,
+        object: 'whatsapp_business_account',
+        entry: [{ changes: [{ value: { statuses: [status_payload] } }] }]
+      }.with_indifferent_access
+    end
+
+    def process_status(source_id, status, errors: nil)
+      described_class.new(inbox: whatsapp_channel.inbox, params: status_params(source_id, status, errors: errors)).perform
+    end
+
+    it 'advances sent to delivered' do
+      process_status(message.source_id, 'delivered')
+      expect(message.reload.status).to eq('delivered')
+    end
+
+    it 'ignores a late sent status on a read message' do
+      message.update!(status: :read)
+      process_status(message.source_id, 'sent')
+      expect(message.reload.status).to eq('read')
+    end
+
+    it 'ignores a late failed status on a read message and does not set external_error' do
+      message.update!(status: :read)
+      process_status(message.source_id, 'failed', errors: [{ code: 131_026, title: 'Message undeliverable' }])
+      expect(message.reload.status).to eq('read')
+      expect(message.external_error).to be_nil
+    end
+
+    it 'stores external_error when a sent message fails' do
+      process_status(message.source_id, 'failed', errors: [{ code: 131_026, title: 'Message undeliverable' }])
+      expect(message.reload.status).to eq('failed')
+      expect(message.external_error).to eq('131026: Message undeliverable')
+    end
+
+    it 'silently ignores a status for an unknown message id' do
+      expect { process_status('wamid.unknown', 'delivered') }.not_to raise_error
+    end
+  end
 end
