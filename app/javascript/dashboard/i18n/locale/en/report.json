@@ -657,6 +657,11 @@
     }
   },
   "SUMMARY_REPORTS": {
+    "TEAM_FILTER": {
+      "PLACEHOLDER": "All teams",
+      "SEARCH_PLACEHOLDER": "Search team",
+      "EMPTY": "No teams found"
+    },
     "INBOX": "Inbox",
     "AGENT": "Agent",
     "TEAM": "Team",
