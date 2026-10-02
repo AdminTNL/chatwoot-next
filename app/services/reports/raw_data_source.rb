@@ -6,6 +6,7 @@ class Reports::RawDataSource < Reports::DataSource
   def initialize(**context)
     super
     @access_scope = context[:access_scope] || Reports::AccessScope::Null.instance
+    @team_id = context[:team_id].presence
   end
 
   def timeseries
@@ -108,16 +109,31 @@ class Reports::RawDataSource < Reports::DataSource
 
   def summary_scope
     scope = restrict_to_accessible_inboxes(account.reporting_events).where(created_at: range)
+    scope = restrict_to_team(scope, :events)
     return scope.joins(:conversation) if dimension_type == 'team'
 
     scope
   end
 
   def summary_conversation_counts
-    restrict_to_accessible_inboxes(account.conversations)
+    restrict_to_team(restrict_to_accessible_inboxes(account.conversations), :conversations)
       .where(created_at: range)
       .group(summary_conversation_group_by_key)
       .count
+  end
+
+  # Restricts the summary dataset to conversations of a single team (the
+  # optional `team_id` filter). Events have no team column, so they are
+  # matched through a conversation subquery (no extra join). No-op without
+  # a team_id.
+  def restrict_to_team(relation, kind)
+    return relation if @team_id.blank?
+
+    if kind == :events
+      relation.where(conversation_id: account.conversations.where(team_id: @team_id).select(:id))
+    else
+      relation.where(team_id: @team_id)
+    end
   end
 
   # Restricts the *base* summary dataset (before grouping by whatever

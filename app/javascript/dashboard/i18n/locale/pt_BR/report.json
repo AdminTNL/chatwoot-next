@@ -637,6 +637,11 @@
     }
   },
   "SUMMARY_REPORTS": {
+    "TEAM_FILTER": {
+      "PLACEHOLDER": "Todos os times",
+      "SEARCH_PLACEHOLDER": "Buscar time",
+      "EMPTY": "Nenhum time encontrado"
+    },
     "INBOX": "Caixa de Entrada",
     "AGENT": "Agente",
     "TEAM": "Time",

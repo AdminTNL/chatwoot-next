@@ -221,7 +221,59 @@ describe('getConversationDashboardRoute', () => {
     expect(getConversationDashboardRoute('conversation_through_inbox')).toEqual(
       'inbox_dashboard'
     );
+    expect(
+      getConversationDashboardRoute('conversation_through_team_inbox')
+    ).toEqual('team_inbox_conversations');
+    expect(
+      getConversationDashboardRoute('conversation_through_team_label')
+    ).toEqual('team_label_conversations');
     expect(getConversationDashboardRoute('non_existent_route')).toBeNull();
+  });
+});
+
+describe('isAConversationRoute com rotas de time', () => {
+  const baseNames = ['team_inbox_conversations', 'team_label_conversations'];
+  const extendedNames = [
+    'conversation_through_team_inbox',
+    'conversation_through_team_label',
+  ];
+
+  it('rotas de lista novas sao base', () => {
+    baseNames.forEach(name => {
+      expect(isAConversationRoute(name)).toBe(false);
+      expect(isAConversationRoute(name, false)).toBe(false);
+      expect(isAConversationRoute(name, true)).toBe(true);
+      expect(isAConversationRoute(name, true, true)).toBe(true);
+      expect(isAConversationRoute(name, true, false)).toBe(true);
+      expect(isAConversationRoute(name, false, true)).toBe(false);
+    });
+  });
+
+  it('rotas com conversa novas sao estendidas', () => {
+    extendedNames.forEach(name => {
+      expect(isAConversationRoute(name)).toBe(true);
+      expect(isAConversationRoute(name, false, true)).toBe(true);
+      expect(isAConversationRoute(name, true, true)).toBe(true);
+      expect(isAConversationRoute(name, true, false)).toBe(false);
+      expect(isAConversationRoute(name, false, false)).toBe(false);
+    });
+  });
+
+  it('mantem classificacao das rotas antigas', () => {
+    ['inbox_dashboard', 'label_conversations', 'team_conversations'].forEach(
+      name => {
+        expect(isAConversationRoute(name, true, false)).toBe(true);
+        expect(isAConversationRoute(name)).toBe(false);
+      }
+    );
+    [
+      'conversation_through_inbox',
+      'conversations_through_label',
+      'conversations_through_team',
+    ].forEach(name => {
+      expect(isAConversationRoute(name)).toBe(true);
+      expect(isAConversationRoute(name, true, false)).toBe(false);
+    });
   });
 });
 

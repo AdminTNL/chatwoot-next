@@ -41,6 +41,7 @@ const store = useStore();
 const from = ref(0);
 const to = ref(0);
 const businessHours = ref(false);
+const teamId = ref(null);
 import { useI18n } from 'vue-i18n';
 import SummaryReportLink from './SummaryReportLink.vue';
 
@@ -151,6 +152,7 @@ const fetchReportsWithRetry = async () => {
     until: to.value,
     businessHours: businessHours.value,
   };
+  if (teamId.value) params.teamId = teamId.value;
   try {
     await store.dispatch(props.actionKey, params);
   } catch {
@@ -173,6 +175,7 @@ const onFilterChange = updatedFilter => {
   from.value = updatedFilter.from;
   to.value = updatedFilter.to;
   businessHours.value = updatedFilter.businessHours;
+  teamId.value = updatedFilter.team || null;
   fetchAllData();
 };
 
@@ -208,6 +211,7 @@ const downloadReports = () => {
       fileName,
       businessHours: businessHours.value,
     };
+    if (teamId.value) params.teamId = teamId.value;
     store.dispatch(dispatchMethods[props.type], params);
   }
 };

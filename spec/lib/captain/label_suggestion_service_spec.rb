@@ -63,7 +63,7 @@ RSpec.describe Captain::LabelSuggestionService do
 
           expect(user_message).to include('Messages:')
           expect(user_message).to include('Labels:')
-          expect(user_message).to include('bug, feature-request')
+          expect(user_message).to include("#{label1.title}, #{label2.title}")
           { message: 'bug' }
         end
 

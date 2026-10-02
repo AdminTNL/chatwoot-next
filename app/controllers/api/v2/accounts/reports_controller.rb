@@ -5,6 +5,7 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   before_action :check_authorization
   # These three builders are not scoped yet, so keep them admin/report_manage-only.
   before_action :ensure_unrestricted_access, only: %i[bot_metrics first_response_time_distribution conversation_traffic]
+  before_action :set_team_filter, only: %i[agents inboxes labels teams]
 
   def index
     builder = V2::Reports::Conversations::ReportBuilder.new(Current.account, report_params)
@@ -116,6 +117,17 @@ class Api::V2::Accounts::ReportsController < Api::V1::Accounts::BaseController
   def access_scope
     @access_scope ||= Reports::AccessScope.new(account: Current.account, user: Current.user, account_user: Current.account_user)
   end
+
+  # Optional `team_id` filter for the agents/inboxes/labels/teams CSVs.
+  # Unknown/foreign teams and teams outside a restricted user's own teams
+  # answer 404 (default deny).
+  def set_team_filter
+    return if params[:team_id].blank?
+
+    @team_filter = Reports::TeamFilter.resolve(account: Current.account, team_id: params[:team_id], access_scope: access_scope)
+  end
+
+  attr_reader :team_filter
 
   def scoped(hash) = hash.merge(access_scope: access_scope)
 

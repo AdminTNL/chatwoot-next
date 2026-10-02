@@ -38,8 +38,8 @@ RSpec.describe V2::Reports::InboxLabelMatrixBuilder do
 
       it 'returns labels ordered by title' do
         expect(report[:labels]).to eq([
-                                        { id: label_one.id, title: 'bug' },
-                                        { id: label_two.id, title: 'feature' }
+                                        { id: label_one.id, title: label_one.title },
+                                        { id: label_two.id, title: label_two.title }
                                       ])
       end
 
@@ -88,7 +88,7 @@ RSpec.describe V2::Reports::InboxLabelMatrixBuilder do
       end
 
       it 'only includes the specified labels and their counts' do
-        expect(report[:labels]).to eq([{ id: label_one.id, title: 'bug' }])
+        expect(report[:labels]).to eq([{ id: label_one.id, title: label_one.title }])
         expect(report[:matrix]).to eq([[1], [0]])
       end
     end
@@ -120,6 +120,8 @@ RSpec.describe V2::Reports::InboxLabelMatrixBuilder do
     context 'with Reports::AccessScope restriction' do
       let!(:team_a) { create(:team, account: account) }
       let!(:team_b) { create(:team, account: account) }
+      let!(:label_one) { create(:label, account: account, title: 'bug', team: team_a) }
+      let!(:label_two) { create(:label, account: account, title: 'feature', team: team_a) }
       let!(:agent) { create(:user, account: account, role: :agent) }
       let(:access_scope) do
         Reports::AccessScope.new(account: account, user: agent, account_user: account.account_users.find_by(user: agent))

@@ -141,11 +141,28 @@ describe('useUISettings', () => {
     expect(isEditorHotKeyEnabled('cmd_enter')).toBe(false);
   });
 
-  it('returns correct value for isEditorHotKeyEnabled when editor_message_key is not configured', () => {
+  it('defaults to enter when editor_message_key and enter_to_send_enabled are not configured', () => {
     getUISettingsMock.value.editor_message_key = undefined;
+    getUISettingsMock.value.enter_to_send_enabled = undefined;
+    const { isEditorHotKeyEnabled } = useUISettings();
+    expect(isEditorHotKeyEnabled('enter')).toBe(true);
+    expect(isEditorHotKeyEnabled('cmd_enter')).toBe(false);
+  });
+
+  it('uses cmd_enter when editor_message_key is not configured and enter_to_send_enabled is false', () => {
+    getUISettingsMock.value.editor_message_key = undefined;
+    getUISettingsMock.value.enter_to_send_enabled = false;
     const { isEditorHotKeyEnabled } = useUISettings();
     expect(isEditorHotKeyEnabled('enter')).toBe(false);
     expect(isEditorHotKeyEnabled('cmd_enter')).toBe(true);
+  });
+
+  it('uses enter when editor_message_key is not configured and enter_to_send_enabled is true', () => {
+    getUISettingsMock.value.editor_message_key = undefined;
+    getUISettingsMock.value.enter_to_send_enabled = true;
+    const { isEditorHotKeyEnabled } = useUISettings();
+    expect(isEditorHotKeyEnabled('enter')).toBe(true);
+    expect(isEditorHotKeyEnabled('cmd_enter')).toBe(false);
   });
 
   it('handles non-existent keys', () => {

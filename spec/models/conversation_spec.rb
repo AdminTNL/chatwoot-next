@@ -463,6 +463,23 @@ RSpec.describe Conversation do
     end
   end
 
+  describe '#inherit_labels_from_contact' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+
+    it 'enqueues the inheritance job when the conversation is created with a team' do
+      inbox = create(:inbox, account: account, team: team)
+
+      expect { create(:conversation, account: account, inbox: inbox) }
+        .to have_enqueued_job(Labels::InheritFromContactJob)
+    end
+
+    it 'does not enqueue the inheritance job when the conversation has no team' do
+      expect { create(:conversation, account: account) }
+        .not_to have_enqueued_job(Labels::InheritFromContactJob)
+    end
+  end
+
   describe '#toggle_status' do
     it 'toggles conversation status to resolved when open' do
       conversation = create(:conversation, status: 'open')

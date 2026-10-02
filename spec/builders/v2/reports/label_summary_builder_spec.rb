@@ -61,14 +61,14 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
 
         expect(report.length).to eq(3)
 
-        bug_report = report.find { |r| r[:name] == 'label_1' }
-        feature_request = report.find { |r| r[:name] == 'label_2' }
-        customer_support = report.find { |r| r[:name] == 'label_3' }
+        bug_report = report.find { |r| r[:name] == label_1.title }
+        feature_request = report.find { |r| r[:name] == label_2.title }
+        customer_support = report.find { |r| r[:name] == label_3.title }
 
         [
-          [bug_report, label_1, 'label_1'],
-          [feature_request, label_2, 'label_2'],
-          [customer_support, label_3, 'label_3']
+          [bug_report, label_1, label_1.title],
+          [feature_request, label_2, label_2.title],
+          [customer_support, label_3, label_3.title]
         ].each do |report_data, label, label_name|
           expect(report_data).to include(
             id: label.id,
@@ -106,7 +106,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
                                        account: account, inbox: inbox,
                                        conversation: conversation,
                                        created_at: Time.zone.today + 2.hours)
-              conversation.update_labels('label_1')
+              conversation.update_labels(label_1.title)
               conversation.label_list
               conversation.save!
             end
@@ -120,7 +120,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
                                        account: account, inbox: inbox,
                                        conversation: conversation,
                                        created_at: Time.zone.today + 1.hour)
-              conversation.update_labels('label_2')
+              conversation.update_labels(label_2.title)
               conversation.label_list
               conversation.save!
             end
@@ -172,9 +172,9 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
 
           expect(report.length).to eq(3)
 
-          label_1_report = report.find { |r| r[:name] == 'label_1' }
-          label_2_report = report.find { |r| r[:name] == 'label_2' }
-          label_3_report = report.find { |r| r[:name] == 'label_3' }
+          label_1_report = report.find { |r| r[:name] == label_1.title }
+          label_2_report = report.find { |r| r[:name] == label_2.title }
+          label_3_report = report.find { |r| r[:name] == label_3.title }
 
           expect(label_1_report).to include(
             conversations_count: 3,
@@ -204,8 +204,8 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
 
           expect(report.length).to eq(3)
 
-          label_1_report = report.find { |r| r[:name] == 'label_1' }
-          label_2_report = report.find { |r| r[:name] == 'label_2' }
+          label_1_report = report.find { |r| r[:name] == label_1.title }
+          label_2_report = report.find { |r| r[:name] == label_2.title }
 
           expect(label_1_report[:conversations_count]).to eq(3)
           expect(label_1_report[:avg_first_response_time]).to be > 0
@@ -234,7 +234,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
             conversation_in_range = create(:conversation, account: account,
                                                           inbox: inbox, assignee: user,
                                                           created_at: 2.days.ago)
-            conversation_in_range.update_labels('label_1')
+            conversation_in_range.update_labels(label_1.title)
             conversation_in_range.label_list
             conversation_in_range.save!
 
@@ -249,7 +249,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
             conversation_out_of_range = create(:conversation, account: account,
                                                               inbox: inbox, assignee: user,
                                                               created_at: 1.week.ago)
-            conversation_out_of_range.update_labels('label_1')
+            conversation_out_of_range.update_labels(label_1.title)
             conversation_out_of_range.label_list
             conversation_out_of_range.save!
 
@@ -268,7 +268,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
 
         expect(report.length).to eq(3)
 
-        label_1_report = report.find { |r| r[:name] == 'label_1' }
+        label_1_report = report.find { |r| r[:name] == label_1.title }
         expect(label_1_report).not_to be_nil
         expect(label_1_report[:conversations_count]).to eq(1)
         expect(label_1_report[:avg_first_response_time]).to eq(1800.0)
@@ -290,7 +290,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
             conversation = create(:conversation, account: account,
                                                  inbox: inbox, assignee: user,
                                                  created_at: Time.zone.today)
-            conversation.update_labels('label_1')
+            conversation.update_labels(label_1.title)
             conversation.label_list
             conversation.save!
 
@@ -310,7 +310,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
 
         expect(report.length).to eq(3)
 
-        label_1_report = report.find { |r| r[:name] == 'label_1' }
+        label_1_report = report.find { |r| r[:name] == label_1.title }
         expect(label_1_report).not_to be_nil
         expect(label_1_report[:avg_first_response_time]).to eq(1800.0)
       end
@@ -346,7 +346,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
             conversation = create(:conversation, account: account2,
                                                  inbox: inbox, assignee: user,
                                                  created_at: test_date)
-            conversation.update_labels(unique_label_name)
+            conversation.update_labels(test_label.title)
             conversation.label_list
             conversation.save!
 
@@ -360,7 +360,7 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
       it 'counts multiple resolution events for same conversation' do
         report = account2_builder.build
 
-        test_label_report = report.find { |r| r[:name] == unique_label_name }
+        test_label_report = report.find { |r| r[:name] == test_label.title }
         expect(test_label_report).not_to be_nil
         expect(test_label_report[:resolved_conversations_count]).to eq(2)
       end

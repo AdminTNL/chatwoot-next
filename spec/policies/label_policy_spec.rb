@@ -10,7 +10,10 @@ RSpec.describe LabelPolicy, type: :policy do
   let(:agent_team_a) { create(:user, account: account) }
   let(:agent_both_teams) { create(:user, account: account) }
 
-  let!(:global_label) { create(:label, account: account, title: 'global-label') }
+  # Legacy label without team (global): team is mandatory now, so the row is made team-less directly.
+  let!(:global_label) do
+    create(:label, account: account, title: 'global-label').tap { |label| label.update_column(:team_id, nil) } # rubocop:disable Rails/SkipsModelValidations
+  end
   let!(:team_a_label) { create(:label, account: account, team: team_a, title: 'team-a-label') }
   let!(:team_b_label) { create(:label, account: account, team: team_b, title: 'team-b-label') }
 

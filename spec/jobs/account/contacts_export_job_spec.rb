@@ -4,7 +4,7 @@ RSpec.describe Account::ContactsExportJob do
   subject(:job) { described_class.perform_later(account.id, user.id, [], {}) }
 
   let(:account) { create(:account) }
-  let(:user) { create(:user, account: account, email: 'account-user-test@test.com') }
+  let(:user) { create(:user, account: account, email: 'account-user-test@test.com', role: :administrator) }
 
   let(:email_filter) do
     {
@@ -86,8 +86,8 @@ RSpec.describe Account::ContactsExportJob do
 
     it 'exports labels when requested through column names' do
       contact_with_labels = account.contacts.first
-      create(:label, account: account, title: 'vip')
-      contact_with_labels.add_labels(%w[vip])
+      vip_label = create(:label, account: account, title: 'vip')
+      contact_with_labels.add_labels([vip_label.title])
 
       described_class.perform_now(account.id, user.id, %w[id email labels], {})
 
@@ -96,13 +96,13 @@ RSpec.describe Account::ContactsExportJob do
       row = csv_data.find { |r| r['email'] == contact_with_labels.email }
 
       expect(csv_data.headers).to eq(%w[id email labels])
-      expect(row['labels']).to eq('vip')
+      expect(row['labels']).to eq(vip_label.title)
     end
 
     it 'bulk loads labels while exporting contacts' do
-      create(:label, account: account, title: 'vip')
-      create(:label, account: account, title: 'support')
-      account.contacts.find_each { |contact| contact.add_labels(%w[vip support]) }
+      vip_label = create(:label, account: account, title: 'vip')
+      support_label = create(:label, account: account, title: 'support')
+      account.contacts.find_each { |contact| contact.add_labels([vip_label.title, support_label.title]) }
       account.contacts.first.add_labels('legacy_tag')
 
       taggings_queries = []
@@ -115,7 +115,7 @@ RSpec.describe Account::ContactsExportJob do
       row = csv_data.find { |r| r['email'] == account.contacts.first.email }
 
       expect(csv_data.headers).to include('labels')
-      expect(row['labels'].split(described_class::LABELS_DELIMITER)).to match_array(%w[vip support])
+      expect(row['labels'].split(described_class::LABELS_DELIMITER)).to contain_exactly(vip_label.title, support_label.title)
       expect(taggings_queries.size).to eq(1)
     ensure
       ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber

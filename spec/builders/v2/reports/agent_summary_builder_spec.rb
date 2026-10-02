@@ -166,5 +166,41 @@ RSpec.describe V2::Reports::AgentSummaryBuilder do
         expect(user1_stats[:participated_conversations_count]).to eq 2
       end
     end
+
+    context 'when filtering by team_id' do
+      let(:business_hours) { false }
+      let(:team_a) { create(:team, account: account) }
+      let(:team_b) { create(:team, account: account) }
+      let(:inbox_a) { create(:inbox, account: account, team: team_a) }
+      let(:inbox_b) { create(:inbox, account: account, team: team_b) }
+
+      before do
+        team_a.add_members([user1.id])
+        team_b.add_members([user1.id])
+        ca = create(:conversation, account: account, inbox: inbox_a, assignee: user1, created_at: Time.current)
+        cb = create(:conversation, account: account, inbox: inbox_b, assignee: user1, created_at: Time.current)
+        create(:reporting_event, account: account, conversation: ca, inbox: inbox_a, user: user1,
+                                 name: 'conversation_resolved', value: 10, created_at: Time.current)
+        create(:reporting_event, account: account, conversation: cb, inbox: inbox_b, user: user1,
+                                 name: 'conversation_resolved', value: 30, created_at: Time.current)
+      end
+
+      it 'sums both teams without team_id' do
+        stats = builder.build.find { |s| s[:id] == user1.id }
+
+        expect(stats[:conversations_count]).to eq 2
+        expect(stats[:resolved_conversations_count]).to eq 2
+        expect(stats[:avg_resolution_time].to_f).to eq 20.0
+      end
+
+      it 'only considers the team conversations with team_id' do
+        team_builder = described_class.new(account: account, params: params.merge(team_id: team_a.id))
+        stats = team_builder.build.find { |s| s[:id] == user1.id }
+
+        expect(stats[:conversations_count]).to eq 1
+        expect(stats[:resolved_conversations_count]).to eq 1
+        expect(stats[:avg_resolution_time].to_f).to eq 10.0
+      end
+    end
   end
 end

@@ -109,6 +109,41 @@ RSpec.describe Message do
     end
   end
 
+  describe '.preview_candidates' do
+    let(:conversation) { create(:conversation) }
+
+    def create_message(attrs = {})
+      create(:message, { conversation: conversation, account: conversation.account }.merge(attrs))
+    end
+
+    it 'returns the public message first even when a private one is newer' do
+      public_message = create_message(private: false, created_at: 2.hours.ago)
+      create_message(private: true, created_at: 1.hour.ago)
+
+      expect(conversation.messages.preview_candidates.first).to eq(public_message)
+    end
+
+    it 'returns the private message when there is no public one' do
+      private_message = create_message(private: true, created_at: 1.hour.ago)
+
+      expect(conversation.messages.preview_candidates.first).to eq(private_message)
+    end
+
+    it 'excludes activity messages' do
+      create_message(message_type: :activity, private: false, created_at: 1.hour.ago)
+
+      expect(conversation.messages.preview_candidates).to be_empty
+    end
+
+    it 'orders by created_at desc within the same group' do
+      create_message(private: false, created_at: 3.hours.ago)
+      newest_public = create_message(private: false, created_at: 1.hour.ago)
+      create_message(private: false, created_at: 2.hours.ago)
+
+      expect(conversation.messages.preview_candidates.first).to eq(newest_public)
+    end
+  end
+
   describe '#push_event_data' do
     subject(:push_event_data) { message.push_event_data }
 
@@ -268,6 +303,80 @@ RSpec.describe Message do
       message.save!
       expect(conversation.open?).to be false
       expect(conversation.pending?).to be true
+    end
+
+    context 'when the message is outgoing' do
+      let(:agent_bot) { create(:agent_bot) }
+
+      it 'reopens a resolved conversation' do
+        conversation.resolved!
+        create(:message, message_type: :outgoing, conversation: conversation)
+        expect(conversation.reload.open?).to be true
+      end
+
+      it 'reopens a resolved conversation as open even when the agent bot is active' do
+        conversation.inbox.update!(agent_bot: agent_bot)
+        conversation.resolved!
+        create(:message, message_type: :outgoing, conversation: conversation)
+        expect(conversation.reload.open?).to be true
+      end
+
+      it 'reopens a snoozed conversation' do
+        conversation.snoozed!
+        create(:message, message_type: :outgoing, conversation: conversation)
+        expect(conversation.reload.open?).to be true
+      end
+
+      it 'does not reopen a resolved conversation for a private note' do
+        conversation.resolved!
+        create(:message, message_type: :outgoing, private: true, conversation: conversation)
+        expect(conversation.reload.resolved?).to be true
+      end
+
+      it 'does not unsnooze a snoozed conversation for a private note' do
+        conversation.snoozed!
+        create(:message, message_type: :outgoing, private: true, conversation: conversation)
+        expect(conversation.reload.snoozed?).to be true
+      end
+
+      it 'does not reopen a muted conversation' do
+        conversation.resolved!
+        conversation.mute!
+        create(:message, message_type: :outgoing, conversation: conversation)
+        expect(conversation.reload.resolved?).to be true
+      end
+
+      it 'does not change status or dispatch status events when the conversation is already open' do
+        allow(Rails.configuration.dispatcher).to receive(:dispatch)
+        create(:message, message_type: :outgoing, conversation: conversation)
+        expect(conversation.reload.open?).to be true
+        expect(Rails.configuration.dispatcher).not_to have_received(:dispatch)
+          .with(Conversation::CONVERSATION_STATUS_CHANGED, anything, anything)
+      end
+    end
+
+    context 'when the message is incoming in an API inbox' do
+      it 'reopens the conversation and assigns the contact as executor' do
+        api_conversation = create(:conversation, inbox: create(:inbox, channel: create(:channel_api)))
+        api_conversation.resolved!
+        contact_message = build(:message, message_type: :incoming, conversation: api_conversation, sender: api_conversation.contact)
+        allow(Current).to receive(:executed_by=).and_call_original
+        contact_message.save!
+        expect(api_conversation.reload.open?).to be true
+        expect(Current).to have_received(:executed_by=).with(api_conversation.contact)
+      end
+    end
+
+    it 'does not reopen a resolved conversation for activity messages' do
+      conversation.resolved!
+      create(:message, message_type: :activity, conversation: conversation)
+      expect(conversation.reload.resolved?).to be true
+    end
+
+    it 'does not reopen a resolved conversation for template messages' do
+      conversation.resolved!
+      create(:message, message_type: :template, conversation: conversation)
+      expect(conversation.reload.resolved?).to be true
     end
   end
 

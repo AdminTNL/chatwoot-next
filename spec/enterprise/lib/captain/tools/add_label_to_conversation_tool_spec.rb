@@ -32,29 +32,29 @@ RSpec.describe Captain::Tools::AddLabelToConversationTool, type: :model do
         before { label }
 
         it 'adds label to conversation and returns success message' do
-          result = tool.perform(tool_context, label_name: 'urgent')
-          expect(result).to eq("Label 'urgent' added to conversation ##{conversation.display_id}")
+          result = tool.perform(tool_context, label_name: label.title)
+          expect(result).to eq("Label '#{label.title}' added to conversation ##{conversation.display_id}")
 
-          expect(conversation.reload.label_list).to include('urgent')
+          expect(conversation.reload.label_list).to include(label.title)
         end
 
         it 'logs tool usage' do
           expect(tool).to receive(:log_tool_usage).with(
             'added_label',
-            { conversation_id: conversation.id, label: 'urgent' }
+            { conversation_id: conversation.id, label: label.title }
           )
 
-          tool.perform(tool_context, label_name: 'urgent')
+          tool.perform(tool_context, label_name: label.title)
         end
 
         it 'handles case insensitive label names' do
-          result = tool.perform(tool_context, label_name: 'URGENT')
-          expect(result).to eq("Label 'urgent' added to conversation ##{conversation.display_id}")
+          result = tool.perform(tool_context, label_name: label.title.upcase)
+          expect(result).to eq("Label '#{label.title}' added to conversation ##{conversation.display_id}")
         end
 
         it 'strips whitespace from label names' do
-          result = tool.perform(tool_context, label_name: '  urgent  ')
-          expect(result).to eq("Label 'urgent' added to conversation ##{conversation.display_id}")
+          result = tool.perform(tool_context, label_name: "  #{label.title}  ")
+          expect(result).to eq("Label '#{label.title}' added to conversation ##{conversation.display_id}")
         end
       end
 

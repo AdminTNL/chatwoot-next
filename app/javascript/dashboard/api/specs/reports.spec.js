@@ -174,6 +174,50 @@ describe('#Reports API', () => {
       });
     });
 
+    it('#getAgentReports with teamId', () => {
+      reportsAPI.getAgentReports({
+        from: 1621103400,
+        to: 1621621800,
+        teamId: 5,
+      });
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v2/reports/agents', {
+        params: { since: 1621103400, until: 1621621800, team_id: 5 },
+      });
+    });
+
+    it('#getLabelReports with teamId', () => {
+      reportsAPI.getLabelReports({
+        from: 1621103400,
+        to: 1621621800,
+        teamId: 5,
+      });
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v2/reports/labels', {
+        params: { since: 1621103400, until: 1621621800, team_id: 5 },
+      });
+    });
+
+    it('#getInboxReports with teamId', () => {
+      reportsAPI.getInboxReports({
+        from: 1621103400,
+        to: 1621621800,
+        teamId: 5,
+      });
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v2/reports/inboxes', {
+        params: { since: 1621103400, until: 1621621800, team_id: 5 },
+      });
+    });
+
+    it('#getTeamReports with teamId', () => {
+      reportsAPI.getTeamReports({
+        from: 1621103400,
+        to: 1621621800,
+        teamId: 5,
+      });
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v2/reports/teams', {
+        params: { since: 1621103400, until: 1621621800, team_id: 5 },
+      });
+    });
+
     it('#getBotMetrics', () => {
       reportsAPI.getBotMetrics({ from: 1621103400, to: 1621621800 });
       expect(axiosMock.get).toHaveBeenCalledWith(

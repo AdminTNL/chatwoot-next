@@ -1,3 +1,5 @@
+import { hasAiSuggestion } from './aiSuggestionHelpers';
+
 /**
  * Determines the last non-activity message between store and API messages.
  * @param {Object} messageInStore - The last non-activity message from the store.
@@ -42,16 +44,35 @@ export const filterDuplicateSourceMessages = (messages = []) => {
 };
 
 /**
- * Retrieves the last message from a conversation, prioritizing non-activity messages.
+ * Retrieves the last message from a conversation for the preview.
+ * Priority: last public non-activity message, then last private/AI suggestion
+ * non-activity message, then last activity message.
  * @param {Object} m - The conversation object containing messages.
  * @returns {Object} The last message of the conversation.
  */
 export const getLastMessage = m => {
+  const isPublic = message => !message.private && !hasAiSuggestion([message]);
+
   const lastMessageIncludingActivity = m.messages[m.messages.length - 1];
 
   const nonActivityMessages = m.messages.filter(
     message => message.message_type !== 2
   );
+
+  const publicMessages = nonActivityMessages.filter(isPublic);
+  const lastPublicMessageInStore = publicMessages[publicMessages.length - 1];
+  const lastPublicMessageFromAPI =
+    m.last_non_activity_message && isPublic(m.last_non_activity_message)
+      ? m.last_non_activity_message
+      : undefined;
+
+  if (lastPublicMessageInStore || lastPublicMessageFromAPI) {
+    return getLastNonActivityMessage(
+      lastPublicMessageInStore,
+      lastPublicMessageFromAPI
+    );
+  }
+
   const lastNonActivityMessageInStore =
     nonActivityMessages[nonActivityMessages.length - 1];
 

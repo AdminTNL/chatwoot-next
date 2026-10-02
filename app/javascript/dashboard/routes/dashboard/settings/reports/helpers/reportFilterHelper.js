@@ -4,6 +4,7 @@ export const generateReportURLParams = ({
   businessHours,
   groupBy,
   range,
+  team,
 }) => {
   const params = {};
 
@@ -17,11 +18,23 @@ export const generateReportURLParams = ({
   // Include range type (last7days, last3months, custom, etc.)
   if (range) params.range = range;
 
+  // Team filter: numeric id or 'all' (explicitly no team)
+  if (team === 'all' || (team && !Number.isNaN(Number(team)))) {
+    params.team = team;
+  }
+
   return params;
 };
 
 export const parseReportURLParams = query => {
-  const { from, to, business_hours, group_by, range } = query;
+  const { from, to, business_hours, group_by, range, team } = query;
+
+  let parsedTeam = null;
+  if (team === 'all') {
+    parsedTeam = 'all';
+  } else if (team && !Number.isNaN(Number(team))) {
+    parsedTeam = Number(team);
+  }
 
   return {
     from: from ? Number(from) : null,
@@ -29,6 +42,7 @@ export const parseReportURLParams = query => {
     businessHours: business_hours === 'true',
     groupBy: group_by ? Number(group_by) : null,
     range: range || null,
+    team: parsedTeam,
   };
 };
 

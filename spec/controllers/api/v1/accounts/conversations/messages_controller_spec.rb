@@ -325,6 +325,14 @@ RSpec.describe 'Conversation Messages API', type: :request do
         expect(message.reload.status).to eq('sent')
         expect(message.reload.content_attributes['external_error']).to be_nil
       end
+
+      it 'enqueues SendReplyJob for the retried message' do
+        expect do
+          post "/api/v1/accounts/#{account.id}/conversations/#{message.conversation.display_id}/messages/#{message.id}/retry",
+               headers: agent.create_new_auth_token,
+               as: :json
+        end.to have_enqueued_job(SendReplyJob).with(message.id)
+      end
     end
 
     context 'when the message id is invalid' do
@@ -528,6 +536,18 @@ RSpec.describe 'Conversation Messages API', type: :request do
           expect(response).to have_http_status(:success)
           expect(message.reload.status).to eq('failed')
           expect(message.reload.external_error).to eq('err123')
+        end
+
+        it 'does not allow regressing a read message to sent' do
+          message.update!(status: :read)
+
+          patch api_v1_account_conversation_message_url(
+            account_id: account.id,
+            conversation_id: conversation.display_id,
+            id: message.id
+          ), params: { status: 'sent' }, headers: agent.create_new_auth_token, as: :json
+
+          expect(message.reload.status).to eq('read')
         end
       end
     end

@@ -88,6 +88,8 @@ export const isAConversationRoute = (
     'inbox_dashboard',
     'label_conversations',
     'team_conversations',
+    'team_inbox_conversations',
+    'team_label_conversations',
     'folder_conversations',
     'conversation_participating',
   ];
@@ -98,6 +100,8 @@ export const isAConversationRoute = (
     'conversation_through_inbox',
     'conversations_through_label',
     'conversations_through_team',
+    'conversation_through_team_inbox',
+    'conversation_through_team_label',
     'conversations_through_folders',
     'conversation_through_participating',
   ];
@@ -122,6 +126,10 @@ export const getConversationDashboardRoute = routeName => {
       return 'label_conversations';
     case 'conversations_through_team':
       return 'team_conversations';
+    case 'conversation_through_team_inbox':
+      return 'team_inbox_conversations';
+    case 'conversation_through_team_label':
+      return 'team_label_conversations';
     case 'conversations_through_folders':
       return 'folder_conversations';
     case 'conversation_through_participating':

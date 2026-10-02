@@ -32,7 +32,7 @@ describe V2::ReportBuilder do
                                      account: account, inbox: inbox,
                                      conversation: conversation,
                                      created_at: Time.zone.today + 3.hours)
-            conversation.update_labels('label_1')
+            conversation.update_labels(label_1.title)
             conversation.label_list
             conversation.save!
           end
@@ -49,7 +49,7 @@ describe V2::ReportBuilder do
                                      account: account, inbox: inbox,
                                      conversation: conversation,
                                      created_at: (Time.zone.today - 2.days))
-            conversation.update_labels('label_2')
+            conversation.update_labels(label_2.title)
             conversation.label_list
             conversation.save!
           end

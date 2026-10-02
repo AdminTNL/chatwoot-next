@@ -13,7 +13,11 @@ export const conversationUrl = ({
   foldersId,
 }) => {
   let url = `accounts/${accountId}/conversations/${id}`;
-  if (activeInbox) {
+  if (teamId && activeInbox) {
+    url = `accounts/${accountId}/team/${teamId}/inbox/${activeInbox}/conversations/${id}`;
+  } else if (teamId && label) {
+    url = `accounts/${accountId}/team/${teamId}/label/${label}/conversations/${id}`;
+  } else if (activeInbox) {
     url = `accounts/${accountId}/inbox/${activeInbox}/conversations/${id}`;
   } else if (label) {
     url = `accounts/${accountId}/label/${label}/conversations/${id}`;
@@ -40,7 +44,11 @@ export const conversationListPageURL = ({
   customViewId,
 }) => {
   let url = `accounts/${accountId}/dashboard`;
-  if (label) {
+  if (teamId && inboxId) {
+    url = `accounts/${accountId}/team/${teamId}/inbox/${inboxId}`;
+  } else if (teamId && label) {
+    url = `accounts/${accountId}/team/${teamId}/label/${label}`;
+  } else if (label) {
     url = `accounts/${accountId}/label/${label}`;
   } else if (teamId) {
     url = `accounts/${accountId}/team/${teamId}`;
