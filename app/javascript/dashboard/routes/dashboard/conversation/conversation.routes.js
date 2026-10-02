@@ -140,6 +140,60 @@ export default {
       }),
     },
     {
+      path: frontendURL('accounts/:accountId/team/:teamId/inbox/:inbox_id'),
+      name: 'team_inbox_conversations',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: route => ({
+        teamId: route.params.teamId,
+        inboxId: route.params.inbox_id,
+      }),
+    },
+    {
+      path: frontendURL(
+        'accounts/:accountId/team/:teamId/inbox/:inbox_id/conversations/:conversation_id'
+      ),
+      name: 'conversation_through_team_inbox',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: route => ({
+        teamId: route.params.teamId,
+        inboxId: route.params.inbox_id,
+        conversationId: route.params.conversation_id,
+      }),
+    },
+    {
+      path: frontendURL('accounts/:accountId/team/:teamId/label/:label'),
+      name: 'team_label_conversations',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: route => ({
+        teamId: route.params.teamId,
+        label: route.params.label,
+      }),
+    },
+    {
+      path: frontendURL(
+        'accounts/:accountId/team/:teamId/label/:label/conversations/:conversation_id'
+      ),
+      name: 'conversation_through_team_label',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: ConversationView,
+      props: route => ({
+        teamId: route.params.teamId,
+        label: route.params.label,
+        conversationId: route.params.conversation_id,
+      }),
+    },
+    {
       path: frontendURL('accounts/:accountId/custom_view/:id'),
       name: 'folder_conversations',
       meta: {

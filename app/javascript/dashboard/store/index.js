@@ -47,6 +47,7 @@ import reports from './modules/reports';
 import sla from './modules/sla';
 import slaReports from './modules/SLAReports';
 import sidebarSortPreferences from './modules/sidebarSortPreferences';
+import teamContext from './modules/teamContext';
 import summaryReports from './modules/summaryReports';
 import teamMembers from './modules/teamMembers';
 import teams from './modules/teams';
@@ -114,6 +115,7 @@ export default createStore({
     sla,
     slaReports,
     sidebarSortPreferences,
+    teamContext,
     summaryReports,
     teamMembers,
     teams,
