@@ -109,6 +109,41 @@ RSpec.describe Message do
     end
   end
 
+  describe '.preview_candidates' do
+    let(:conversation) { create(:conversation) }
+
+    def create_message(attrs = {})
+      create(:message, { conversation: conversation, account: conversation.account }.merge(attrs))
+    end
+
+    it 'returns the public message first even when a private one is newer' do
+      public_message = create_message(private: false, created_at: 2.hours.ago)
+      create_message(private: true, created_at: 1.hour.ago)
+
+      expect(conversation.messages.preview_candidates.first).to eq(public_message)
+    end
+
+    it 'returns the private message when there is no public one' do
+      private_message = create_message(private: true, created_at: 1.hour.ago)
+
+      expect(conversation.messages.preview_candidates.first).to eq(private_message)
+    end
+
+    it 'excludes activity messages' do
+      create_message(message_type: :activity, private: false, created_at: 1.hour.ago)
+
+      expect(conversation.messages.preview_candidates).to be_empty
+    end
+
+    it 'orders by created_at desc within the same group' do
+      create_message(private: false, created_at: 3.hours.ago)
+      newest_public = create_message(private: false, created_at: 1.hour.ago)
+      create_message(private: false, created_at: 2.hours.ago)
+
+      expect(conversation.messages.preview_candidates.first).to eq(newest_public)
+    end
+  end
+
   describe '#push_event_data' do
     subject(:push_event_data) { message.push_event_data }
 
