@@ -211,7 +211,7 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
     let!(:team_b) { create(:team, account: account) }
     let!(:inbox_a) { create(:inbox, account: account, team: team_a) }
     let!(:inbox_b) { create(:inbox, account: account, team: team_b) }
-    let!(:agent_a) { create(:user, account: account, role: :agent) }
+    let!(:agent_a) { create(:user, account: account, role: :agent, name: 'Agent Alpha') }
     let!(:label_a) { create(:label, account: account, team: team_a, title: 'team-a-label') }
     let!(:label_b) { create(:label, account: account, team: team_b, title: 'team-b-label') }
 
@@ -310,7 +310,10 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
 
   describe 'GET /api/v2/accounts/{account.id}/reports/inbox_label_matrix' do
     let!(:inbox_one) { create(:inbox, account: account, name: 'Email Support') }
-    let!(:label_one) { create(:label, account: account, title: 'bug') }
+    # Legacy label without team (global): team is mandatory now, so the row is made team-less directly.
+    let!(:label_one) do
+      create(:label, account: account, title: 'bug').tap { |l| l.update_column(:team_id, nil) } # rubocop:disable Rails/SkipsModelValidations
+    end
 
     context 'when unauthenticated' do
       it 'returns unauthorized' do
@@ -330,7 +333,7 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
         # LabelPolicy::Scope even though the agent has no accessible inbox -
         # but with no accessible inbox at all, the matrix itself has no rows.
         expect(body['inboxes']).to eq([])
-        expect(body['labels']).to eq([{ 'id' => label_one.id, 'title' => 'bug' }])
+        expect(body['labels']).to eq([{ 'id' => label_one.id, 'title' => label_one.title }])
         expect(body['matrix']).to eq([])
       end
     end
@@ -569,7 +572,7 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
       it 'returns outgoing message counts grouped by label' do
         label = create(:label, account: account, title: 'support')
         conversation = account.conversations.first
-        conversation.label_list.add('support')
+        conversation.label_list.add(label.title)
         conversation.save!
 
         get "/api/v2/accounts/#{account.id}/reports/outgoing_messages_count",
@@ -581,7 +584,7 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
         expect(data).to be_an(Array)
         expect(data.length).to eq(1)
         expect(data.first['id']).to eq(label.id)
-        expect(data.first['name']).to eq('support')
+        expect(data.first['name']).to eq(label.title)
       end
 
       it 'excludes bot messages when grouped by agent' do
@@ -607,8 +610,8 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
     let!(:team_b) { create(:team, account: account) }
     let!(:inbox_a) { create(:inbox, account: account, team: team_a, name: 'Team A Inbox') }
     let!(:inbox_b) { create(:inbox, account: account, team: team_b, name: 'Team B Inbox') }
-    let!(:agent_a) { create(:user, account: account, role: :agent) }
-    let!(:agent_b) { create(:user, account: account, role: :agent) }
+    let!(:agent_a) { create(:user, account: account, role: :agent, name: 'Agent Alpha') }
+    let!(:agent_b) { create(:user, account: account, role: :agent, name: 'Agent Bravo') }
 
     let(:since_param) { 1.week.ago.to_i.to_s }
     let(:until_param) { Time.current.to_i.to_s }
@@ -672,6 +675,62 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
       expect(response).to have_http_status(:success)
       expect(response.body).to include(inbox_a.name)
       expect(response.body).to include(inbox_b.name)
+    end
+
+    context 'with the optional team_id filter' do
+      let!(:label_a) { create(:label, account: account, team: team_a, title: 'team-a-label') }
+      let!(:label_b) { create(:label, account: account, team: team_b, title: 'team-b-label') }
+
+      def get_csv(type, user: admin, **extra)
+        get "/api/v2/accounts/#{account.id}/reports/#{type}",
+            params: { since: since_param, until: until_param }.merge(extra),
+            headers: user.create_new_auth_token, as: :json
+      end
+
+      it 'only lists the team rows in each CSV and nothing from the other team' do
+        {
+          agents: [agent_a.name, agent_b.name], inboxes: [inbox_a.name, inbox_b.name],
+          teams: [team_a.name, team_b.name], labels: [label_a.title, label_b.title]
+        }.each do |type, (included, excluded)|
+          get_csv(type, team_id: team_a.id)
+
+          expect(response).to have_http_status(:success)
+          expect(response.body).to include(included)
+          expect(response.body).not_to include(excluded)
+        end
+      end
+
+      it 'keeps the unfiltered CSV unchanged without team_id' do
+        get_csv(:agents)
+        expect(response.body).to include(agent_a.name, agent_b.name)
+
+        get_csv(:labels)
+        expect(response.body).to include(label_a.title, label_b.title)
+      end
+
+      it 'uses the same team-filtered metrics as the summary table for agents' do
+        get_csv(:agents, team_id: team_a.id)
+        row = CSV.parse(response.body).find { |r| r.first == agent_a.name }
+
+        get "/api/v2/accounts/#{account.id}/summary_reports/agent",
+            params: { since: since_param, until: until_param, team_id: team_a.id },
+            headers: admin.create_new_auth_token, as: :json
+        entry = response.parsed_body.find { |r| r['id'] == agent_a.id }
+
+        expect(row[1].to_i).to eq(entry['conversations_count'])
+      end
+
+      it 'returns not_found for a restricted agent filtering by another team' do
+        %i[agents inboxes labels teams].each do |type|
+          get_csv(type, team_id: team_b.id, user: agent_a)
+          expect(response).to have_http_status(:not_found)
+        end
+      end
+
+      it 'returns not_found for an unknown team' do
+        get_csv(:teams, team_id: 999_999)
+        expect(response).to have_http_status(:not_found)
+      end
     end
   end
 end

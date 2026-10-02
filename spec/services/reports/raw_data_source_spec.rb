@@ -20,8 +20,8 @@ RSpec.describe Reports::RawDataSource do
     Reports::AccessScope.new(account: account, user: administrator, account_user: account_user)
   end
 
-  def build_source(dimension_type: 'inbox', dimension_id: nil, access_scope: nil)
-    Reports::DataSource.for(
+  def build_source(dimension_type: 'inbox', dimension_id: nil, access_scope: nil, team_id: nil)
+    context = {
       account: account,
       metric: nil,
       dimension_type: dimension_type,
@@ -32,7 +32,9 @@ RSpec.describe Reports::RawDataSource do
       timezone_offset: nil,
       business_hours: false,
       access_scope: access_scope
-    )
+    }
+    context[:team_id] = team_id if team_id
+    Reports::DataSource.for(**context)
   end
 
   before do
@@ -96,6 +98,60 @@ RSpec.describe Reports::RawDataSource do
 
         expect(results).to eq({})
       end
+    end
+  end
+
+  describe '#summary with team_id' do
+    before do
+      team_b.add_members([agent.id])
+      conv_a2 = create(:conversation, account: account, inbox: inbox_a, assignee: agent, created_at: current_time)
+      conv_b2 = create(:conversation, account: account, inbox: inbox_b, assignee: agent, created_at: current_time)
+      { conv_a2 => [inbox_a, 100, 10, 20], conv_b2 => [inbox_b, 300, 50, 60] }.each do |conversation, (inbox, resolution, first, reply)|
+        { 'conversation_resolved' => resolution, 'first_response' => first, 'reply_time' => reply, 'agent_participation' => 0 }.each do |name, value|
+          create(:reporting_event, name: name, account: account, conversation: conversation, inbox: inbox,
+                                   user: agent, value: value, created_at: current_time)
+        end
+      end
+    end
+
+    it 'sums both teams for the agent without team_id' do
+      row = build_source(dimension_type: 'agent').summary[agent.id]
+
+      expect(row[:conversations_count]).to eq(2)
+      expect(row[:resolved_conversations_count]).to eq(2)
+      expect(row[:participated_conversations_count]).to eq(2)
+      expect(row[:avg_resolution_time].to_f).to eq(200.0)
+      expect(row[:avg_first_response_time].to_f).to eq(30.0)
+      expect(row[:avg_reply_time].to_f).to eq(40.0)
+    end
+
+    it 'considers only the given team conversations for the agent with team_id' do
+      row = build_source(dimension_type: 'agent', team_id: team_a.id).summary[agent.id]
+
+      expect(row[:conversations_count]).to eq(1)
+      expect(row[:resolved_conversations_count]).to eq(1)
+      expect(row[:participated_conversations_count]).to eq(1)
+      expect(row[:avg_resolution_time].to_f).to eq(100.0)
+      expect(row[:avg_first_response_time].to_f).to eq(10.0)
+      expect(row[:avg_reply_time].to_f).to eq(20.0)
+    end
+
+    it 'returns an empty summary without errors for a team with no conversations' do
+      empty_team = create(:team, account: account)
+
+      expect(build_source(dimension_type: 'agent', team_id: empty_team.id).summary).to eq({})
+    end
+
+    it 'keeps the inbox and team dimensions unchanged without team_id' do
+      expect(build_source(dimension_type: 'inbox').summary.keys).to contain_exactly(inbox_a.id, inbox_b.id)
+      expect(build_source(dimension_type: 'team').summary.keys).to contain_exactly(team_a.id, team_b.id)
+    end
+
+    it 'works with the team dimension without ambiguous columns' do
+      results = build_source(dimension_type: 'team', team_id: team_a.id).summary
+
+      expect(results.keys).to contain_exactly(team_a.id)
+      expect(results[team_a.id][:resolved_conversations_count]).to eq(2)
     end
   end
 end

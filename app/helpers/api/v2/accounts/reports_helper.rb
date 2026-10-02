@@ -2,7 +2,7 @@ module Api::V2::Accounts::ReportsHelper
   def generate_agents_report
     reports = V2::Reports::AgentSummaryBuilder.new(
       account: Current.account,
-      params: build_params(type: :agent)
+      params: build_params({ type: :agent }.merge(current_team_filter ? { team_id: current_team_filter.team_id } : {}))
     ).build
 
     accessible_agents.map do |agent|
@@ -42,6 +42,7 @@ module Api::V2::Accounts::ReportsHelper
     ).build
 
     reports = reports.select { |report| accessible_label_titles.nil? || accessible_label_titles.include?(report[:name]) }
+    reports = reports.select { |report| current_team_filter.label_titles.include?(report[:name]) } if current_team_filter
 
     reports.map do |report|
       [report[:name]] + generate_readable_report_metrics(report)
@@ -72,21 +73,23 @@ module Api::V2::Accounts::ReportsHelper
   # only ever sees rows for agents/inboxes/teams/labels inside their
   # Reports::AccessScope, never the account-wide list.
   def accessible_agents
-    return Current.account.users if access_scope.unrestricted?
-
-    Current.account.users.where(id: access_scope.agent_ids)
+    agents = access_scope.unrestricted? ? Current.account.users : Current.account.users.where(id: access_scope.agent_ids)
+    current_team_filter ? agents.where(id: current_team_filter.agent_ids) : agents
   end
 
   def accessible_inboxes
-    return Current.account.inboxes if access_scope.unrestricted?
-
-    Current.account.inboxes.where(id: access_scope.inbox_ids)
+    inboxes = access_scope.unrestricted? ? Current.account.inboxes : Current.account.inboxes.where(id: access_scope.inbox_ids)
+    current_team_filter ? inboxes.where(id: current_team_filter.inbox_ids) : inboxes
   end
 
   def accessible_teams
-    return Current.account.teams if access_scope.unrestricted?
+    teams = access_scope.unrestricted? ? Current.account.teams : Current.account.teams.where(id: access_scope.team_ids)
+    current_team_filter ? teams.where(id: current_team_filter.team_ids) : teams
+  end
 
-    Current.account.teams.where(id: access_scope.team_ids)
+  # Optional Reports::TeamFilter; the includer may not define `team_filter`.
+  def current_team_filter
+    respond_to?(:team_filter, true) ? team_filter : nil
   end
 
   def accessible_label_titles

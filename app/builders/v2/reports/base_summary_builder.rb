@@ -28,7 +28,11 @@ class V2::Reports::BaseSummaryBuilder
   end
 
   def data_source
-    @data_source ||= Reports::DataSource.for(
+    @data_source ||= Reports::DataSource.for(**data_source_context)
+  end
+
+  def data_source_context
+    context = {
       account: account,
       metric: nil,
       dimension_type: summary_dimension_type,
@@ -38,7 +42,9 @@ class V2::Reports::BaseSummaryBuilder
       group_by: 'day',
       timezone_offset: params[:timezone_offset],
       business_hours: params[:business_hours]
-    )
+    }
+    context[:team_id] = params[:team_id] if params[:team_id].present?
+    context
   end
 
   def summary_dimension_type
