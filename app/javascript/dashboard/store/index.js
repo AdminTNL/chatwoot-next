@@ -17,6 +17,7 @@ import categories from './modules/helpCenterCategories';
 import contactConversations from './modules/contactConversations';
 import contactLabels from './modules/contactLabels';
 import contactNotes from './modules/contactNotes';
+import contactTeams from './modules/contactTeams';
 import contacts from './modules/contacts';
 import conversationLabels from './modules/conversationLabels';
 import conversationMetadata from './modules/conversationMetadata';
@@ -46,6 +47,7 @@ import reports from './modules/reports';
 import sla from './modules/sla';
 import slaReports from './modules/SLAReports';
 import sidebarSortPreferences from './modules/sidebarSortPreferences';
+import teamContext from './modules/teamContext';
 import summaryReports from './modules/summaryReports';
 import teamMembers from './modules/teamMembers';
 import teams from './modules/teams';
@@ -83,6 +85,7 @@ export default createStore({
     contactConversations,
     contactLabels,
     contactNotes,
+    contactTeams,
     contacts,
     conversationLabels,
     conversationMetadata,
@@ -112,6 +115,7 @@ export default createStore({
     sla,
     slaReports,
     sidebarSortPreferences,
+    teamContext,
     summaryReports,
     teamMembers,
     teams,

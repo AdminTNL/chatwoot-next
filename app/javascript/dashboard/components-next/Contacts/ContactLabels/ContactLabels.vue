@@ -2,6 +2,7 @@
 import { computed, watch, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 
 import LabelItem from 'dashboard/components-next/label/LabelItem.vue';
 import AddLabel from 'dashboard/components-next/label/AddLabel.vue';
@@ -27,22 +28,39 @@ const hoveredLabel = ref(null);
 const allLabels = useMapGetter('labels/getLabels');
 const contactLabels = useMapGetter('contactLabels/getContactLabels');
 const myTeams = useMapGetter('teams/getMyTeams');
+const contactTeams = useMapGetter('contactTeams/getTeams');
+const contextTeamId = useMapGetter('teamContext/getSelectedTeamId');
+const conversationsOfContact = useMapGetter(
+  'contactConversations/getContactConversation'
+);
+const { isAdmin } = useAdmin();
 
 const selectedTeamId = ref(null);
 
-const teamOptions = computed(() =>
-  myTeams.value.map(team => ({ value: team.id, label: team.name }))
-);
+const teamOptions = computed(() => {
+  const teamsOfContact = contactTeams.value(props.contactId);
+  const teamsForSelector = isAdmin.value
+    ? teamsOfContact
+    : teamsOfContact.filter(contactTeam =>
+        myTeams.value.some(myTeam => myTeam.id === contactTeam.id)
+      );
+
+  return teamsForSelector.map(team => ({ value: team.id, label: team.name }));
+});
 
 watch(
-  myTeams,
+  teamOptions,
   teams => {
-    const isSelectedTeamStillMine = teams.some(
-      team => team.id === selectedTeamId.value
+    const isSelectedTeamStillAnOption = teams.some(
+      team => team.value === selectedTeamId.value
     );
-    if (!isSelectedTeamStillMine) {
-      selectedTeamId.value = teams[0]?.id || null;
-    }
+    if (isSelectedTeamStillAnOption) return;
+    const isContextTeamAnOption = teams.some(
+      team => team.value === contextTeamId.value
+    );
+    selectedTeamId.value = isContextTeamAnOption
+      ? contextTeamId.value
+      : teams[0]?.value || null;
   },
   { immediate: true }
 );
@@ -56,7 +74,8 @@ const savedLabels = computed(() => {
 
 const labelMenuItems = computed(() => {
   return allLabels.value
-    ?.map(label => ({
+    .filter(label => label.team_id === selectedTeamId.value)
+    .map(label => ({
       label: label.title,
       value: label.id,
       thumbnail: { name: label.title, color: label.color },
@@ -75,31 +94,27 @@ const fetchLabels = async contactId => {
   store.dispatch('contactLabels/get', contactId);
 };
 
-const handleLabelAction = async ({ value }) => {
+const fetchTeams = async contactId => {
+  if (!contactId) {
+    return;
+  }
+  store.dispatch('contactTeams/get', contactId);
+};
+
+const toggleLabel = async (label, teamId) => {
   try {
-    // Get current label titles
-    const currentLabels = savedLabels.value.map(label => label.title);
+    // Base is the full list of contact label titles (including ones the user
+    // can't see), since the backend replaces the whole list.
+    const currentLabels = [...contactLabels.value(props.contactId)];
 
-    // Find the label title for the ID (value)
-    const selectedLabel = allLabels.value.find(label => label.id === value);
-    if (!selectedLabel) return;
-
-    let updatedLabels;
-
-    // If label is already selected, remove it (toggle behavior)
-    if (currentLabels.includes(selectedLabel.title)) {
-      updatedLabels = currentLabels.filter(
-        labelTitle => labelTitle !== selectedLabel.title
-      );
-    } else {
-      // Add the new label
-      updatedLabels = [...currentLabels, selectedLabel.title];
-    }
+    const updatedLabels = currentLabels.includes(label.title)
+      ? currentLabels.filter(labelTitle => labelTitle !== label.title)
+      : [...currentLabels, label.title];
 
     await store.dispatch('contactLabels/update', {
       contactId: props.contactId,
       labels: updatedLabels,
-      teamId: selectedTeamId.value,
+      teamId,
     });
 
     showDropdown.value = false;
@@ -108,15 +123,27 @@ const handleLabelAction = async ({ value }) => {
   }
 };
 
-const handleRemoveLabel = label => {
-  return handleLabelAction({ value: label.id });
+const handleLabelAction = ({ value }) => {
+  const selectedLabel = allLabels.value.find(label => label.id === value);
+  if (!selectedLabel) return Promise.resolve();
+  return toggleLabel(selectedLabel, selectedTeamId.value);
 };
+
+const handleRemoveLabel = label => {
+  return toggleLabel(label, label.team_id ?? null);
+};
+
+watch(
+  () => conversationsOfContact.value(props.contactId).length,
+  () => fetchTeams(props.contactId)
+);
 
 watch(
   () => props.contactId,
   (newVal, oldVal) => {
     if (newVal !== oldVal) {
       fetchLabels(newVal);
+      fetchTeams(newVal);
     }
   }
 );
@@ -124,6 +151,7 @@ onMounted(() => {
   store.dispatch('teams/get');
   if (route.params.contactId) {
     fetchLabels(route.params.contactId);
+    fetchTeams(route.params.contactId);
   }
 });
 
@@ -158,6 +186,7 @@ const handleLabelHover = labelId => {
       @hover="handleLabelHover(label.id)"
     />
     <AddLabel
+      v-if="selectedTeamId !== null"
       :label-menu-items="labelMenuItems"
       @update-label="handleLabelAction"
     />

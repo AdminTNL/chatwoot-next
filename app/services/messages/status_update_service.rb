@@ -1,10 +1,11 @@
 class Messages::StatusUpdateService
   attr_reader :message, :status, :external_error
 
-  def initialize(message, status, external_error = nil)
+  def initialize(message, status, external_error = nil, force: false)
     @message = message
     @status = status
     @external_error = external_error
+    @force = force
   end
 
   def perform
@@ -24,11 +25,8 @@ class Messages::StatusUpdateService
   end
 
   def valid_status_transition?
-    return false unless Message.statuses.key?(status)
+    return true if @force
 
-    # Don't allow changing from 'read' to 'delivered'
-    return false if message.read? && status == 'delivered'
-
-    true
+    Messages::StatusTransition.allowed?(from: message.status, to: status)
   end
 end

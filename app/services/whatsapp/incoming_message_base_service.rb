@@ -57,6 +57,8 @@ class Whatsapp::IncomingMessageBaseService
   end
 
   def update_message_with_status(message, status)
+    return unless Messages::StatusTransition.allowed?(from: message.status, to: status[:status])
+
     message.status = status[:status]
     if status[:status] == 'failed' && status[:errors].present?
       error = status[:errors]&.first

@@ -1,5 +1,6 @@
 class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseController
   before_action :check_authorization
+  before_action :set_team_filter, only: [:agent, :team, :inbox, :label]
   before_action :prepare_builder_params, only: [:agent, :team, :inbox, :label, :channel]
 
   def agent
@@ -51,11 +52,27 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
 
   def render_report_with(builder_class, type: nil)
     builder_params = type.present? ? @builder_params.merge(type: type) : @builder_params
+    builder_params = builder_params.merge(team_id: @team_filter.team_id) if @team_filter && type == :agent
     builder = builder_class.new(account: Current.account, params: builder_params)
     render json: filter_by_access_scope(builder.build, type)
   end
 
+  def set_team_filter
+    return if params[:team_id].blank?
+
+    @team_filter = Reports::TeamFilter.resolve(account: Current.account, team_id: params[:team_id], access_scope: access_scope)
+  end
+
+  def filter_by_team(report, type)
+    reader = DIMENSION_ID_READERS[type]
+    return report unless @team_filter && reader
+
+    ids = @team_filter.public_send(reader)
+    report.select { |row| ids.include?(row[:id]) }
+  end
+
   def filter_by_access_scope(report, type)
+    report = filter_by_team(report, type)
     return report if access_scope.unrestricted?
 
     reader = DIMENSION_ID_READERS[type]
@@ -70,7 +87,7 @@ class Api::V2::Accounts::SummaryReportsController < Api::V1::Accounts::BaseContr
   end
 
   def permitted_params
-    params.permit(:since, :until, :business_hours)
+    params.permit(:since, :until, :business_hours, :team_id)
   end
 
   def date_range_too_long?

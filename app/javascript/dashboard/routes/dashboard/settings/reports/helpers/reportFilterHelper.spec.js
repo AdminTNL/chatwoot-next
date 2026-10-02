@@ -107,6 +107,7 @@ describe('reportFilterHelper', () => {
         businessHours: false,
         groupBy: null,
         range: null,
+        team: null,
       });
     });
 
@@ -159,6 +160,7 @@ describe('reportFilterHelper', () => {
         businessHours: false,
         groupBy: null,
         range: null,
+        team: null,
       });
     });
 
@@ -177,6 +179,7 @@ describe('reportFilterHelper', () => {
         businessHours: true,
         groupBy: 3,
         range: 'lastYear',
+        team: null,
       });
     });
 
@@ -346,5 +349,31 @@ describe('reportFilterHelper', () => {
         team_id: 456,
       });
     });
+  });
+});
+
+describe('team URL param', () => {
+  it('generates team for number and all, omits otherwise', () => {
+    expect(generateReportURLParams({ team: 5 }).team).toBe(5);
+    expect(generateReportURLParams({ team: 'all' }).team).toBe('all');
+    [null, undefined, ''].forEach(team => {
+      expect(generateReportURLParams({ team })).not.toHaveProperty('team');
+    });
+  });
+
+  it('parses team', () => {
+    expect(parseReportURLParams({ team: '5' }).team).toBe(5);
+    expect(parseReportURLParams({ team: 'all' }).team).toBe('all');
+    expect(parseReportURLParams({}).team).toBeNull();
+    expect(parseReportURLParams({ team: 'abc' }).team).toBeNull();
+  });
+
+  it('round-trips', () => {
+    expect(
+      parseReportURLParams(generateReportURLParams({ team: 5 })).team
+    ).toBe(5);
+    expect(
+      parseReportURLParams(generateReportURLParams({ team: 'all' })).team
+    ).toBe('all');
   });
 });

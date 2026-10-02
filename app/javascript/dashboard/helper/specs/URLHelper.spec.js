@@ -35,6 +35,18 @@ describe('#URL Helpers', () => {
       );
     });
 
+    it('should return url to team and inbox', () => {
+      expect(
+        conversationListPageURL({ accountId: 1, teamId: 5, inboxId: 9 })
+      ).toBe('/app/accounts/1/team/5/inbox/9');
+    });
+
+    it('should return url to team and label', () => {
+      expect(
+        conversationListPageURL({ accountId: 1, teamId: 5, label: 'vip' })
+      ).toBe('/app/accounts/1/team/5/label/vip');
+    });
+
     it('should return url to custom view', () => {
       expect(conversationListPageURL({ accountId: 1, customViewId: 1 })).toBe(
         '/app/accounts/1/custom_view/1'
@@ -70,6 +82,27 @@ describe('#URL Helpers', () => {
       expect(conversationUrl({ accountId: 1, teamId: 1, id: 1 })).toBe(
         'accounts/1/team/1/conversations/1'
       );
+    });
+    it('should keep team when inbox is active', () => {
+      expect(
+        conversationUrl({ accountId: 1, id: 33, teamId: 5, activeInbox: 9 })
+      ).toBe('accounts/1/team/5/inbox/9/conversations/33');
+    });
+    it('should keep team when label is active', () => {
+      expect(
+        conversationUrl({ accountId: 1, id: 33, teamId: 5, label: 'vip' })
+      ).toBe('accounts/1/team/5/label/vip/conversations/33');
+    });
+    it('prefers team+inbox when team, label and inbox are present', () => {
+      expect(
+        conversationUrl({
+          accountId: 1,
+          id: 33,
+          teamId: 5,
+          label: 'vip',
+          activeInbox: 9,
+        })
+      ).toBe('accounts/1/team/5/inbox/9/conversations/33');
     });
   });
 

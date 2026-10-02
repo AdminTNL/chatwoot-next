@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Conversations::UnreadCounts::Builder do
   let(:account) { create(:account) }
-  let(:inbox) { create(:inbox, account: account) }
+  let(:inbox) { create(:inbox, account: account, team: team) }
   let(:label) { create(:label, account: account, title: 'urgent', show_on_sidebar: true) }
   let(:assignee) { create(:user, account: account, role: :agent) }
   let(:team) { create(:team, account: account, allow_auto_assign: false) }

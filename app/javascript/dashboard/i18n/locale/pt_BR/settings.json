@@ -27,11 +27,11 @@
         "CARD": {
           "ENTER_KEY": {
             "HEADING": "Enter (↵)",
-            "CONTENT": "Enviar mensagens pressionando a tecla Enter em vez de clicar no botão de enviar."
+            "CONTENT": "Enviar mensagens pressionando a tecla Enter em vez de clicar no botão de enviar. Use Shift + Enter para quebrar a linha."
           },
           "CMD_ENTER_KEY": {
             "HEADING": "Cmd/Ctrl + Enter (⌘ + ↵)",
-            "CONTENT": "Pressione a tecla Cmd/Ctrl + Enter ao invés de clicar no botão enviar."
+            "CONTENT": "Enviar mensagens pressionando Cmd/Ctrl + Enter em vez de clicar no botão de enviar. Use Enter para quebrar a linha."
           }
         }
       },

@@ -46,6 +46,32 @@ RSpec.describe 'Conversations API', type: :request do
         expect(body[:data][:payload].first[:messages]).to eq([])
       end
 
+      it 'returns the latest public message as last_non_activity_message even when a private note is newer' do
+        public_message = create(:message, conversation: conversation, account: account, private: false, created_at: 2.hours.ago)
+        create(:message, conversation: conversation, account: account, private: true, created_at: 1.hour.ago)
+
+        get "/api/v1/accounts/#{account.id}/conversations",
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        body = JSON.parse(response.body, symbolize_names: true)
+        expect(body[:data][:payload].first[:last_non_activity_message][:id]).to eq(public_message.id)
+      end
+
+      it 'returns the latest private note as last_non_activity_message when there is no public message' do
+        create(:message, conversation: conversation, account: account, private: true, created_at: 2.hours.ago)
+        latest_private = create(:message, conversation: conversation, account: account, private: true, created_at: 1.hour.ago)
+
+        get "/api/v1/accounts/#{account.id}/conversations",
+            headers: agent.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        body = JSON.parse(response.body, symbolize_names: true)
+        expect(body[:data][:payload].first[:last_non_activity_message][:id]).to eq(latest_private.id)
+      end
+
       it 'returns unattended conversations' do
         attended_conversation = create(:conversation, account: account, first_reply_created_at: Time.now.utc)
         # to ensure that waiting since value is populated
@@ -149,6 +175,8 @@ RSpec.describe 'Conversations API', type: :request do
         end
 
         it 'returns unread team conversation counts scoped to the signed-in user' do
+          visible_inbox.update!(team: team)
+          hidden_inbox.update!(team: team)
           create_unread_conversation(account: account, inbox: visible_inbox, team: team)
           create_unread_conversation(account: account, inbox: hidden_inbox, team: team)
 
@@ -493,10 +521,11 @@ RSpec.describe 'Conversations API', type: :request do
         end
 
         it 'creates a new conversation with assignee and team' do
+          inbox.update!(team: team)
           allow(Rails.configuration.dispatcher).to receive(:dispatch)
           post "/api/v1/accounts/#{account.id}/conversations",
                headers: agent.create_new_auth_token,
-               params: { source_id: contact_inbox.source_id, contact_id: contact.id, inbox_id: inbox.id, assignee_id: agent.id, team_id: team.id },
+               params: { source_id: contact_inbox.source_id, contact_id: contact.id, inbox_id: inbox.id, assignee_id: agent.id },
                as: :json
 
           expect(response).to have_http_status(:success)

@@ -5,13 +5,14 @@
 Antes de repetir um erro já mapeado, consulte `.claude/lessons/`:
 - [`.claude/lessons/git-worktree-isolation-fails.md`](.claude/lessons/git-worktree-isolation-fails.md) — `isolation: "worktree"` do Agent tool falha neste repo (redirect de `core.worktree`); rodar agentes paralelos direto na árvore principal, com escopo de arquivos disjunto.
 - [`.claude/lessons/subagent-background-execution.md`](.claude/lessons/subagent-background-execution.md) — agentes delegados devem aguardar ativamente a conclusão de testes antes de reportar, nunca encerrar o turno em estado de espera.
-- [`.claude/lessons/test-database-contamination.md`](.claude/lessons/test-database-contamination.md) — falhas inesperadas em specs Ruby podem vir de contaminação do `chatwoot_test` (linha órfã, processos `[bundle]` zumbis), não da mudança em si; confirmar revertendo e reproduzindo antes de investigar a mudança.
+- [`.claude/lessons/rspec-must-run-with-rails-env-test.md`](.claude/lessons/rspec-must-run-with-rails-env-test.md) — o container está em `RAILS_ENV=development` e o `rails_helper` usa `||=`; todo rspec deve rodar com `docker exec -e RAILS_ENV=test chatwoot-next-rails-1 bundle exec rspec ...`, senão os testes rodam no banco de dev.
+- [`.claude/lessons/test-database-contamination.md`](.claude/lessons/test-database-contamination.md) — falhas inesperadas em specs Ruby podem vir de contaminação de estado (processos `[bundle]` zumbis; linhas "órfãs" que provavelmente eram do banco de dev, ver lição do `RAILS_ENV=test`), não da mudança em si; confirmar revertendo e reproduzindo no ambiente de teste correto antes de investigar a mudança.
 - [`.claude/lessons/spec-file-list-scope-gaps.md`](.claude/lessons/spec-file-list-scope-gaps.md) — specs de execução devem instruir o agente a parar e reportar se a lista de "Arquivos a mudar" for insuficiente para o comportamento descrito, nunca reinterpretar o design silenciosamente.
 
 ## Windows/Docker Dev Environment (this machine)
 
 - The Windows host has **no local Ruby/bundle** — Rails/Sidekiq/Postgres/Redis still run inside Docker Compose containers: `chatwoot-next-rails-1` (Ruby/Rails), `chatwoot-next-vite-1` (Node/Vite/JS), `chatwoot-next-postgres-1`, `chatwoot-next-redis-1`.
-- Run every Ruby command (`bundle exec rspec`, `rubocop`, `rails ...`) via `docker exec chatwoot-next-rails-1 <command>` — running it directly on the host fails immediately (no toolchain installed there).
+- Run every Ruby command (`bundle exec rspec`, `rubocop`, `rails ...`) via `docker exec chatwoot-next-rails-1 <command>` — running it directly on the host fails immediately (no toolchain installed there). **For `rspec`, always add `-e RAILS_ENV=test`** (`docker exec -e RAILS_ENV=test chatwoot-next-rails-1 bundle exec rspec ...`): the container runs with `RAILS_ENV=development` and `spec/rails_helper.rb` does not override it, so without the flag the specs run against the dev database.
 - The host **does** have `pnpm` installed locally now (pinned version from `package.json`'s `packageManager` field). Run JS/Vue commands (`pnpm test`, `pnpm eslint`, `pnpm vitest`, etc.) directly on the host instead of via `docker exec chatwoot-next-vite-1 <command>` — it's faster (no container exec overhead) and is the preferred way going forward. Run `pnpm install` first whenever dependencies may have changed (new package added, lockfile updated by a pull, etc.), otherwise commands can fail or run against stale `node_modules`.
 - The Bash tool in this Claude Code environment does **not** have `git` or standard Unix coreutils (`head`, etc.) on PATH here — those commands fail with "command not found". Use the PowerShell tool for `git` and any host-level shell command instead.
 
@@ -27,8 +28,8 @@ Antes de repetir um erro já mapeado, consulte `.claude/lessons/`:
 - **Lint JS/Vue**: `pnpm eslint` / `pnpm eslint:fix`
 - **Lint Ruby**: `bundle exec rubocop -a`
 - **Test JS**: `pnpm test` or `pnpm test:watch`
-- **Test Ruby**: `bundle exec rspec spec/path/to/file_spec.rb`
-- **Single Test**: `bundle exec rspec spec/path/to/file_spec.rb:LINE_NUMBER`
+- **Test Ruby**: `docker exec -e RAILS_ENV=test chatwoot-next-rails-1 bundle exec rspec spec/path/to/file_spec.rb`
+- **Single Test**: `docker exec -e RAILS_ENV=test chatwoot-next-rails-1 bundle exec rspec spec/path/to/file_spec.rb:LINE_NUMBER`
 - **Run Project**: `overmind start -f Procfile.dev`
 - **Ruby Version**: Manage Ruby via `rbenv` and install the version listed in `.ruby-version` (e.g., `rbenv install $(cat .ruby-version)`)
 - **rbenv setup**: Before running any `bundle` or `rspec` commands, init rbenv in your shell (`eval "$(rbenv init -)"`) so the correct Ruby/Bundler versions are used

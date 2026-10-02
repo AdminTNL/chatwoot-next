@@ -97,5 +97,76 @@ describe('conversationHelper', () => {
         testConversation.messages[1]
       );
     });
+
+    describe('public message priority', () => {
+      const msg = (id, extra = {}) => ({
+        id,
+        message_type: 1,
+        private: false,
+        created_at: id,
+        content: `m${id}`,
+        ...extra,
+      });
+
+      it('returns the public message over a more recent private one', () => {
+        const pub = msg(1);
+        const priv = msg(2, { private: true });
+        expect(
+          getLastMessage({
+            messages: [pub, priv],
+            last_non_activity_message: null,
+          })
+        ).toEqual(pub);
+      });
+
+      it('treats a message with ai_suggestion_id as non public', () => {
+        const pub = msg(1);
+        const suggestion = msg(2, {
+          content_attributes: { ai_suggestion_id: 'x' },
+        });
+        expect(
+          getLastMessage({
+            messages: [pub, suggestion],
+            last_non_activity_message: null,
+          })
+        ).toEqual(pub);
+      });
+
+      it('falls back to the private message from API when store is empty', () => {
+        const priv = msg(2, { private: true });
+        expect(
+          getLastMessage({ messages: [], last_non_activity_message: priv })
+        ).toEqual(priv);
+      });
+
+      it('returns the public message from API over a private one in store', () => {
+        const pub = msg(1);
+        const priv = msg(2, { private: true });
+        expect(
+          getLastMessage({ messages: [priv], last_non_activity_message: pub })
+        ).toEqual(pub);
+      });
+
+      it('returns the private message over an activity when no public exists', () => {
+        const activity = msg(1, { message_type: 2 });
+        const priv = msg(2, { private: true });
+        expect(
+          getLastMessage({
+            messages: [activity, priv],
+            last_non_activity_message: null,
+          })
+        ).toEqual(priv);
+      });
+
+      it('returns the activity when it is the only message', () => {
+        const activity = msg(1, { message_type: 2 });
+        expect(
+          getLastMessage({
+            messages: [activity],
+            last_non_activity_message: null,
+          })
+        ).toEqual(activity);
+      });
+    });
   });
 });

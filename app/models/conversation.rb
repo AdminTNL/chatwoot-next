@@ -133,6 +133,7 @@ class Conversation < ApplicationRecord
   after_update_commit :execute_after_update_commit_callbacks
   after_create_commit :notify_conversation_creation
   after_create_commit :load_attributes_created_by_db_triggers
+  after_create_commit :inherit_labels_from_contact
   before_destroy :set_unread_count_deletion_data
   after_destroy_commit :notify_conversation_deletion
 
@@ -418,6 +419,14 @@ class Conversation < ApplicationRecord
     return if added.blank? && removed.blank?
 
     Labels::PropagateJob.perform_later(conversation_id: id, added_labels: added, removed_labels: removed)
+  end
+
+  # A new conversation inherits the labels its contact already has from the conversation's team.
+  # See Labels::ContactInheritanceService.
+  def inherit_labels_from_contact
+    return if team_id.blank?
+
+    Labels::InheritFromContactJob.perform_later(conversation_id: id)
   end
 
   def validate_referer_url
