@@ -27,11 +27,11 @@
         "CARD": {
           "ENTER_KEY": {
             "HEADING": "Enter (↵)",
-            "CONTENT": "Send messages by pressing Enter key instead of clicking the send button."
+            "CONTENT": "Send messages by pressing Enter instead of clicking the send button. Use Shift + Enter to add a line break."
           },
           "CMD_ENTER_KEY": {
             "HEADING": "Cmd/Ctrl + Enter (⌘ + ↵)",
-            "CONTENT": "Send messages by pressing Cmd/Ctrl + enter key instead of clicking the send button."
+            "CONTENT": "Send messages by pressing Cmd/Ctrl + Enter instead of clicking the send button. Use Enter to add a line break."
           }
         }
       },
