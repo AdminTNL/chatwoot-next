@@ -189,20 +189,26 @@ RSpec.describe DataImportJob do
     end
 
     context 'when the data contains labels column' do
+      let(:labels_account) { create(:account) }
+      let(:customer_label) { create(:label, account: labels_account, title: 'customer') }
+      let(:vip_label) { create(:label, account: labels_account, title: 'vip') }
+      let(:lead_label) { create(:label, account: labels_account, title: 'lead') }
+
       let(:data_with_labels) do
         [
           %w[id name email phone_number labels],
-          ['1', 'John Doe', 'john@example.com', '+918080808080', ' Customer , VIP , vip '],
-          ['2', 'Jane Smith', 'jane@example.com', '+918080808081', 'lead'],
+          ['1', 'John Doe', 'john@example.com', '+918080808080',
+           " #{customer_label.title.capitalize} , #{vip_label.title.upcase} , #{vip_label.title} "],
+          ['2', 'Jane Smith', 'jane@example.com', '+918080808081', lead_label.title],
           ['3', 'Bob Wilson', 'bob@example.com', '+918080808082', '']
         ]
       end
-      let(:labels_data_import) { create(:data_import, import_file: generate_csv_file(data_with_labels)) }
+      let(:labels_data_import) { create(:data_import, account: labels_account, import_file: generate_csv_file(data_with_labels)) }
 
       before do
-        %w[customer vip lead].each do |title|
-          create(:label, account: labels_data_import.account, title: title)
-        end
+        customer_label
+        vip_label
+        lead_label
       end
 
       it 'imports contacts with labels from CSV' do
@@ -210,11 +216,11 @@ RSpec.describe DataImportJob do
 
         john = Contact.from_email('john@example.com')
         expect(john).to be_present
-        expect(john.label_list).to contain_exactly('customer', 'vip')
+        expect(john.label_list).to contain_exactly(customer_label.title, vip_label.title)
 
         jane = Contact.from_email('jane@example.com')
         expect(jane).to be_present
-        expect(jane.label_list).to contain_exactly('lead')
+        expect(jane.label_list).to contain_exactly(lead_label.title)
 
         bob = Contact.from_email('bob@example.com')
         expect(bob).to be_present
@@ -223,11 +229,11 @@ RSpec.describe DataImportJob do
 
       it 'dispatches only the contact update event when importing labels for an existing contact' do
         existing_contact = create(:contact, account: labels_data_import.account, email: 'existing-labeled@example.com', name: 'Old Name')
-        existing_contact.add_labels('customer')
+        existing_contact.add_labels(customer_label.title)
         data_with_existing_contact = [
           %w[id name email phone_number labels],
-          ['1', 'Updated Name', existing_contact.email, '+918080808090', 'lead'],
-          ['2', 'New Labeled Contact', 'new-labeled@example.com', '+918080808091', 'customer']
+          ['1', 'Updated Name', existing_contact.email, '+918080808090', lead_label.title],
+          ['2', 'New Labeled Contact', 'new-labeled@example.com', '+918080808091', customer_label.title]
         ]
         existing_contact_import = create(:data_import, account: labels_data_import.account,
                                                        import_file: generate_csv_file(data_with_existing_contact))
@@ -240,15 +246,15 @@ RSpec.describe DataImportJob do
           anything,
           hash_including(contact: have_attributes(id: existing_contact.id))
         ).once
-        expect(existing_contact.reload.label_list).to contain_exactly('customer', 'lead')
-        expect(labels_data_import.account.contacts.from_email('new-labeled@example.com').label_list).to contain_exactly('customer')
+        expect(existing_contact.reload.label_list).to contain_exactly(customer_label.title, lead_label.title)
+        expect(labels_data_import.account.contacts.from_email('new-labeled@example.com').label_list).to contain_exactly(customer_label.title)
       end
 
       it 'merges labels for duplicate contact rows without duplicate taggings' do
         data_with_duplicate_contact = [
           %w[id name email phone_number labels],
-          ['1', 'Duplicate User', 'duplicate-labeled@example.com', '+918080808092', 'lead'],
-          ['2', 'Duplicate User', 'duplicate-labeled@example.com', '+918080808092', 'customer,lead']
+          ['1', 'Duplicate User', 'duplicate-labeled@example.com', '+918080808092', lead_label.title],
+          ['2', 'Duplicate User', 'duplicate-labeled@example.com', '+918080808092', "#{customer_label.title},#{lead_label.title}"]
         ]
         duplicate_contact_import = create(:data_import, account: labels_data_import.account,
                                                         import_file: generate_csv_file(data_with_duplicate_contact))
@@ -256,8 +262,8 @@ RSpec.describe DataImportJob do
         described_class.perform_now(duplicate_contact_import)
 
         contact = labels_data_import.account.contacts.from_email('duplicate-labeled@example.com')
-        lead = ActsAsTaggableOn::Tag.find_by(name: 'lead')
-        expect(contact.label_list).to contain_exactly('customer', 'lead')
+        lead = ActsAsTaggableOn::Tag.find_by(name: lead_label.title)
+        expect(contact.label_list).to contain_exactly(customer_label.title, lead_label.title)
         expect(ActsAsTaggableOn::Tagging.where(tag_id: lead.id, taggable: contact, context: 'labels').count).to eq(1)
       end
 
@@ -269,7 +275,7 @@ RSpec.describe DataImportJob do
                                   name: 'Existing Name')
         data_with_unknown_labels = [
           %w[id name email phone_number labels],
-          ['1', 'Updated Name', existing_contact.email, '+918080808086', 'vip,unknown_label']
+          ['1', 'Updated Name', existing_contact.email, '+918080808086', "#{vip_label.title},unknown_label"]
         ]
 
         unknown_label_import = create(:data_import, account: labels_data_import.account,

@@ -301,6 +301,7 @@ RSpec.describe Conversations::UnreadCounts::Listener do
     team = create(:team, account: account)
     assignee = create(:user, account: account)
     create(:team_member, team: team, user: assignee)
+    conversation.inbox.update!(team: team)
     conversation.update!(assignee_id: assignee.id, team: team)
     conversation.update_labels([label.title])
     conversation.reload

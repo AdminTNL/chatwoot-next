@@ -9,7 +9,10 @@ RSpec.describe Reports::AccessScope do
   let(:inbox_b) { create(:inbox, account: account, team: team_b) }
   let(:direct_inbox) { create(:inbox, account: account) }
 
-  let(:label_global) { create(:label, account: account, title: 'global-label') }
+  # Legacy label without team (global): team is mandatory now, so the row is made team-less directly.
+  let(:label_global) do
+    create(:label, account: account, title: 'global-label').tap { |label| label.update_column(:team_id, nil) } # rubocop:disable Rails/SkipsModelValidations
+  end
   let(:label_team_a) { create(:label, account: account, team: team_a, title: 'team-a-label') }
   let(:label_team_b) { create(:label, account: account, team: team_b, title: 'team-b-label') }
 

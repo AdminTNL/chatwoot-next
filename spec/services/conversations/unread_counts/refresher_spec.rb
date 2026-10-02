@@ -77,9 +77,11 @@ RSpec.describe Conversations::UnreadCounts::Refresher do
   end
 
   it 'moves base team membership when team changes' do
+    inbox.update!(team: team)
     conversation = create_unread_conversation(account: account, inbox: inbox, team: team)
     Conversations::UnreadCounts::Builder.new(account).build_base!
 
+    inbox.update!(team: new_team)
     conversation.update!(team: new_team)
     expect(described_class.new(conversation.reload, changed_attributes: { team_id: [team.id, new_team.id] }).perform).to be(true)
 
@@ -158,9 +160,11 @@ RSpec.describe Conversations::UnreadCounts::Refresher do
 
   it 'moves assignment-aware team membership when team changes' do
     create(:team_member, user: assignee, team: new_team)
+    inbox.update!(team: team)
     conversation = create_unread_conversation(account: account, inbox: inbox, assignee: assignee, team: team)
     Conversations::UnreadCounts::Builder.new(account).build_assignment!
 
+    inbox.update!(team: new_team)
     conversation.update!(team: new_team)
     described_class.new(conversation.reload, changed_attributes: { team_id: [team.id, new_team.id] }).perform
 

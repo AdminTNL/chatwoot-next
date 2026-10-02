@@ -43,6 +43,9 @@ RSpec.describe 'Label API', type: :request do
       let!(:team_a_label) { create(:label, account: account, team: team_a, title: 'team-a-label') }
       let!(:team_b_label) { create(:label, account: account, team: team_b, title: 'team-b-label') }
 
+      # Team is mandatory on new labels; a legacy label without team (global) can only exist from older data.
+      before { label.update_column(:team_id, nil) } # rubocop:disable Rails/SkipsModelValidations
+
       it 'returns all labels for an administrator' do
         admin = create(:user, account: account, role: :administrator)
 
@@ -105,7 +108,8 @@ RSpec.describe 'Label API', type: :request do
   end
 
   describe 'POST /api/v1/accounts/{account.id}/labels' do
-    let(:valid_params) { { label: { title: 'test' } } }
+    let(:team) { create(:team, account: account) }
+    let(:valid_params) { { label: { title: 'test', team_id: team.id } } }
 
     context 'when it is an unauthenticated user' do
       it 'returns unauthorized' do
@@ -162,10 +166,10 @@ RSpec.describe 'Label API', type: :request do
               as: :json
 
         expect(response).to have_http_status(:success)
-        expect(label.reload.title).to eq('test_2')
+        expect(label.reload.title).to eq("#{label.team.label_prefix}-test_2")
       end
 
-      it 'removes the team when team_id is set to null' do
+      it 'does not remove the team when team_id is set to null' do
         team = create(:team, account: account)
         team_label = create(:label, account: account, team: team)
 
@@ -174,8 +178,8 @@ RSpec.describe 'Label API', type: :request do
               params: { team_id: nil },
               as: :json
 
-        expect(response).to have_http_status(:success)
-        expect(team_label.reload.team_id).to be_nil
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(team_label.reload.team_id).to eq(team.id)
       end
     end
   end
