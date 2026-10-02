@@ -1,10 +1,18 @@
-import { reactive } from 'vue';
+import { reactive, ref, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { createStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import Sidebar from '../Sidebar.vue';
+import teamContextModule from 'dashboard/store/modules/teamContext';
 
 vi.mock('vue-router');
+
+// The real module exports a plain `state` object, which would be shared
+// between the stores created by each test; give every store a fresh state.
+const teamContext = {
+  ...teamContextModule,
+  state: () => ({ selectedTeamId: null }),
+};
 
 // Sidebar.vue statically imports several heavy, unrelated components
 // (compose conversation, account switcher, profile menu, changelog widgets).
@@ -117,13 +125,26 @@ const CUSTOM_ROLE_NO_REPORTS_USER = {
   ],
 };
 
+// Last store/router built by the helpers below, so tests can inspect the
+// teamContext state and the router.replace calls.
+let lastStore = null;
+let lastRouter = null;
+
 const buildStore = (
   currentUser,
-  { myTeams = [], teams = [], inboxes = [], labels = [] } = {}
-) =>
-  createStore({
+  {
+    myTeams = [],
+    teams = [],
+    inboxes = [],
+    labels = [],
+    accountIdRef = null,
+    inboxesRef = null,
+  } = {}
+) => {
+  const store = createStore({
+    modules: { teamContext },
     getters: {
-      getCurrentAccountId: () => 1,
+      getCurrentAccountId: () => (accountIdRef ? accountIdRef.value : 1),
       getCurrentUserID: () => currentUser.id,
       getCurrentUser: () => currentUser,
       getCurrentRole: () => currentUser.accounts[0].role,
@@ -133,7 +154,7 @@ const buildStore = (
       'accounts/isRTL': () => false,
       'globalConfig/isACustomBrandedInstance': () => false,
       'globalConfig/isOnChatwootCloud': () => false,
-      'inboxes/getInboxes': () => inboxes,
+      'inboxes/getInboxes': () => (inboxesRef ? inboxesRef.value : inboxes),
       'labels/getLabelsOnSidebar': () => labels,
       'teams/getMyTeams': () => myTeams,
       'teams/getTeams': () => teams,
@@ -163,8 +184,32 @@ const buildStore = (
       updateUISettings: () => {},
     },
   });
+  lastStore = store;
+  return store;
+};
 
-const mountSidebar = (currentUser, storeOptions, routeOverrides = {}) => {
+const buildRouter = (resolveOverride = null) => {
+  lastRouter = {
+    resolve:
+      resolveOverride ||
+      (to => ({
+        path: '/',
+        meta: (to && routeMetaByName[to.name]) || {},
+      })),
+    getRoutes: () =>
+      Object.entries(routeMetaByName).map(([name, meta]) => ({ name, meta })),
+    push: vi.fn(),
+    replace: vi.fn(),
+  };
+  return lastRouter;
+};
+
+const mountSidebar = (
+  currentUser,
+  storeOptions,
+  routeOverrides = {},
+  resolveOverride = null
+) => {
   useRoute.mockReturnValue({
     params: { accountId: '1' },
     path: '/',
@@ -172,15 +217,7 @@ const mountSidebar = (currentUser, storeOptions, routeOverrides = {}) => {
     ...routeOverrides,
   });
 
-  useRouter.mockReturnValue({
-    resolve: to => ({
-      path: '/',
-      meta: (to && routeMetaByName[to.name]) || {},
-    }),
-    getRoutes: () =>
-      Object.entries(routeMetaByName).map(([name, meta]) => ({ name, meta })),
-    push: vi.fn(),
-  });
+  useRouter.mockReturnValue(buildRouter(resolveOverride));
 
   return mount(Sidebar, {
     global: {
@@ -201,7 +238,8 @@ const mountSidebar = (currentUser, storeOptions, routeOverrides = {}) => {
 const mountSidebarWithReactiveRoute = (
   currentUser,
   storeOptions,
-  initialRoute
+  initialRoute,
+  resolveOverride = null
 ) => {
   const route = reactive({
     params: { accountId: '1' },
@@ -211,15 +249,7 @@ const mountSidebarWithReactiveRoute = (
   });
   useRoute.mockReturnValue(route);
 
-  useRouter.mockReturnValue({
-    resolve: to => ({
-      path: '/',
-      meta: (to && routeMetaByName[to.name]) || {},
-    }),
-    getRoutes: () =>
-      Object.entries(routeMetaByName).map(([name, meta]) => ({ name, meta })),
-    push: vi.fn(),
-  });
+  useRouter.mockReturnValue(buildRouter(resolveOverride));
 
   const wrapper = mount(Sidebar, {
     global: {
@@ -480,7 +510,20 @@ describe('Sidebar - Channels section filtered by active team route', () => {
     expect(findChannelLabels(wrapper)).toEqual([]);
   });
 
-  it('shows an empty Channels list without erroring when the route teamId matches no existing inbox', () => {
+  it('shows an empty Channels list without erroring when the route teamId matches no existing inbox while teams are still loading', () => {
+    const wrapper = mountSidebar(
+      ADMIN_USER,
+      { myTeams: [], teams: [], inboxes: allInboxes },
+      {
+        name: 'team_conversations',
+        params: { accountId: '1', teamId: '999999' },
+      }
+    );
+
+    expect(findChannelLabels(wrapper)).toEqual([]);
+  });
+
+  it('ignores a route teamId that is not an accessible team once teams are loaded (no team context)', () => {
     const wrapper = mountSidebar(
       ADMIN_USER,
       { myTeams: allTeams, teams: allTeams, inboxes: allInboxes },
@@ -490,7 +533,10 @@ describe('Sidebar - Channels section filtered by active team route', () => {
       }
     );
 
-    expect(findChannelLabels(wrapper)).toEqual([]);
+    expect(lastStore.getters['teamContext/getSelectedTeamId']).toBeNull();
+    expect(findChannelLabels(wrapper)).toEqual(
+      expect.arrayContaining(['Inbox X1', 'Inbox Y1', 'Inbox No Team'])
+    );
   });
 
   it('keeps unread-count sorting and per-inbox badges correct over the filtered list', () => {
@@ -516,12 +562,14 @@ describe('Sidebar - Channels section filtered by active team route', () => {
       resolve: () => ({ path: '/', meta: {} }),
       getRoutes: () => [],
       push: vi.fn(),
+      replace: vi.fn(),
     });
 
     const wrapper = mount(Sidebar, {
       global: {
         plugins: [
           createStore({
+            modules: { teamContext },
             getters: {
               getCurrentAccountId: () => 1,
               getCurrentUserID: () => ADMIN_USER.id,
@@ -668,5 +716,407 @@ describe('Sidebar - Labels section filtered by active team route', () => {
     expect(findLabelLeafLabels(wrapper)).toEqual(
       expect.arrayContaining(['urgent-x', 'billing-x', 'urgent-y', 'vip'])
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Spec 032 - team context kept in the store (teamContext module)
+// ---------------------------------------------------------------------------
+// Leaves are rendered by SidebarGroupLeaf; find one by label to read its props.
+const findSidebarLeaf = (wrapper, label) =>
+  wrapper
+    .findAllComponents({ name: 'SidebarGroupLeaf' })
+    .find(c => c.props('label') === label);
+
+const STORE_ACTIONS_STUB = {
+  'labels/get': () => {},
+  'inboxes/get': () => {},
+  'notifications/unReadCount': () => {},
+  'teams/get': () => {},
+  'attributes/get': () => {},
+  'customViews/get': () => {},
+  'conversationUnreadCounts/clear': () => {},
+  'conversationUnreadCounts/get': () => {},
+  'sidebarSortPreferences/initialize': () => {},
+  updateUISettings: () => {},
+};
+
+describe('Sidebar - team context (spec 032)', () => {
+  const teamX = { id: 10, name: 'Team X', is_member: true };
+  const teamY = { id: 20, name: 'Team Y', is_member: true };
+  const teamZ = { id: 30, name: 'Team Z', is_member: true };
+  const allTeams = [teamX, teamY, teamZ];
+
+  const inboxX1 = { id: 1, name: 'Inbox X1', team_id: 10 };
+  const inboxX2 = { id: 2, name: 'Inbox X2', team_id: 10 };
+  const inboxY1 = { id: 3, name: 'Inbox Y1', team_id: 20 };
+  const inboxNoTeam = { id: 4, name: 'Inbox No Team', team_id: null };
+  const allInboxes = [inboxX1, inboxX2, inboxY1, inboxNoTeam];
+
+  const labelX = { id: 1, title: 'urgent-x', team_id: 10 };
+  const labelY = { id: 3, title: 'urgent-y', team_id: 20 };
+  const labelGlobal = { id: 4, title: 'vip', team_id: null };
+  const allLabels = [labelX, labelY, labelGlobal];
+
+  const baseOptions = {
+    myTeams: allTeams,
+    teams: allTeams,
+    inboxes: allInboxes,
+    labels: allLabels,
+  };
+
+  const teamRoute = (name, teamId, extra = {}) => ({
+    name,
+    params: { accountId: '1', teamId: String(teamId), ...extra },
+  });
+
+  const selectedTeam = () => lastStore.getters['teamContext/getSelectedTeamId'];
+
+  it('filters channels and labels on team_inbox_conversations and points leaves to the new routes', () => {
+    const wrapper = mountSidebar(
+      ADMIN_USER,
+      baseOptions,
+      teamRoute('team_inbox_conversations', 10, { inbox_id: '1' })
+    );
+
+    expect(findChannelLabels(wrapper).sort()).toEqual(['Inbox X1', 'Inbox X2']);
+    expect(findLabelLeafLabels(wrapper)).toEqual(['urgent-x']);
+
+    const channelLeaf = findSidebarLeaf(wrapper, 'Inbox X1');
+    expect(channelLeaf.props('to').name).toBe('team_inbox_conversations');
+    expect(channelLeaf.props('to').params).toMatchObject({
+      teamId: 10,
+      inbox_id: 1,
+    });
+    const labelLeaf = findSidebarLeaf(wrapper, 'urgent-x');
+    expect(labelLeaf.props('to').name).toBe('team_label_conversations');
+    expect(labelLeaf.props('to').params).toMatchObject({
+      teamId: 10,
+      label: 'urgent-x',
+    });
+  });
+
+  it('keeps the team context when navigating to routes that must not clear it', async () => {
+    const { wrapper, route } = mountSidebarWithReactiveRoute(
+      ADMIN_USER,
+      baseOptions,
+      teamRoute('team_inbox_conversations', 10, { inbox_id: '1' })
+    );
+
+    const neutralRoutes = [
+      'conversation_mentions',
+      'conversation_unattended',
+      'conversation_participating',
+      'folder_conversations',
+      'settings_inbox_list',
+      'team_reports_index',
+    ];
+
+    await neutralRoutes.reduce(
+      (chain, name) =>
+        chain.then(async () => {
+          route.name = name;
+          route.params = { accountId: '1' };
+          await nextTick();
+
+          expect(selectedTeam()).toBe(10);
+          expect(findChannelLabels(wrapper).sort()).toEqual([
+            'Inbox X1',
+            'Inbox X2',
+          ]);
+        }),
+      Promise.resolve()
+    );
+  });
+
+  it.each(['home', 'inbox_conversation'])(
+    'clears the team context when navigating to %s',
+    async routeName => {
+      const { wrapper, route } = mountSidebarWithReactiveRoute(
+        ADMIN_USER,
+        baseOptions,
+        teamRoute('team_inbox_conversations', 10, { inbox_id: '1' })
+      );
+      expect(selectedTeam()).toBe(10);
+
+      route.name = routeName;
+      route.params = { accountId: '1' };
+      await nextTick();
+
+      expect(selectedTeam()).toBeNull();
+      expect(findChannelLabels(wrapper)).toEqual(
+        expect.arrayContaining([
+          'Inbox X1',
+          'Inbox X2',
+          'Inbox Y1',
+          'Inbox No Team',
+        ])
+      );
+      expect(findSidebarLeaf(wrapper, 'Inbox X1').props('to').name).toBe(
+        'inbox_dashboard'
+      );
+      expect(findSidebarLeaf(wrapper, 'vip').props('to').name).toBe(
+        'label_conversations'
+      );
+    }
+  );
+
+  it('switches to the other team when the route moves from team X to team Y', async () => {
+    const { wrapper, route } = mountSidebarWithReactiveRoute(
+      ADMIN_USER,
+      baseOptions,
+      teamRoute('team_inbox_conversations', 10, { inbox_id: '1' })
+    );
+
+    route.params = { accountId: '1', teamId: '20', inbox_id: '3' };
+    await nextTick();
+
+    expect(selectedTeam()).toBe(20);
+    expect(findChannelLabels(wrapper)).toEqual(['Inbox Y1']);
+  });
+
+  describe('redirect when clicking a team', () => {
+    it('replaces the route once with the first inbox of the team (default sort)', () => {
+      mountSidebar(
+        ADMIN_USER,
+        baseOptions,
+        teamRoute('team_conversations', 10)
+      );
+
+      expect(lastRouter.replace).toHaveBeenCalledTimes(1);
+      const target = lastRouter.replace.mock.calls[0][0];
+      expect(target.name).toBe('team_inbox_conversations');
+      expect(target.params).toMatchObject({
+        accountId: 1,
+        teamId: 10,
+        inbox_id: 2,
+      });
+    });
+
+    it('uses the active channel sort (unread count) to choose the first inbox', () => {
+      useRoute.mockReturnValue({
+        params: { accountId: '1', teamId: '10' },
+        path: '/',
+        name: 'team_conversations',
+      });
+      const router = buildRouter();
+      useRouter.mockReturnValue(router);
+
+      const base = buildStore(ADMIN_USER, baseOptions);
+      const passthrough = Object.fromEntries(
+        Object.keys(base.getters).map(key => [key, () => base.getters[key]])
+      );
+      const store = createStore({
+        modules: { teamContext },
+        getters: {
+          ...passthrough,
+          'sidebarSortPreferences/getSectionSort': () => section =>
+            section === 'channels' ? 'unread_count_desc' : null,
+          'conversationUnreadCounts/getInboxUnreadCount': () => id =>
+            id === 1 ? 9 : 1,
+        },
+        actions: STORE_ACTIONS_STUB,
+      });
+
+      mount(Sidebar, {
+        global: {
+          plugins: [store],
+          stubs: { RouterLink: { template: '<a><slot /></a>' } },
+        },
+      });
+
+      expect(router.replace).toHaveBeenCalledTimes(1);
+      expect(router.replace.mock.calls[0][0].params.inbox_id).toBe(1);
+    });
+
+    it('does not redirect (nor throw) when the team has no inboxes', () => {
+      const wrapper = mountSidebar(
+        ADMIN_USER,
+        baseOptions,
+        teamRoute('team_conversations', 30)
+      );
+
+      expect(lastRouter.replace).not.toHaveBeenCalled();
+      expect(findChannelLabels(wrapper)).toEqual([]);
+    });
+
+    it('redirects once the inboxes finish loading', async () => {
+      const inboxesRef = ref([]);
+      mountSidebar(
+        ADMIN_USER,
+        { ...baseOptions, inboxesRef },
+        teamRoute('team_conversations', 10)
+      );
+      expect(lastRouter.replace).not.toHaveBeenCalled();
+
+      inboxesRef.value = allInboxes;
+      await nextTick();
+      await nextTick();
+
+      expect(lastRouter.replace).toHaveBeenCalledTimes(1);
+      expect(lastRouter.replace.mock.calls[0][0].params.inbox_id).toBe(2);
+    });
+
+    it('does not redirect on other routes', () => {
+      mountSidebar(
+        ADMIN_USER,
+        baseOptions,
+        teamRoute('team_inbox_conversations', 10, { inbox_id: '1' })
+      );
+
+      expect(lastRouter.replace).not.toHaveBeenCalled();
+    });
+  });
+
+  it('filters labels and channels on team_label_conversations', () => {
+    const wrapper = mountSidebar(
+      ADMIN_USER,
+      baseOptions,
+      teamRoute('team_label_conversations', 10, { label: 'urgent-x' })
+    );
+
+    expect(findLabelLeafLabels(wrapper)).toEqual(['urgent-x']);
+    expect(findChannelLabels(wrapper).sort()).toEqual(['Inbox X1', 'Inbox X2']);
+  });
+
+  it('clears the context when the selected team is not among the loaded teams of an agent', async () => {
+    const { wrapper } = mountSidebarWithReactiveRoute(
+      AGENT_USER,
+      { ...baseOptions, myTeams: [teamY] },
+      { name: 'conversation_mentions' }
+    );
+    await lastStore.dispatch('teamContext/setSelectedTeam', 10);
+    await nextTick();
+
+    expect(selectedTeam()).toBeNull();
+    expect(findChannelLabels(wrapper)).toEqual(
+      expect.arrayContaining(['Inbox X1', 'Inbox Y1', 'Inbox No Team'])
+    );
+  });
+
+  it('keeps a valid team for an admin', async () => {
+    const { wrapper } = mountSidebarWithReactiveRoute(ADMIN_USER, baseOptions, {
+      name: 'conversation_mentions',
+    });
+    await lastStore.dispatch('teamContext/setSelectedTeam', 10);
+    await nextTick();
+
+    expect(selectedTeam()).toBe(10);
+    expect(findChannelLabels(wrapper).sort()).toEqual(['Inbox X1', 'Inbox X2']);
+  });
+
+  it('neither clears nor ignores the selected team while teams are still loading', async () => {
+    const { wrapper } = mountSidebarWithReactiveRoute(
+      AGENT_USER,
+      { ...baseOptions, myTeams: [], teams: [] },
+      { name: 'conversation_mentions' }
+    );
+    await lastStore.dispatch('teamContext/setSelectedTeam', 10);
+    await nextTick();
+
+    expect(selectedTeam()).toBe(10);
+    expect(findChannelLabels(wrapper).sort()).toEqual(['Inbox X1', 'Inbox X2']);
+  });
+
+  it('clears the team context when the account changes', async () => {
+    const accountIdRef = ref(1);
+    mountSidebarWithReactiveRoute(
+      ADMIN_USER,
+      { ...baseOptions, accountIdRef },
+      teamRoute('team_inbox_conversations', 10, { inbox_id: '1' })
+    );
+    expect(selectedTeam()).toBe(10);
+
+    accountIdRef.value = 2;
+    await nextTick();
+    await nextTick();
+
+    expect(selectedTeam()).toBeNull();
+  });
+
+  describe('active item', () => {
+    const resolveByName = to => {
+      const p = to.params || {};
+      const paths = {
+        team_conversations: `/team/${p.teamId}`,
+        team_inbox_conversations: `/team/${p.teamId}/inbox/${p.inbox_id}`,
+        team_label_conversations: `/team/${p.teamId}/label/${p.label}`,
+      };
+      return { path: paths[to.name] || '/', meta: {} };
+    };
+
+    it('highlights the channel leaf (and not the team leaf) inside conversation_through_team_inbox', () => {
+      const { wrapper } = mountSidebarWithReactiveRoute(
+        ADMIN_USER,
+        baseOptions,
+        {
+          name: 'conversation_through_team_inbox',
+          path: '/team/10/inbox/1/conversations/33',
+          params: {
+            accountId: '1',
+            teamId: '10',
+            inbox_id: '1',
+            conversation_id: '33',
+          },
+        },
+        resolveByName
+      );
+
+      const activeTexts = wrapper
+        .findAll('a.active')
+        .map(el => el.text().trim());
+      expect(activeTexts).toContain('Inbox X1');
+      expect(activeTexts).not.toContain('Team X');
+    });
+
+    it('highlights the label leaf inside conversation_through_team_label', () => {
+      const { wrapper } = mountSidebarWithReactiveRoute(
+        ADMIN_USER,
+        baseOptions,
+        {
+          name: 'conversation_through_team_label',
+          path: '/team/10/label/urgent-x/conversations/33',
+          params: {
+            accountId: '1',
+            teamId: '10',
+            label: 'urgent-x',
+            conversation_id: '33',
+          },
+        },
+        resolveByName
+      );
+
+      const activeTexts = wrapper
+        .findAll('a.active')
+        .map(el => el.text().trim());
+      expect(activeTexts).toContain('urgent-x');
+      expect(activeTexts).not.toContain('Team X');
+    });
+  });
+
+  it('keeps the legacy leaves unchanged when there is no team context', () => {
+    const wrapper = mountSidebar(ADMIN_USER, baseOptions, { name: 'home' });
+
+    expect(selectedTeam()).toBeNull();
+    expect(findSidebarLeaf(wrapper, 'Inbox X1').props('to').name).toBe(
+      'inbox_dashboard'
+    );
+    expect(findSidebarLeaf(wrapper, 'urgent-x').props('to').name).toBe(
+      'label_conversations'
+    );
+    expect(findSidebarLeaf(wrapper, 'Team X').props('to').name).toBe(
+      'team_conversations'
+    );
+    expect(findChannelLabels(wrapper)).toHaveLength(4);
+  });
+
+  it('shows no channels and does not throw for an unknown teamId on the new route while teams are loading', () => {
+    const wrapper = mountSidebar(
+      ADMIN_USER,
+      { ...baseOptions, myTeams: [], teams: [] },
+      teamRoute('team_inbox_conversations', 999999, { inbox_id: '1' })
+    );
+
+    expect(findChannelLabels(wrapper)).toEqual([]);
   });
 });

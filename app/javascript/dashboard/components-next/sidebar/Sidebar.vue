@@ -6,6 +6,7 @@ import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useSidebarKeyboardShortcuts } from './useSidebarKeyboardShortcuts';
 import { vOnClickOutside } from '@vueuse/components';
@@ -44,6 +45,7 @@ const emit = defineEmits([
 ]);
 
 const { accountScopedRoute, isOnChatwootCloud, route } = useAccount();
+const router = useRouter();
 const store = useStore();
 const searchShortcut = useKbd([`$mod`, 'k']);
 const { t } = useI18n();
@@ -306,14 +308,82 @@ const sortedTeams = computed(() =>
   })
 );
 
-const activeTeamId = computed(() => {
-  const isOnTeamRoute = [
-    'team_conversations',
-    'conversations_through_team',
-  ].includes(route.name);
-  if (!isOnTeamRoute) return null;
-  return Number(route.params.teamId);
+const selectedTeamId = useMapGetter('teamContext/getSelectedTeamId');
+
+const TEAM_ROUTE_NAMES = [
+  'team_conversations',
+  'conversations_through_team',
+  'team_inbox_conversations',
+  'conversation_through_team_inbox',
+  'team_label_conversations',
+  'conversation_through_team_label',
+];
+const CLEAR_TEAM_ROUTE_NAMES = ['home', 'inbox_conversation'];
+
+const isSelectedTeamAccessible = () => {
+  if (selectedTeamId.value === null) return false;
+  // While teams are still loading, trust the selected id.
+  if (!teams.value.length) return true;
+  return teams.value.some(team => team.id === selectedTeamId.value);
+};
+
+const activeTeamId = computed(() =>
+  isSelectedTeamAccessible() ? selectedTeamId.value : null
+);
+
+watch(
+  [() => route.name, () => route.params?.teamId],
+  ([routeName, teamId]) => {
+    if (TEAM_ROUTE_NAMES.includes(routeName)) {
+      store.dispatch('teamContext/setSelectedTeam', teamId);
+    } else if (CLEAR_TEAM_ROUTE_NAMES.includes(routeName)) {
+      store.dispatch('teamContext/clearSelectedTeam');
+    }
+  },
+  { immediate: true }
+);
+
+watch(accountId, (newId, oldId) => {
+  if (oldId !== undefined && newId !== oldId) {
+    store.dispatch('teamContext/clearSelectedTeam');
+  }
 });
+
+watch(
+  [selectedTeamId, teams],
+  () => {
+    if (selectedTeamId.value !== null && !isSelectedTeamAccessible()) {
+      store.dispatch('teamContext/clearSelectedTeam');
+    }
+  },
+  { immediate: true }
+);
+
+const sortInboxList = list =>
+  sortSidebarItems(list, {
+    sortBy: getSortForSection(SIDEBAR_SORT_SECTIONS.CHANNELS),
+    labelKey: inbox => inbox.name,
+    unreadCountKey: inbox => getInboxUnreadCount.value(inbox.id),
+  });
+
+watch(
+  [() => route.name, () => route.params?.teamId, inboxes],
+  ([routeName, routeTeamId]) => {
+    if (routeName !== 'team_conversations') return;
+    const teamId = Number(routeTeamId);
+    const [first] = sortInboxList(
+      inboxes.value.filter(inbox => inbox.team_id === teamId)
+    );
+    if (!first) return;
+    router.replace(
+      accountScopedRoute('team_inbox_conversations', {
+        teamId,
+        inbox_id: first.id,
+      })
+    );
+  },
+  { immediate: true }
+);
 
 const sortedInboxes = computed(() => {
   const baseInboxes =
@@ -321,11 +391,7 @@ const sortedInboxes = computed(() => {
       ? inboxes.value.filter(inbox => inbox.team_id === activeTeamId.value)
       : inboxes.value;
 
-  return sortSidebarItems(baseInboxes, {
-    sortBy: getSortForSection(SIDEBAR_SORT_SECTIONS.CHANNELS),
-    labelKey: inbox => inbox.name,
-    unreadCountKey: inbox => getInboxUnreadCount.value(inbox.id),
-  });
+  return sortInboxList(baseInboxes);
 });
 
 const sortedLabels = computed(() => {
@@ -474,7 +540,19 @@ const menuItems = computed(() => {
             label: inbox.name,
             badgeCount: getInboxUnreadCount.value(inbox.id),
             icon: h(ChannelIcon, { inbox, class: 'size-[16px]' }),
-            to: accountScopedRoute('inbox_dashboard', { inbox_id: inbox.id }),
+            ...(activeTeamId.value !== null
+              ? {
+                  to: accountScopedRoute('team_inbox_conversations', {
+                    teamId: activeTeamId.value,
+                    inbox_id: inbox.id,
+                  }),
+                  activeOn: ['conversation_through_team_inbox'],
+                }
+              : {
+                  to: accountScopedRoute('inbox_dashboard', {
+                    inbox_id: inbox.id,
+                  }),
+                }),
             component: leafProps =>
               h(ChannelLeaf, {
                 label: leafProps.label,
@@ -500,9 +578,19 @@ const menuItems = computed(() => {
               class: `size-[8px] rounded-sm`,
               style: { backgroundColor: label.color },
             }),
-            to: accountScopedRoute('label_conversations', {
-              label: label.title,
-            }),
+            ...(activeTeamId.value !== null
+              ? {
+                  to: accountScopedRoute('team_label_conversations', {
+                    teamId: activeTeamId.value,
+                    label: label.title,
+                  }),
+                  activeOn: ['conversation_through_team_label'],
+                }
+              : {
+                  to: accountScopedRoute('label_conversations', {
+                    label: label.title,
+                  }),
+                }),
           })),
         },
       ],
