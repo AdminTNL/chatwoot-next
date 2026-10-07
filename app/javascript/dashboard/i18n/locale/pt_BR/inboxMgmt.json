@@ -786,7 +786,16 @@
         "LABEL": "Time responsável",
         "SUB_TEXT": "Escolha o time responsável por esta caixa de entrada",
         "PLACEHOLDER": "Selecione um time",
-        "NONE": "Nenhum time"
+        "NONE": "Nenhum time",
+        "CHANGE_CONFIRM": {
+          "TITLE": "Mover caixa de entrada para o time {teamName}?",
+          "TITLE_NO_TEAM": "Remover o time desta caixa de entrada?",
+          "MIGRATION": "Todas as conversas desta caixa de entrada serão migradas para o novo time. Dependendo do volume, isso pode levar alguns minutos.",
+          "MIGRATION_NO_TEAM": "Todas as conversas desta caixa de entrada ficarão apenas com administradores. Dependendo do volume, isso pode levar alguns minutos.",
+          "LABELS": "As etiquetas do time anterior serão removidas dessas conversas.",
+          "ACCESS": "Os membros do time anterior perderão o acesso a essas conversas.",
+          "CONFIRM": "Confirmar troca"
+        }
       },
       "INBOX_UPDATE_TITLE": "Configurações da Caixa de Entrada",
       "INBOX_UPDATE_SUB_TEXT": "Atualize suas configurações de caixa de entrada",

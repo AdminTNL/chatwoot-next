@@ -795,7 +795,16 @@
         "LABEL": "Responsible team",
         "SUB_TEXT": "Choose the team responsible for this inbox",
         "PLACEHOLDER": "Select a team",
-        "NONE": "No team"
+        "NONE": "No team",
+        "CHANGE_CONFIRM": {
+          "TITLE": "Move inbox to the team {teamName}?",
+          "TITLE_NO_TEAM": "Remove the team from this inbox?",
+          "MIGRATION": "All conversations in this inbox will be moved to the new team. Depending on the volume, this may take a few minutes.",
+          "MIGRATION_NO_TEAM": "All conversations in this inbox will be left with administrators only. Depending on the volume, this may take a few minutes.",
+          "LABELS": "The labels of the previous team will be removed from these conversations.",
+          "ACCESS": "Members of the previous team will lose access to these conversations.",
+          "CONFIRM": "Confirm change"
+        }
       },
       "INBOX_UPDATE_TITLE": "Inbox Settings",
       "INBOX_UPDATE_SUB_TEXT": "Update your inbox settings",

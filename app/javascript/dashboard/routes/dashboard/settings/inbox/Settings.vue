@@ -30,6 +30,8 @@ import BotConfiguration from './components/BotConfiguration.vue';
 import AccountHealth from './components/AccountHealth.vue';
 import WhatsappManualMigrationDialog from './components/WhatsappManualMigrationDialog.vue';
 import WhatsappManualMigrationBanner from './components/WhatsappManualMigrationBanner.vue';
+import TeamChangeConfirmDialog from './components/TeamChangeConfirmDialog.vue';
+import { hasTeamChanged } from './helpers/teamChange';
 import { FEATURE_FLAGS } from '../../../../featureFlags';
 import SenderNameExamplePreview from './components/SenderNameExamplePreview.vue';
 import LockToSingleConversationPreview from './components/LockToSingleConversationPreview.vue';
@@ -79,6 +81,7 @@ export default {
     SelectInput,
     AccountHealth,
     WhatsappManualMigrationDialog,
+    TeamChangeConfirmDialog,
     WhatsappManualMigrationBanner,
     Widget,
     AccessToken,
@@ -130,6 +133,12 @@ export default {
       portals: 'portals/allPortals',
       teams: 'teams/getTeams',
     }),
+    selectedTeamName() {
+      const team = this.teams.find(
+        item => String(item.id) === String(this.selectedTeamId)
+      );
+      return team?.name || '';
+    },
     isInboundEmailEnabled() {
       return this.isFeatureEnabledonAccount(
         this.accountId,
@@ -638,7 +647,17 @@ export default {
       const tabIndex = this.tabs.findIndex(tab => tab.key === tabParam);
       this.selectedTabIndex = tabIndex === -1 ? 0 : tabIndex;
     },
-    async updateInbox() {
+    updateInbox() {
+      if (hasTeamChanged(this.inbox.team_id, this.selectedTeamId)) {
+        this.$refs.teamChangeConfirmDialog?.open();
+        return Promise.resolve();
+      }
+      return this.saveInbox();
+    },
+    cancelTeamChange() {
+      this.selectedTeamId = this.inbox.team_id || '';
+    },
+    async saveInbox() {
       const bubbleSettings = {
         position: this.widgetBubblePosition,
         type: this.widgetBubbleType,
@@ -1424,6 +1443,12 @@ export default {
             @register-webhook="registerWebhook"
           />
         </div>
+        <TeamChangeConfirmDialog
+          ref="teamChangeConfirmDialog"
+          :team-name="selectedTeamName"
+          @confirm="saveInbox"
+          @cancel="cancelTeamChange"
+        />
         <WhatsappManualMigrationDialog
           v-if="showWhatsAppManualMigration"
           ref="whatsappManualMigrationDialog"
