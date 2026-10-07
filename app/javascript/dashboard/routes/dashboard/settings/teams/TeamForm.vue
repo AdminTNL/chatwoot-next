@@ -46,7 +46,6 @@ export default {
     const {
       description = '',
       name: title = '',
-      allow_auto_assign: allowAutoAssign = true,
       icon = '',
       icon_color: iconColor = '',
     } = formData;
@@ -54,7 +53,6 @@ export default {
     const state = reactive({
       description,
       title,
-      allowAutoAssign,
       icon,
       iconColor,
     });
@@ -87,7 +85,6 @@ export default {
       this.onSubmit({
         description: this.state.description,
         name: this.state.title,
-        allow_auto_assign: this.state.allowAutoAssign,
         icon: this.state.icon,
         icon_color: this.state.iconColor,
       });
@@ -154,12 +151,6 @@ export default {
         "
         @blur="v$.description.$touch"
       />
-      <div class="w-full flex items-center gap-2">
-        <input v-model="state.allowAutoAssign" type="checkbox" :value="true" />
-        <label for="conversation_creation">
-          {{ $t('TEAMS_SETTINGS.FORM.AUTO_ASSIGN.LABEL') }}
-        </label>
-      </div>
       <div class="flex flex-row justify-end gap-2 py-2 px-0 w-full">
         <div class="w-full">
           <NextButton

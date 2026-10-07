@@ -13,18 +13,10 @@ module AssignmentHandler
     return unless team_id_changed?
 
     validate_current_assignee_team
-    self.assignee ||= find_assignee_from_team
   end
 
   def validate_current_assignee_team
     self.assignee_id = nil if team&.members&.exclude?(assignee)
-  end
-
-  def find_assignee_from_team
-    return if team&.allow_auto_assign.blank?
-
-    team_members_with_capacity = inbox.member_ids_with_assignment_capacity & team.members.ids
-    ::AutoAssignment::AgentAssignmentService.new(conversation: self, allowed_agent_ids: team_members_with_capacity).find_assignee
   end
 
   def notify_assignment_change
