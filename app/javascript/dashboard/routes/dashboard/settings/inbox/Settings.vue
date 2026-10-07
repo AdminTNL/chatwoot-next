@@ -26,7 +26,6 @@ import ConfigurationPage from './settingsPage/ConfigurationPage.vue';
 import VoiceConfigurationPage from './settingsPage/VoiceConfigurationPage.vue';
 import WhatsappCallingPage from './settingsPage/WhatsappCallingPage.vue';
 import CustomerSatisfactionPage from './settingsPage/CustomerSatisfactionPage.vue';
-import CollaboratorsPage from './settingsPage/CollaboratorsPage.vue';
 import BotConfiguration from './components/BotConfiguration.vue';
 import AccountHealth from './components/AccountHealth.vue';
 import WhatsappManualMigrationDialog from './components/WhatsappManualMigrationDialog.vue';
@@ -52,7 +51,6 @@ export default {
   components: {
     Banner,
     BotConfiguration,
-    CollaboratorsPage,
     ConfigurationPage,
     VoiceConfigurationPage,
     WhatsappCallingPage,
@@ -179,10 +177,6 @@ export default {
           key: 'inbox-settings',
           name: this.$t('INBOX_MGMT.TABS.SETTINGS'),
         },
-        {
-          key: 'collaborators',
-          name: this.$t('INBOX_MGMT.TABS.COLLABORATORS'),
-        },
       ];
 
       visibleToAllChannelTabs = [
@@ -292,7 +286,7 @@ export default {
       return getInboxIconByType(type, medium, 'line');
     },
     bannerMaxWidth() {
-      const narrowTabs = ['collaborators', 'bot-configuration'];
+      const narrowTabs = ['bot-configuration'];
       const wideIfWebWidget = ['configuration', 'inbox-settings'];
       if (narrowTabs.includes(this.selectedTabKey)) return 'max-w-4xl';
       if (wideIfWebWidget.includes(this.selectedTabKey)) {
@@ -1392,9 +1386,6 @@ export default {
           </div>
         </div>
 
-        <div v-if="selectedTabKey === 'collaborators'" class="mx-6 max-w-4xl">
-          <CollaboratorsPage :inbox="inbox" />
-        </div>
         <div
           v-if="selectedTabKey === 'configuration'"
           class="mx-6"

@@ -36,7 +36,6 @@ import draftMessages from './modules/draftMessages';
 import globalConfig from 'shared/store/globalConfig';
 import inboxAssignableAgents from './modules/inboxAssignableAgents';
 import inboxes from './modules/inboxes';
-import inboxMembers from './modules/inboxMembers';
 import integrations from './modules/integrations';
 import labels from './modules/labels';
 import labelGroups from './modules/labelGroups';
@@ -104,7 +103,6 @@ export default createStore({
     globalConfig,
     inboxAssignableAgents,
     inboxes,
-    inboxMembers,
     integrations,
     labels,
     labelGroups,
