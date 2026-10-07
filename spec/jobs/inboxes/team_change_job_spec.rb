@@ -151,6 +151,7 @@ RSpec.describe Inboxes::TeamChangeJob do
 
   it 'bumps the inbox and label cache keys' do
     before_keys = account.cache_keys
+    allow(Time).to receive(:now).and_return(Time.now + 5.seconds) # rubocop:disable Rails/TimeZone
 
     switch_team(team_b)
 
