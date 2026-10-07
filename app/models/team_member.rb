@@ -28,7 +28,7 @@ class TeamMember < ApplicationRecord
   private
 
   # Com Team#destroy (destroy_async) o time já não existe quando o membro é apagado;
-  # sem account_id disponível, a limpeza é ignorada.
+  # sem account_id disponível, a limpeza é ignorada aqui e feita por Team#refresh_access_after_destroy.
   def enqueue_access_cleanup
     account_id = Team.find_by(id: team_id)&.account_id
     return if account_id.blank?
