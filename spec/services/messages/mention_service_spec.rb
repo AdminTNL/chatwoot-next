@@ -234,6 +234,47 @@ describe Messages::MentionService do
       end
     end
 
+    context 'when mentioned user is a member only via the inbox team' do
+      let!(:inbox_team) { create(:team, account: account) }
+      let!(:team_only_agent) { create(:user, account: account) }
+
+      before do
+        inbox.update!(team: inbox_team)
+        create(:team_member, user: team_only_agent, team: inbox_team)
+      end
+
+      it 'mentions the agent and adds them as participant' do
+        message = build(
+          :message,
+          conversation: conversation,
+          account: account,
+          content: "hi (mention://user/#{team_only_agent.id}/#{team_only_agent.name})",
+          private: true
+        )
+
+        described_class.new(message: message).perform
+
+        expect(Conversations::UserMentionJob).to have_received(:perform_later).with([team_only_agent.id.to_s], conversation.id, account.id)
+        expect(conversation.conversation_participants.pluck(:user_id)).to eq([team_only_agent.id])
+      end
+
+      it 'ignores agents from another team' do
+        other_agent = create(:user, account: account)
+        create(:team_member, user: other_agent, team: team)
+        message = build(
+          :message,
+          conversation: conversation,
+          account: account,
+          content: "hi (mention://user/#{other_agent.id}/#{other_agent.name})",
+          private: true
+        )
+
+        described_class.new(message: message).perform
+
+        expect(Conversations::UserMentionJob).not_to have_received(:perform_later)
+      end
+    end
+
     context 'when mentioned user is an admin' do
       it 'creates notifications for admin users even if not inbox members' do
         message = build(

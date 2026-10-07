@@ -63,6 +63,28 @@ RSpec.describe 'Assignable Agents API', type: :request do
         expect(response_data.pluck(:role)).to include('agent', 'administrator')
       end
 
+      context 'when agents are members only via the inbox team' do
+        let(:team) { create(:team, account: account) }
+        let(:team_agent) { create(:user, account: account, role: :agent) }
+
+        before do
+          inbox1.update!(team: team)
+          inbox2.update!(team: team)
+          create(:team_member, team: team, user: team_agent)
+        end
+
+        it 'includes the team agent once, alongside direct members and administrators' do
+          get "/api/v1/accounts/#{account.id}/assignable_agents",
+              params: { inbox_ids: [inbox1.id, inbox2.id] },
+              headers: agent1.create_new_auth_token,
+              as: :json
+
+          expect(response).to have_http_status(:success)
+          ids = response.parsed_body['payload'].pluck('id')
+          expect(ids).to contain_exactly(agent1.id, team_agent.id, admin.id)
+        end
+      end
+
       context 'with Agent Bots' do
         let!(:account_bot) { create(:agent_bot, account: account, name: 'Account bot') }
         let!(:global_bot) { create(:agent_bot, account: nil, name: 'Global bot') }

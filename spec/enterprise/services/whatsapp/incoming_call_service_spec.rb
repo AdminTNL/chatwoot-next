@@ -74,6 +74,42 @@ describe Whatsapp::IncomingCallService do
     end
   end
 
+  describe 'inbound connect routing via inbox team' do
+    let(:team) { create(:team, account: account) }
+    let!(:team_agent) { create(:user, account: account) }
+    let!(:other_team_agent) { create(:user, account: account) }
+    let!(:admin) { create(:user, account: account, role: :administrator) }
+    let(:params) { call_payload(event: 'connect', session: { sdp: "v=0\r\n...sdp...", sdp_type: 'offer' }) }
+
+    before do
+      inbox.update!(team: team)
+      create(:team_member, team: team, user: team_agent)
+      create(:team_member, team: create(:team, account: account), user: other_team_agent)
+      allow(ActionCable.server).to receive(:broadcast)
+    end
+
+    it 'rings only online team members when someone is online' do
+      allow(OnlineStatusTracker).to receive(:get_available_users)
+        .and_return(team_agent.id.to_s => 'online', other_team_agent.id.to_s => 'online')
+
+      described_class.new(inbox: inbox, params: params).perform
+
+      expect(ActionCable.server).to have_received(:broadcast).with(team_agent.pubsub_token, hash_including(event: 'voice_call.incoming'))
+      expect(ActionCable.server).not_to have_received(:broadcast).with(other_team_agent.pubsub_token, anything)
+      expect(ActionCable.server).not_to have_received(:broadcast).with(admin.pubsub_token, anything)
+    end
+
+    it 'falls back to team members and administrators when nobody is online' do
+      allow(OnlineStatusTracker).to receive(:get_available_users).and_return({})
+
+      described_class.new(inbox: inbox, params: params).perform
+
+      expect(ActionCable.server).to have_received(:broadcast).with(team_agent.pubsub_token, hash_including(event: 'voice_call.incoming'))
+      expect(ActionCable.server).to have_received(:broadcast).with(admin.pubsub_token, hash_including(event: 'voice_call.incoming'))
+      expect(ActionCable.server).not_to have_received(:broadcast).with(other_team_agent.pubsub_token, anything)
+    end
+  end
+
   describe 'outbound connect (existing call)' do
     let!(:call) do
       conversation = create(:conversation, account: account, inbox: inbox)

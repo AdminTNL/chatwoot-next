@@ -45,10 +45,7 @@ class Team < ApplicationRecord
   def add_members(user_ids)
     team_members_to_create = user_ids.map { |user_id| { user_id: user_id } }
     created_members = team_members.create(team_members_to_create)
-    added_users = created_members.filter_map(&:user)
-
-    update_account_cache
-    added_users
+    created_members.filter_map(&:user)
   end
 
   # Removes multiple members from the team
@@ -56,7 +53,6 @@ class Team < ApplicationRecord
   # @return [void]
   def remove_members(user_ids)
     team_members.where(user_id: user_ids).destroy_all
-    update_account_cache
   end
 
   def messages

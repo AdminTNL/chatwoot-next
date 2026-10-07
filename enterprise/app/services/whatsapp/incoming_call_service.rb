@@ -234,11 +234,12 @@ class Whatsapp::IncomingCallService
   end
 
   def online_agent_streams
-    inbox.available_agents.pluck('users.pubsub_token').compact
+    online = OnlineStatusTracker.get_available_users(inbox.account_id).select { |_id, status| status.eql?('online') }
+    inbox.all_member_users.where(id: online.keys.map(&:to_i)).pluck(:pubsub_token).compact
   end
 
   def fallback_agent_streams
-    user_ids = inbox.member_ids | inbox.account.administrators.ids
+    user_ids = inbox.all_member_user_ids | inbox.account.administrators.ids
     User.where(id: user_ids).pluck(:pubsub_token).compact
   end
 

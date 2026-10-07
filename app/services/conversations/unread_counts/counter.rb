@@ -183,7 +183,7 @@ class Conversations::UnreadCounts::Counter
     @visible_inbox_ids ||= if account_user&.administrator?
                              account.inboxes.pluck(:id)
                            else
-                             user.inboxes.where(account_id: account.id).pluck(:id)
+                             user.accessible_inboxes(account).pluck(:id)
                            end
   end
 

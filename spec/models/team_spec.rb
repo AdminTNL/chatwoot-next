@@ -76,6 +76,26 @@ RSpec.describe Team do
     end
   end
 
+  describe 'team cache key' do
+    let(:account) { create(:account) }
+
+    before do
+      allow(Rails.configuration.dispatcher).to receive(:dispatch)
+      allow(Time).to receive(:now).and_return(Time.now + 5.seconds) # rubocop:disable Rails/TimeZone
+    end
+
+    it 'renews the team key when a team is created' do
+      expect { create(:team, account: account) }.to(change { account.cache_keys[:team] })
+    end
+
+    it 'renews the team key when a team is updated' do
+      team = create(:team, account: account)
+      allow(Time).to receive(:now).and_return(Time.now + 10.seconds) # rubocop:disable Rails/TimeZone
+
+      expect { team.update!(description: 'nova') }.to(change { account.cache_keys[:team] })
+    end
+  end
+
   describe '#add_members' do
     let(:team) { FactoryBot.create(:team) }
 

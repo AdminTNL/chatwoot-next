@@ -21,7 +21,13 @@ class TeamMember < ApplicationRecord
 
   after_commit :invalidate_filtered_unread_count_visibility, on: [:create, :destroy]
 
+  after_commit :refresh_account_cache_keys, on: [:create, :destroy]
+
   private
+
+  def refresh_account_cache_keys
+    Team.find_by(id: team_id)&.account&.update_cache_keys(%w[team inbox label])
+  end
 
   def invalidate_filtered_unread_count_visibility
     ::Conversations::UnreadCounts::FilteredCountInvalidator.new(team&.account).user_visibility_changed!(user_id: user_id)
