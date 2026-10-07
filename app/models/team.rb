@@ -30,6 +30,7 @@ class Team < ApplicationRecord
 
   before_destroy :capture_filtered_unread_count_member_ids, prepend: true
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
+  after_destroy_commit :refresh_access_after_destroy
 
   validates :name,
             presence: { message: I18n.t('errors.validations.presence') },
@@ -83,6 +84,15 @@ class Team < ApplicationRecord
 
   def capture_filtered_unread_count_member_ids
     @filtered_unread_count_member_ids = team_members.pluck(:user_id)
+  end
+
+  # Os TeamMember são apagados em background (destroy_async), quando o time já não existe
+  # e o callback deles não consegue achar a conta; por isso o time cuida disso aqui.
+  def refresh_access_after_destroy
+    account.update_cache_keys(%w[team inbox label])
+    return if @filtered_unread_count_member_ids.blank?
+
+    Notification::AccessCleanupJob.perform_later(account_id, @filtered_unread_count_member_ids)
   end
 
   def invalidate_filtered_unread_counts_after_destroy

@@ -142,4 +142,27 @@ RSpec.describe Team do
                                                                         )
     end
   end
+
+  describe 'when destroyed' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+
+    before { create(:team_member, team: team, user: agent) }
+
+    it 'bumps the team, inbox and label cache keys' do
+      before_keys = account.cache_keys
+      allow(Time).to receive(:now).and_return(Time.now + 5.seconds) # rubocop:disable Rails/TimeZone
+
+      team.destroy!
+
+      after_keys = account.reload.cache_keys
+      %i[team inbox label].each { |key| expect(after_keys[key]).not_to eq(before_keys[key]) }
+    end
+
+    it 'enqueues the notification access cleanup for the former members' do
+      expect { team.destroy! }
+        .to have_enqueued_job(Notification::AccessCleanupJob).with(account.id, [agent.id])
+    end
+  end
 end
