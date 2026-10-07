@@ -87,6 +87,7 @@ class Inbox < ApplicationRecord
 
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
+  after_update_commit :enqueue_team_change, if: :saved_change_to_team_id?
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
 
   scope :order_by_name, -> { order('lower(name) ASC') }
@@ -269,6 +270,11 @@ class Inbox < ApplicationRecord
     return if ENV['ENABLE_INBOX_EVENTS'].blank?
 
     Rails.configuration.dispatcher.dispatch(INBOX_UPDATED, Time.zone.now, inbox: self, changed_attributes: previous_changes)
+  end
+
+  def enqueue_team_change
+    previous_team_id, new_team_id = saved_change_to_team_id
+    Inboxes::TeamChangeJob.perform_later(inbox_id: id, previous_team_id: previous_team_id, new_team_id: new_team_id)
   end
 
   def ensure_valid_max_assignment_limit

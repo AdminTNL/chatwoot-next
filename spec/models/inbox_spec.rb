@@ -81,6 +81,29 @@ RSpec.describe Inbox do
     end
   end
 
+  describe 'team change job' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:other_team) { create(:team, account: account) }
+    let!(:inbox) { create(:inbox, account: account, team: team) }
+
+    it 'enqueues the job with previous and new team ids when the team changes' do
+      expect { inbox.update!(team: other_team) }
+        .to have_enqueued_job(Inboxes::TeamChangeJob)
+        .with(inbox_id: inbox.id, previous_team_id: team.id, new_team_id: other_team.id)
+    end
+
+    it 'enqueues the job when the team is removed' do
+      expect { inbox.update!(team: nil) }
+        .to have_enqueued_job(Inboxes::TeamChangeJob)
+        .with(inbox_id: inbox.id, previous_team_id: team.id, new_team_id: nil)
+    end
+
+    it 'does not enqueue the job when another attribute changes' do
+      expect { inbox.update!(name: 'Novo nome') }.not_to have_enqueued_job(Inboxes::TeamChangeJob)
+    end
+  end
+
   describe 'account teardown' do
     it 'destroys an orphaned inbox after its account has been deleted' do
       account = create(:account)
