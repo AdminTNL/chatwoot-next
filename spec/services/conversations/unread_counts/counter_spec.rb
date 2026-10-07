@@ -99,7 +99,7 @@ RSpec.describe Conversations::UnreadCounts::Counter do
       all_count: 2,
       inboxes: { visible_inbox.id.to_s => 1, hidden_inbox.id.to_s => 1 },
       labels: { label.id.to_s => 2 },
-      teams: { visible_team.id.to_s => 2 }
+      teams: { visible_team.id.to_s => 1, hidden_inbox.team_id.to_s => 1 }
     )
   end
 
