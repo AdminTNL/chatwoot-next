@@ -64,6 +64,25 @@ RSpec.describe TeamMember do
     end
   end
 
+  describe 'notification access cleanup' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:user) { create(:user) }
+
+    it 'enqueues the cleanup job with account and user when a member is removed' do
+      team_member = create(:team_member, team: team, user: user)
+
+      expect { team_member.destroy! }
+        .to have_enqueued_job(Notification::AccessCleanupJob).with(account.id, [user.id])
+    end
+
+    it 'does not raise when the whole team is destroyed' do
+      create(:team_member, team: team, user: user)
+
+      expect { perform_enqueued_jobs { team.destroy! } }.not_to raise_error
+    end
+  end
+
   describe 'filtered unread count invalidation' do
     let(:account) { create(:account) }
     let(:team) { create(:team, account: account) }

@@ -23,7 +23,18 @@ class TeamMember < ApplicationRecord
 
   after_commit :refresh_account_cache_keys, on: [:create, :destroy]
 
+  after_destroy_commit :enqueue_access_cleanup
+
   private
+
+  # Com Team#destroy (destroy_async) o time já não existe quando o membro é apagado;
+  # sem account_id disponível, a limpeza é ignorada.
+  def enqueue_access_cleanup
+    account_id = Team.find_by(id: team_id)&.account_id
+    return if account_id.blank?
+
+    Notification::AccessCleanupJob.perform_later(account_id, [user_id])
+  end
 
   def refresh_account_cache_keys
     Team.find_by(id: team_id)&.account&.update_cache_keys(%w[team inbox label])

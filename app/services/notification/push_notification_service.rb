@@ -33,9 +33,14 @@ class Notification::PushNotificationService
   def push_message
     {
       title: notification.push_message_title,
-      tag: "#{notification.notification_type}_#{conversation.display_id}_#{notification.id}",
+      tag: push_tag,
       url: push_url
     }
+  end
+
+  def push_tag
+    base = "#{notification.notification_type}_#{conversation.display_id}"
+    notification.id.present? ? "#{base}_#{notification.id}" : base
   end
 
   def push_url

@@ -23,12 +23,9 @@ class NotificationBuilder
   end
 
   def build_notification
-    # Create conversation_creation notification only if user is subscribed to it
-    return if notification_type == 'conversation_creation' && !user_subscribed_to_notification?
-    # skip notifications for blocked conversations except for user mentions
-    return if primary_actor.contact.blocked? && notification_type != 'conversation_mention'
-    # respect conversation access (inbox/team membership and custom-role permissions)
-    return unless user_can_access_conversation?
+    return unless deliverable?
+
+    return enqueue_delivery_only if conversation_creation?
 
     user.notifications.create!(
       notification_type: notification_type,
@@ -36,6 +33,30 @@ class NotificationBuilder
       primary_actor: primary_actor,
       # secondary_actor is secondary_actor if present, else current_user
       secondary_actor: secondary_actor || current_user
+    )
+  end
+
+  def deliverable?
+    # Create conversation_creation notification only if user is subscribed to it
+    return false if conversation_creation? && !user_subscribed_to_notification?
+    # skip notifications for blocked conversations except for user mentions
+    return false if primary_actor.contact.blocked? && notification_type != 'conversation_mention'
+
+    # respect conversation access (inbox/team membership and custom-role permissions)
+    user_can_access_conversation?
+  end
+
+  def conversation_creation?
+    notification_type == 'conversation_creation'
+  end
+
+  # Conversa nova não é gravada em notifications: vira só entrega push/e-mail.
+  def enqueue_delivery_only
+    Notification::DeliveryOnlyJob.perform_later(
+      user_id: user.id,
+      account_id: account.id,
+      conversation_id: primary_actor.id,
+      notification_type: notification_type
     )
   end
 

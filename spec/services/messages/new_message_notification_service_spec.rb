@@ -44,11 +44,6 @@ describe Messages::NewMessageNotificationService do
                                                          primary_actor: message.conversation, secondary_actor: message)).to exist
       end
 
-      it 'creates notifications for assignee' do
-        expect(assignee.notifications.where(notification_type: 'assigned_conversation_new_message', account: account,
-                                            primary_actor: message.conversation, secondary_actor: message)).to exist
-      end
-
       it 'will not create notifications for the user who created the message' do
         expect(participating_agent_1.notifications.where(notification_type: 'participating_conversation_new_message',
                                                          account: account, primary_actor: message.conversation,
@@ -63,35 +58,16 @@ describe Messages::NewMessageNotificationService do
         described_class.new(message: message).perform
       end
 
-      it 'creates notifications for assignee' do
-        expect(assignee.notifications.where(notification_type: 'assigned_conversation_new_message', account: account,
-                                            primary_actor: message.conversation, secondary_actor: message)).to exist
+      it 'does not create assigned_conversation_new_message notifications' do
+        expect(Notification.where(notification_type: 'assigned_conversation_new_message')).not_to exist
       end
 
-      it 'creates notifications for all participating users' do
-        expect(participating_agent_1.notifications.where(notification_type: 'participating_conversation_new_message',
-                                                         account: account, primary_actor: message.conversation,
-                                                         secondary_actor: message)).to exist
-        expect(participating_agent_2.notifications.where(notification_type: 'participating_conversation_new_message',
-                                                         account: account, primary_actor: message.conversation,
-                                                         secondary_actor: message)).to exist
-      end
-    end
-
-    context 'when multiple notification conditions are met' do
-      let(:message) { create(:message, conversation: conversation, account: account) }
-
-      before do
-        described_class.new(message: message).perform
-      end
-
-      it 'will not create participating notifications for the assignee if assignee notification was send' do
-        expect(assignee.notifications.where(notification_type: 'assigned_conversation_new_message',
-                                            account: account, primary_actor: message.conversation,
-                                            secondary_actor: message)).to exist
-        expect(assignee.notifications.where(notification_type: 'participating_conversation_new_message',
-                                            account: account, primary_actor: message.conversation,
-                                            secondary_actor: message)).not_to exist
+      it 'creates participating notifications for all participating users, including the assignee' do
+        [participating_agent_1, participating_agent_2, assignee].each do |agent|
+          expect(agent.notifications.where(notification_type: 'participating_conversation_new_message',
+                                           account: account, primary_actor: message.conversation,
+                                           secondary_actor: message)).to exist
+        end
       end
     end
 
@@ -103,12 +79,7 @@ describe Messages::NewMessageNotificationService do
       end
 
       it 'will not create notifications for the user who created the message' do
-        expect(assignee.notifications.where(notification_type: 'participating_conversation_new_message',
-                                            account: account, primary_actor: message.conversation,
-                                            secondary_actor: message)).not_to exist
-        expect(assignee.notifications.where(notification_type: 'assigned_conversation_new_message',
-                                            account: account, primary_actor: message.conversation,
-                                            secondary_actor: message)).not_to exist
+        expect(assignee.notifications.where(secondary_actor: message)).not_to exist
       end
     end
   end
