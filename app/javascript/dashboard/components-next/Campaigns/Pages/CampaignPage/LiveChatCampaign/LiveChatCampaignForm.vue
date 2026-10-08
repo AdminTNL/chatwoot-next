@@ -121,8 +121,14 @@ const handleInboxChange = async inboxId => {
   }
 
   try {
-    const response = await store.dispatch('inboxMembers/get', { inboxId });
-    senderList.value = response?.data?.payload ?? [];
+    const inbox = formState.inboxes.value?.find(({ id }) => id === inboxId);
+    const teamId = inbox?.team_id;
+    if (!teamId) {
+      senderList.value = [];
+      return;
+    }
+    await store.dispatch('teamMembers/get', { teamId });
+    senderList.value = store.getters['teamMembers/getTeamMembers'](teamId);
   } catch (error) {
     senderList.value = [];
     useAlert(

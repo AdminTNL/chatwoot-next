@@ -17,6 +17,17 @@ RSpec.describe Enterprise::Onboarding::WebWidgetCreationService do
 
   before { create(:account_user, account: account, user: user, role: :administrator) }
 
+  describe '#perform inbox membership' do
+    before do
+      allow(Captain::Llm::WidgetTaglineService).to receive(:new)
+        .and_return(instance_double(Captain::Llm::WidgetTaglineService, perform: { message: 'tagline' }))
+    end
+
+    it 'does not create an InboxMember for the user' do
+      expect { service.perform }.not_to change(InboxMember, :count)
+    end
+  end
+
   describe '#welcome_tagline_text via #perform' do
     let(:llm_double) { instance_double(Captain::Llm::WidgetTaglineService) }
 

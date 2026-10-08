@@ -1,7 +1,8 @@
 <script setup>
 import Avatar from 'next/avatar/Avatar.vue';
 import { ref, computed, watch, nextTick } from 'vue';
-import { useStoreGetters, useMapGetter } from 'dashboard/composables/store';
+import { useMapGetter } from 'dashboard/composables/store';
+import { useAgentsList } from 'dashboard/composables/useAgentsList';
 import { useKeyboardNavigableList } from 'dashboard/composables/useKeyboardNavigableList';
 import { useI18n } from 'vue-i18n';
 
@@ -15,9 +16,16 @@ const props = defineProps({
 const emit = defineEmits(['selectAgent']);
 
 const { t } = useI18n();
-const getters = useStoreGetters();
-const agents = computed(() => getters['agents/getVerifiedAgents'].value);
-const teams = useMapGetter('teams/getTeams');
+const { assignableAgents: agents } = useAgentsList(false);
+const currentChat = useMapGetter('getSelectedChat');
+const getInbox = useMapGetter('inboxes/getInbox');
+const getTeamById = useMapGetter('teams/getTeamById');
+
+const teams = computed(() => {
+  const teamId = getInbox.value(currentChat.value?.inbox_id)?.team_id;
+  const team = teamId ? getTeamById.value(teamId) : null;
+  return team?.id ? [team] : [];
+});
 
 const tagAgentsRef = ref(null);
 const selectedIndex = ref(0);
@@ -34,7 +42,7 @@ const items = computed(() => {
         displayInfo: item[infoKey],
       }))
       .filter(item =>
-        search ? item.displayName.toLowerCase().includes(search) : true
+        search ? item.displayName?.toLowerCase().includes(search) : true
       );
 
   const categories = [

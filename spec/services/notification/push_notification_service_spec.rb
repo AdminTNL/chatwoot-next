@@ -7,6 +7,30 @@ describe Notification::PushNotificationService do
   let(:fcm_double) { instance_double(FCM) }
   let(:fcm_service_double) { instance_double(Notification::FcmService, fcm_client: fcm_double) }
 
+  before do
+    setting = user.notification_settings.find_by(account_id: account.id)
+    setting.selected_push_flags = [:push_conversation_assignment, :push_conversation_creation]
+    setting.save!
+  end
+
+  describe 'with an unsaved notification' do
+    it 'builds the tag without a notification id' do
+      conversation = create(:conversation, account: account)
+      unsaved = Notification.new(user: user, account: account, primary_actor: conversation,
+                                 notification_type: 'conversation_creation')
+      allow(WebPush).to receive(:payload_send).and_return(true)
+
+      with_modified_env VAPID_PUBLIC_KEY: 'test' do
+        create(:notification_subscription, user: user)
+        described_class.new(notification: unsaved).perform
+      end
+
+      expect(WebPush).to have_received(:payload_send) do |args|
+        expect(JSON.parse(args[:message])['tag']).to eq("conversation_creation_#{conversation.display_id}")
+      end
+    end
+  end
+
   describe '#perform' do
     context 'when the push server returns success' do
       before do

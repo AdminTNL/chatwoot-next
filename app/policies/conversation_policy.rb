@@ -26,7 +26,9 @@ class ConversationPolicy < ApplicationPolicy
   end
 
   def inbox_access?
-    user.inboxes.where(account_id: account&.id).exists?(id: record.inbox_id)
+    return false if account.blank?
+
+    user.accessible_inboxes(account).exists?(id: record.inbox_id)
   end
 
   def team_access?

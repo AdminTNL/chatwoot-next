@@ -69,6 +69,21 @@ RSpec.describe 'Conversation Participants API', type: :request do
         expect(conversation.conversation_participants.count).to eq(1)
       end
 
+      it 'creates a participant who is a member only via the inbox team' do
+        team = create(:team, account: account)
+        conversation.inbox.update!(team: team)
+        team_agent = create(:user, account: account, role: :agent)
+        create(:team_member, team: team, user: team_agent)
+
+        post api_v1_account_conversation_participants_url(account_id: account.id, conversation_id: conversation.display_id),
+             params: { user_ids: [team_agent.id] },
+             headers: agent.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(conversation.conversation_participants.pluck(:user_id)).to eq([team_agent.id])
+      end
+
       it 'notifies unread counts when a participant is added' do
         account.enable_features!(:conversation_unread_counts, :unread_count_for_filters)
         allow(Rails.configuration.dispatcher).to receive(:dispatch)

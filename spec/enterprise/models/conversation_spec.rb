@@ -122,15 +122,12 @@ RSpec.describe Conversation, type: :model do
         create_list(:conversation, 2, inbox: inbox, assignee: agent2, status: :open)
       end
 
-      it 'does not enforce max_assignment_limit for team assignment when inbox auto-assignment is disabled' do
+      it 'does not auto assign an agent when the conversation team changes (auto-assignment disabled, spec 040)' do
         conversation = create(:conversation, inbox: inbox, account: account, assignee: nil, status: :open)
 
-        # Assign to team to trigger the assignment logic
         conversation.update!(team: team)
 
-        # Should assign to a team member even if they are over the limit
-        expect(conversation.reload.assignee).to be_present
-        expect([agent1, agent2]).to include(conversation.reload.assignee)
+        expect(conversation.reload.assignee).to be_nil
       end
     end
   end

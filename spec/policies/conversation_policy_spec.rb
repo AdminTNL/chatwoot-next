@@ -51,6 +51,40 @@ RSpec.describe ConversationPolicy, type: :policy do
       end
     end
 
+    context 'when agent is only in the inbox team and the conversation has no team' do
+      let(:team) { create(:team, account: account) }
+      let(:inbox) { create(:inbox, account: account, team: team) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox, team: nil) }
+
+      before { create(:team_member, team: team, user: agent) }
+
+      it 'allows access' do
+        expect(subject).to permit(agent_context, conversation)
+      end
+    end
+
+    context 'when agent is in a different team than the inbox team' do
+      let(:inbox) { create(:inbox, account: account, team: create(:team, account: account)) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox, team: nil) }
+
+      before { create(:team_member, team: create(:team, account: account), user: agent) }
+
+      it 'denies access' do
+        expect(subject).not_to permit(agent_context, conversation)
+      end
+    end
+
+    context 'when account is nil' do
+      let(:inbox) { create(:inbox, account: account) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+
+      before { create(:inbox_member, user: agent, inbox: inbox) }
+
+      it 'denies access' do
+        expect(subject).not_to permit({ user: agent, account: nil, account_user: nil }, conversation)
+      end
+    end
+
     context 'when agent has team access' do
       let(:team) { create(:team, account: account) }
       let(:conversation) { create(:conversation, :with_team, account: account, team: team) }

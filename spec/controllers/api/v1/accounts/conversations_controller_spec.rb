@@ -176,9 +176,9 @@ RSpec.describe 'Conversations API', type: :request do
 
         it 'returns unread team conversation counts scoped to the signed-in user' do
           visible_inbox.update!(team: team)
-          hidden_inbox.update!(team: team)
+          hidden_inbox.update!(team: create(:team, account: account, allow_auto_assign: false))
           create_unread_conversation(account: account, inbox: visible_inbox, team: team)
-          create_unread_conversation(account: account, inbox: hidden_inbox, team: team)
+          create_unread_conversation(account: account, inbox: hidden_inbox, team: hidden_inbox.team)
 
           get "/api/v1/accounts/#{account.id}/conversations/unread_counts",
               headers: agent.create_new_auth_token,

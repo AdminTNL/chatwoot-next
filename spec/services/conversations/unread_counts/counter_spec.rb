@@ -5,7 +5,7 @@ RSpec.describe Conversations::UnreadCounts::Counter do
   let(:agent) { create(:user, account: account, role: :agent) }
   let(:admin) { create(:user, account: account, role: :administrator) }
   let(:visible_inbox) { create(:inbox, account: account, team: visible_team) }
-  let(:hidden_inbox) { create(:inbox, account: account, team: visible_team) }
+  let(:hidden_inbox) { create(:inbox, account: account, team: create(:team, account: account, allow_auto_assign: false)) }
   let(:label) { create(:label, account: account, title: 'billing', show_on_sidebar: true) }
   let(:hidden_label) { create(:label, account: account, title: 'internal', show_on_sidebar: false) }
   let(:visible_team) { create(:team, account: account, allow_auto_assign: false) }
@@ -69,6 +69,26 @@ RSpec.describe Conversations::UnreadCounts::Counter do
     )
   end
 
+  it 'counts unread conversations of inboxes reachable only through the agent team' do
+    team_only_agent = create(:user, account: account, role: :agent)
+    create(:team_member, user: team_only_agent, team: visible_team)
+    create_unread_conversation(account: account, inbox: visible_inbox, labels: [label.title], team: visible_team)
+    create_unread_conversation(account: account, inbox: hidden_inbox, labels: [label.title])
+
+    result = described_class.new(account: account, user: team_only_agent).perform
+
+    expect(result[:inboxes]).to eq(visible_inbox.id.to_s => 1)
+  end
+
+  it 'does not count inboxes of a team the agent does not belong to' do
+    other_agent = create(:user, account: account, role: :agent)
+    create_unread_conversation(account: account, inbox: visible_inbox, labels: [label.title], team: visible_team)
+
+    result = described_class.new(account: account, user: other_agent).perform
+
+    expect(result[:inboxes]).to eq({})
+  end
+
   it 'counts unread conversations across all account inboxes for admins' do
     create_unread_conversation(account: account, inbox: visible_inbox, labels: [label.title], team: visible_team)
     create_unread_conversation(account: account, inbox: hidden_inbox, labels: [label.title], team: visible_team)
@@ -79,7 +99,7 @@ RSpec.describe Conversations::UnreadCounts::Counter do
       all_count: 2,
       inboxes: { visible_inbox.id.to_s => 1, hidden_inbox.id.to_s => 1 },
       labels: { label.id.to_s => 2 },
-      teams: { visible_team.id.to_s => 2 }
+      teams: { visible_team.id.to_s => 1, hidden_inbox.team_id.to_s => 1 }
     )
   end
 

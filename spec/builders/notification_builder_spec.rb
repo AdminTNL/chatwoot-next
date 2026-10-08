@@ -17,13 +17,24 @@ describe NotificationBuilder do
       notification_setting.save!
     end
 
-    it 'creates a notification' do
+    it 'does not persist a conversation_creation notification and enqueues delivery only' do
       expect do
         described_class.new(
           notification_type: 'conversation_creation',
           user: user,
           account: account,
           primary_actor: primary_actor
+        ).perform
+      end.to have_enqueued_job(Notification::DeliveryOnlyJob).with(
+        user_id: user.id, account_id: account.id, conversation_id: primary_actor.id, notification_type: 'conversation_creation'
+      )
+      expect(user.notifications.count).to eq(0)
+    end
+
+    it 'persists other notification types' do
+      expect do
+        described_class.new(
+          notification_type: 'conversation_mention', user: user, account: account, primary_actor: primary_actor
         ).perform
       end.to change { user.notifications.count }.by(1)
     end
@@ -114,7 +125,7 @@ describe NotificationBuilder do
         end.not_to(change { outsider.notifications.count })
       end
 
-      it 'still creates a notification for administrators regardless of inbox membership' do
+      it 'still delivers to administrators regardless of inbox membership' do
         admin = create(:user, account: account, role: :administrator)
         admin_setting = admin.notification_settings.find_by(account_id: account.id)
         admin_setting.selected_email_flags = [:email_conversation_creation]
@@ -128,7 +139,7 @@ describe NotificationBuilder do
             account: account,
             primary_actor: primary_actor
           ).perform
-        end.to change { admin.notifications.count }.by(1)
+        end.to have_enqueued_job(Notification::DeliveryOnlyJob).with(hash_including(user_id: admin.id))
       end
 
       it 'does not create a notification when the user is not part of the account' do
