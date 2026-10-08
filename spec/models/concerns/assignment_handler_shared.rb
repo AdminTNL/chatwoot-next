@@ -45,16 +45,14 @@ shared_examples_for 'assignment_handler' do
         expect(conversation.reload.assignee).to be_nil
       end
 
-      it 'changes assignee to a team member if allow_auto_assign is enabled' do
+      # Auto-atribuição desligada (spec 040): allow_auto_assign não escolhe mais um agente.
+      it 'clears an outside assignee and picks no new one even if allow_auto_assign is enabled' do
         team.update!(allow_auto_assign: true)
 
         conversation.inbox.update!(team: team)
         conversation.save
 
-        expect(conversation.reload.assignee).to eq agent
-        expect(Conversations::ActivityMessageJob).to(have_been_enqueued.at_least(:once)
-          .with(conversation, { account_id: conversation.account_id, inbox_id: conversation.inbox_id, message_type: :activity,
-                                content: "Assigned to #{conversation.assignee.name} via #{team.name} by #{agent.name}" }))
+        expect(conversation.reload.assignee).to be_nil
       end
 
       it 'wont change assignee if he is already a team member' do

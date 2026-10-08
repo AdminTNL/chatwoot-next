@@ -87,6 +87,7 @@ class Inbox < ApplicationRecord
 
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
+  after_update_commit :enqueue_team_change, if: :saved_change_to_team_id?
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
 
   scope :order_by_name, -> { order('lower(name) ASC') }
@@ -174,12 +175,18 @@ class Inbox < ApplicationRecord
   end
 
   def assignable_agents
-    (account.users.where(id: members.select(:user_id)) + account.administrators).uniq
+    (all_member_users + account.administrators).uniq
   end
 
   # Users with access via direct membership or the inbox's team
   def all_member_users
-    account.users.where(id: members.pluck(:id) + (team&.members&.pluck(:id) || []))
+    direct_ids = inbox_members.select(:user_id)
+    team_user_ids = TeamMember.where(team_id: team_id).select(:user_id)
+    account.users.where(id: direct_ids).or(account.users.where(id: team_user_ids))
+  end
+
+  def all_member_user_ids
+    all_member_users.pluck(:id)
   end
 
   def active_bot?
@@ -265,6 +272,11 @@ class Inbox < ApplicationRecord
     Rails.configuration.dispatcher.dispatch(INBOX_UPDATED, Time.zone.now, inbox: self, changed_attributes: previous_changes)
   end
 
+  def enqueue_team_change
+    previous_team_id, new_team_id = saved_change_to_team_id
+    Inboxes::TeamChangeJob.perform_later(inbox_id: id, previous_team_id: previous_team_id, new_team_id: new_team_id)
+  end
+
   def ensure_valid_max_assignment_limit
     # overridden in enterprise/app/models/enterprise/inbox.rb
   end
@@ -276,7 +288,7 @@ class Inbox < ApplicationRecord
   def capture_filtered_unread_count_user_ids
     return if account.blank?
 
-    @filtered_unread_count_user_ids = (inbox_members.pluck(:user_id) + account.account_users.administrator.pluck(:user_id)).uniq
+    @filtered_unread_count_user_ids = (all_member_user_ids + account.account_users.administrator.pluck(:user_id)).uniq
   end
 
   def invalidate_filtered_unread_counts_after_destroy

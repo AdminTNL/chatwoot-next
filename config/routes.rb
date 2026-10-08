@@ -295,12 +295,6 @@ Rails.application.routes.draw do
             end
           end
 
-          resources :inbox_members, only: [:create, :show], param: :inbox_id do
-            collection do
-              delete :destroy
-              patch :update
-            end
-          end
           resources :labels, only: [:index, :show, :create, :update, :destroy]
           resources :label_groups, only: [:index, :show, :create, :update, :destroy]
 

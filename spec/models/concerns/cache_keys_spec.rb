@@ -46,6 +46,25 @@ RSpec.describe CacheKeys do
     end
   end
 
+  describe '#update_cache_keys' do
+    it 'updates every given cache key' do
+      test_model.update_cache_keys(%w[team inbox label])
+      %w[team inbox label].each do |key|
+        expect(Redis::Alfred).to have_received(:setex).with("idb-cache-key-account-1-#{key}", kind_of(Integer), CacheKeys::CACHE_KEYS_EXPIRY)
+      end
+    end
+
+    it 'dispatches the cache update event exactly once' do
+      test_model.update_cache_keys(%w[team inbox label])
+      expect(Rails.configuration.dispatcher).to have_received(:dispatch).once.with(
+        CacheKeys::ACCOUNT_CACHE_INVALIDATED,
+        kind_of(ActiveSupport::TimeWithZone),
+        cache_keys: test_model.cache_keys,
+        account: test_model
+      )
+    end
+  end
+
   describe '#reset_cache_keys' do
     it 'invalidates all cache keys for cacheable models' do
       test_model.reset_cache_keys

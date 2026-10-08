@@ -1120,3 +1120,12 @@ describe('Sidebar - team context (spec 032)', () => {
     expect(findChannelLabels(wrapper)).toEqual([]);
   });
 });
+
+describe('Sidebar - Settings agent assignment item (spec 040)', () => {
+  it('does not render "Agent assignment" even with advanced_assignment enabled', () => {
+    // 'accounts/isFeatureEnabledonAccount' is mocked to always return true.
+    const wrapper = mountSidebar(ADMIN_USER);
+
+    expect(wrapper.html()).not.toMatch(/agent assignment/i);
+  });
+});

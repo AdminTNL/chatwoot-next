@@ -15,7 +15,7 @@ describe NotificationBuilder do
       notification_setting.save!
     end
 
-    def build_notification(conversation, type: 'conversation_creation')
+    def build_notification(conversation, type: 'conversation_mention')
       described_class.new(
         notification_type: type,
         user: agent,

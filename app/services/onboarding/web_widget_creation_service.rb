@@ -27,7 +27,6 @@ class Onboarding::WebWidgetCreationService
     ActiveRecord::Base.transaction do
       channel = @account.web_widgets.create!(attrs)
       inbox = @account.inboxes.create!(name: @account.name, channel: channel)
-      InboxMember.find_or_create_by!(inbox: inbox, user: @user)
       inbox
     end
   rescue StandardError => e

@@ -81,6 +81,29 @@ RSpec.describe Inbox do
     end
   end
 
+  describe 'team change job' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:other_team) { create(:team, account: account) }
+    let!(:inbox) { create(:inbox, account: account, team: team) }
+
+    it 'enqueues the job with previous and new team ids when the team changes' do
+      expect { inbox.update!(team: other_team) }
+        .to have_enqueued_job(Inboxes::TeamChangeJob)
+        .with(inbox_id: inbox.id, previous_team_id: team.id, new_team_id: other_team.id)
+    end
+
+    it 'enqueues the job when the team is removed' do
+      expect { inbox.update!(team: nil) }
+        .to have_enqueued_job(Inboxes::TeamChangeJob)
+        .with(inbox_id: inbox.id, previous_team_id: team.id, new_team_id: nil)
+    end
+
+    it 'does not enqueue the job when another attribute changes' do
+      expect { inbox.update!(name: 'Novo nome') }.not_to have_enqueued_job(Inboxes::TeamChangeJob)
+    end
+  end
+
   describe 'account teardown' do
     it 'destroys an orphaned inbox after its account has been deleted' do
       account = create(:account)
@@ -106,6 +129,56 @@ RSpec.describe Inbox do
       expect do
         inbox.destroy!
       end.to change { store.conversation_version(account.id) }.by(1)
+    end
+  end
+
+  describe '#all_member_users and #assignable_agents' do
+    let(:account) { create(:account) }
+    let(:team) { create(:team, account: account) }
+    let(:inbox) { create(:inbox, account: account, team: team) }
+    let(:team_agent) { create(:user, account: account, role: :agent) }
+    let(:legacy_agent) { create(:user, account: account, role: :agent) }
+    let(:both_agent) { create(:user, account: account, role: :agent) }
+    let(:other_team_agent) { create(:user, account: account, role: :agent) }
+    let(:admin) { create(:user, account: account, role: :administrator) }
+
+    before do
+      admin
+      create(:team_member, team: team, user: team_agent)
+      create(:team_member, team: team, user: both_agent)
+      create(:inbox_member, inbox: inbox, user: both_agent)
+      create(:inbox_member, inbox: inbox, user: legacy_agent)
+      create(:team_member, team: create(:team, account: account), user: other_team_agent)
+    end
+
+    it 'unites team members and legacy inbox members without duplicates' do
+      expect(inbox.all_member_users).to contain_exactly(team_agent, legacy_agent, both_agent)
+      expect(inbox.all_member_user_ids).to contain_exactly(team_agent.id, legacy_agent.id, both_agent.id)
+    end
+
+    it 'adds administrators to assignable agents' do
+      expect(inbox.assignable_agents).to contain_exactly(team_agent, legacy_agent, both_agent, admin)
+    end
+
+    it 'returns only administrators and legacy members for an inbox without team' do
+      inbox.update!(team: nil)
+
+      expect(inbox.all_member_users).to contain_exactly(legacy_agent, both_agent)
+      expect(inbox.assignable_agents).to contain_exactly(legacy_agent, both_agent, admin)
+    end
+
+    it 'does not include team members from another account' do
+      foreign_user = create(:user, account: create(:account), role: :agent)
+      create(:team_member, team: team, user: foreign_user)
+
+      expect(inbox.all_member_users).not_to include(foreign_user)
+    end
+
+    it 'invalidates unread counts of team members when destroyed' do
+      inbox.send(:capture_filtered_unread_count_user_ids)
+
+      expect(inbox.instance_variable_get(:@filtered_unread_count_user_ids))
+        .to contain_exactly(team_agent.id, legacy_agent.id, both_agent.id, admin.id)
     end
   end
 

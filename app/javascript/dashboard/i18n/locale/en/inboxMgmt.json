@@ -22,13 +22,13 @@
         "TITLE": "Create Inbox",
         "BODY": "Authenticate your account and create an inbox."
       },
-      "AGENT": {
-        "TITLE": "Add Agents",
-        "BODY": "Add agents to the created inbox."
-      },
       "FINISH": {
         "TITLE": "Voilà!",
         "BODY": "You are all set to go!"
+      },
+      "TEAM": {
+        "TITLE": "Responsible Team",
+        "BODY": "Choose the team that handles this inbox."
       }
     },
     "ADD": {
@@ -510,12 +510,6 @@
           }
         }
       },
-      "AGENTS": {
-        "TITLE": "Agents",
-        "DESC": "Here you can add agents to manage your newly created inbox. Only these selected agents will have access to your inbox. Agents which are not part of this inbox will not be able to see or respond to messages in this inbox when they login. <br> <b>PS:</b> As an administrator, if you need access to all inboxes, you should add yourself as agent to all inboxes that you create.",
-        "VALIDATION_ERROR": "Add at least one agent to your new Inbox",
-        "PICK_AGENTS": "Pick agents for the inbox"
-      },
       "DETAILS": {
         "TITLE": "Inbox Details",
         "DESC": "From the dropdown below, select the Facebook Page you want to connect to Chatwoot. You can also give a custom name to your inbox for better identification."
@@ -541,6 +535,16 @@
         "SIGN_IN": "Sign in with Google",
         "EMAIL_PLACEHOLDER": "Enter email address",
         "ERROR_MESSAGE": "There was an error connecting to Google, please try again"
+      },
+      "TEAM": {
+        "TITLE": "Responsible team",
+        "DESC": "Choose the team that handles this inbox. Only team members and administrators will have access to its conversations.",
+        "LABEL": "Responsible team",
+        "PLACEHOLDER": "Select a team",
+        "NONE": "No team - administrators only",
+        "NO_TEAM_WARNING": "Only administrators will be able to see the conversations of this inbox.",
+        "BUTTON_TEXT": "Continue",
+        "ERROR_MESSAGE": "We couldn't save the responsible team. Please try again."
       }
     },
     "DETAILS": {
@@ -552,10 +556,6 @@
       "CREATING_CHANNEL": "Creating your Inbox...",
       "TITLE": "Configure Inbox Details",
       "DESC": ""
-    },
-    "AGENTS": {
-      "BUTTON_TEXT": "Add agents",
-      "ADD_AGENTS": "Adding Agents to your Inbox..."
     },
     "FINISH": {
       "TITLE": "Your Inbox is ready!",
@@ -639,7 +639,6 @@
     },
     "TABS": {
       "SETTINGS": "Settings",
-      "COLLABORATORS": "Collaborators",
       "CONFIGURATION": "Configuration",
       "CAMPAIGN": "Campaigns",
       "PRE_CHAT_FORM": "Pre Chat Form",
@@ -779,8 +778,6 @@
         "REQUIRE_LABEL": "Require identity validation for all conversations",
         "REQUIRE_DESCRIPTION": "When enabled, users must provide a valid identity token to start conversations. Requests without valid tokens will be rejected."
       },
-      "INBOX_AGENTS": "Agents",
-      "INBOX_AGENTS_SUB_TEXT": "Add or remove agents from this inbox",
       "AGENT_ASSIGNMENT": "Conversation Assignment",
       "AGENT_ASSIGNMENT_SUB_TEXT": "Update conversation assignment settings",
       "UPDATE": "Update",
@@ -798,7 +795,16 @@
         "LABEL": "Responsible team",
         "SUB_TEXT": "Choose the team responsible for this inbox",
         "PLACEHOLDER": "Select a team",
-        "NONE": "No team"
+        "NONE": "No team",
+        "CHANGE_CONFIRM": {
+          "TITLE": "Move inbox to the team {teamName}?",
+          "TITLE_NO_TEAM": "Remove the team from this inbox?",
+          "MIGRATION": "All conversations in this inbox will be moved to the new team. Depending on the volume, this may take a few minutes.",
+          "MIGRATION_NO_TEAM": "All conversations in this inbox will be left with administrators only. Depending on the volume, this may take a few minutes.",
+          "LABELS": "The labels of the previous team will be removed from these conversations.",
+          "ACCESS": "Members of the previous team will lose access to these conversations.",
+          "CONFIRM": "Confirm change"
+        }
       },
       "INBOX_UPDATE_TITLE": "Inbox Settings",
       "INBOX_UPDATE_SUB_TEXT": "Update your inbox settings",

@@ -14,12 +14,12 @@ const { replaceInstallationName } = useBranding();
 const globalConfig = useMapGetter('globalConfig/get');
 
 const createFlowSteps = computed(() => {
-  const steps = ['CHANNEL', 'INBOX', 'AGENT', 'FINISH'];
+  const steps = ['CHANNEL', 'INBOX', 'TEAM', 'FINISH'];
 
   const routes = {
     CHANNEL: 'settings_inbox_new',
     INBOX: 'settings_inboxes_page_channel',
-    AGENT: 'settings_inboxes_add_agents',
+    TEAM: 'settings_inboxes_add_agents',
     FINISH: 'settings_inbox_finish',
   };
 

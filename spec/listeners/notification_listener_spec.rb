@@ -4,45 +4,8 @@ describe NotificationListener do
   let!(:account) { create(:account) }
   let!(:user) { create(:user, account: account) }
   let!(:first_agent) { create(:user, account: account) }
-  let!(:agent_with_out_notification) { create(:user, account: account) }
   let!(:inbox) { create(:inbox, account: account) }
   let!(:conversation) { create(:conversation, account: account, inbox: inbox, assignee: user) }
-
-  describe 'conversation_created' do
-    let(:event_name) { :'conversation.created' }
-
-    context 'when conversation is created' do
-      it 'creates notifications for inbox members who have notifications turned on' do
-        notification_setting = first_agent.notification_settings.first
-        notification_setting.selected_email_flags = [:email_conversation_creation]
-        notification_setting.selected_push_flags = []
-        notification_setting.save!
-
-        create(:inbox_member, user: first_agent, inbox: inbox)
-        conversation.reload
-
-        event = Events::Base.new(event_name, Time.zone.now, conversation: conversation)
-
-        listener.conversation_created(event)
-        expect(notification_setting.user.notifications.count).to eq(1)
-      end
-
-      it 'does not create notification for inbox members who have notifications turned off' do
-        notification_setting = agent_with_out_notification.notification_settings.first
-        notification_setting.unselect_all_email_flags
-        notification_setting.unselect_all_push_flags
-        notification_setting.save!
-
-        create(:inbox_member, user: agent_with_out_notification, inbox: inbox)
-        conversation.reload
-
-        event = Events::Base.new(event_name, Time.zone.now, conversation: conversation)
-
-        listener.conversation_created(event)
-        expect(notification_setting.user.notifications.count).to eq(0)
-      end
-    end
-  end
 
   describe 'message_created' do
     let(:event_name) { :'message.created' }
@@ -181,63 +144,86 @@ describe NotificationListener do
     end
   end
 
-  describe 'conversation_bot_handoff' do
-    let(:event_name) { :'conversation.bot_handoff' }
+  shared_examples 'conversation delivery' do |listener_method, event_name|
+    let(:team) { create(:team, account: account) }
+    let(:team_inbox) { create(:inbox, account: account, team: team) }
+    let(:team_conversation) { create(:conversation, account: account, inbox: team_inbox) }
+    let(:team_agents) { create_list(:user, 3, account: account) }
+    let(:event) { Events::Base.new(event_name, Time.zone.now, conversation: team_conversation) }
 
-    context 'when conversation is bot handoff' do
-      it 'creates notifications for inbox members who have notifications turned on' do
-        notification_setting = first_agent.notification_settings.first
-        notification_setting.selected_email_flags = [:email_conversation_creation]
-        notification_setting.selected_push_flags = []
-        notification_setting.save!
-
-        create(:inbox_member, user: first_agent, inbox: inbox)
-        conversation.reload
-
-        event = Events::Base.new(event_name, Time.zone.now, conversation: conversation)
-
-        listener.conversation_bot_handoff(event)
-        expect(notification_setting.user.notifications.count).to eq(1)
-      end
-
-      it 'does not create notification for inbox members who have notifications turned off' do
-        notification_setting = agent_with_out_notification.notification_settings.first
-        notification_setting.unselect_all_email_flags
-        notification_setting.unselect_all_push_flags
-        notification_setting.save!
-
-        create(:inbox_member, user: agent_with_out_notification, inbox: inbox)
-        conversation.reload
-
-        event = Events::Base.new(event_name, Time.zone.now, conversation: conversation)
-
-        listener.conversation_bot_handoff(event)
-        expect(notification_setting.user.notifications.count).to eq(0)
-      end
+    def enable_push(agent)
+      setting = agent.notification_settings.find_by(account_id: account.id)
+      setting.selected_push_flags = [:push_conversation_creation]
+      setting.selected_email_flags = []
+      setting.save!
     end
+
+    before do
+      team_agents.each { |agent| create(:team_member, team: team, user: agent) }
+      team_conversation
+    end
+
+    it 'does not persist notifications and enqueues delivery only for subscribed team members' do
+      enable_push(team_agents.first)
+
+      expect { listener.public_send(listener_method, event) }
+        .to have_enqueued_job(Notification::DeliveryOnlyJob).once
+                                                            .with(user_id: team_agents.first.id, account_id: account.id,
+                                                                  conversation_id: team_conversation.id,
+                                                                  notification_type: 'conversation_creation')
+      expect(Notification.where(notification_type: :conversation_creation).count).to eq(0)
+    end
+
+    it 'does not notify members of another team nor administrators outside the team' do
+      other_team_agent = create(:user, account: account)
+      create(:team_member, team: create(:team, account: account), user: other_team_agent)
+      admin = create(:user, account: account, role: :administrator)
+      [other_team_agent, admin].each { |agent| enable_push(agent) }
+
+      expect { listener.public_send(listener_method, event) }.not_to have_enqueued_job(Notification::DeliveryOnlyJob)
+    end
+
+    it 'still notifies agents with legacy inbox membership' do
+      legacy_agent = create(:user, account: account)
+      create(:inbox_member, user: legacy_agent, inbox: team_inbox)
+      enable_push(legacy_agent)
+
+      expect { listener.public_send(listener_method, event) }
+        .to have_enqueued_job(Notification::DeliveryOnlyJob).with(hash_including(user_id: legacy_agent.id))
+    end
+
+    it 'keeps an unread mention untouched' do
+      agent = team_agents.first
+      enable_push(agent)
+      mention = create(:notification, account: account, user: agent, notification_type: :conversation_mention,
+                                      primary_actor: team_conversation)
+
+      perform_enqueued_jobs { listener.public_send(listener_method, event) }
+
+      expect(Notification.exists?(mention.id)).to be(true)
+    end
+  end
+
+  describe 'conversation_created' do
+    include ActiveJob::TestHelper
+
+    it_behaves_like 'conversation delivery', :conversation_created, :'conversation.created'
+  end
+
+  describe 'conversation_bot_handoff' do
+    include ActiveJob::TestHelper
+
+    it_behaves_like 'conversation delivery', :conversation_bot_handoff, :'conversation.bot_handoff'
   end
 
   describe 'assignee_changed' do
     let(:event_name) { :'conversation.assignee_changed' }
 
-    context 'when notifiable_assignee_change is true but assignee is nil' do
-      it 'does not create a notification' do
-        conversation_with_nil_assignee = create(:conversation, account: account, inbox: inbox, assignee: nil)
+    it 'does not create any notification' do
+      create(:inbox_member, user: user, inbox: inbox)
+      event = Events::Base.new(event_name, Time.zone.now, conversation: conversation, data: { notifiable_assignee_change: true })
 
-        notification_builder_mock = instance_double(NotificationBuilder)
-        allow(NotificationBuilder).to receive(:new).and_return(notification_builder_mock)
-
-        event = Events::Base.new(
-          event_name,
-          Time.zone.now,
-          conversation: conversation_with_nil_assignee,
-          data: { notifiable_assignee_change: true }
-        )
-
-        expect(notification_builder_mock).not_to receive(:perform)
-
-        listener.assignee_changed(event)
-      end
+      expect { listener.assignee_changed(event) }.not_to(change(Notification, :count))
     end
   end
 end

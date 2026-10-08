@@ -21,7 +21,11 @@ module CacheKeys
   end
 
   def update_cache_key(key)
-    update_cache_key_for_account(id, key)
+    update_cache_keys([key])
+  end
+
+  def update_cache_keys(keys)
+    Array(keys).each { |key| update_cache_key_for_account(id, key) }
     dispatch_cache_update_event
   end
 
