@@ -349,6 +349,53 @@ describe ConversationFinder do
         expect(unread_result[:conversations].map(&:id)).not_to include(conversation.id)
       end
 
+      it 'classifies as in_progress a conversation with no agent_last_seen_at and only an outgoing message' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: nil)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :outgoing, created_at: 1.minute.ago)
+
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        expect(in_progress_ids).to include(conversation.id)
+        expect(unread_ids).not_to include(conversation.id)
+      end
+
+      it 'does not count an incoming message created exactly at agent_last_seen_at as unread' do
+        seen_at = 1.hour.ago.change(usec: 0)
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: seen_at)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: seen_at)
+
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        expect(in_progress_ids).to include(conversation.id)
+        expect(unread_ids).not_to include(conversation.id)
+      end
+
+      it 'does not count an activity message after agent_last_seen_at as unread' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.hour.ago)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :activity, created_at: 1.minute.ago)
+
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        expect(in_progress_ids).to include(conversation.id)
+        expect(unread_ids).not_to include(conversation.id)
+      end
+
+      it 'lists a conversation with several unread incoming messages once and counts it once' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.hour.ago)
+        3.times do |i|
+          create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: (i + 1).minutes.ago)
+        end
+
+        baseline = described_class.new(user_1, { read_status: 'unread' }).perform
+        unread_ids = baseline[:conversations].map(&:id)
+        expect(unread_ids.count(conversation.id)).to eq(1)
+        expect(baseline[:count][:unread_conversations_count]).to eq(unread_ids.size)
+
+        conversation.update!(agent_last_seen_at: 1.minute.from_now)
+        after = described_class.new(user_1, { read_status: 'unread' }).perform
+        expect(baseline[:count][:unread_conversations_count] - after[:count][:unread_conversations_count]).to eq(1)
+      end
+
       it 'classifies a pending conversation with an unread message as unread, not a category of its own' do
         conversation = create(:conversation, account: account, inbox: inbox, status: 'pending', agent_last_seen_at: 1.hour.ago)
         create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: 1.minute.ago)

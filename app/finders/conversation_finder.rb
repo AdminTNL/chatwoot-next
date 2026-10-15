@@ -157,9 +157,9 @@ class ConversationFinder
   def filter_by_read_status
     case params[:read_status]
     when 'unread'
-      @conversations = @conversations.where.not(status: [:resolved, :snoozed]).where(Conversation.unread_messages_count_arel.gt(0))
+      @conversations = @conversations.where.not(status: [:resolved, :snoozed]).where(Conversation.unread_messages_exist_arel)
     when 'in_progress'
-      @conversations = @conversations.where.not(status: [:resolved, :snoozed]).where(Conversation.unread_messages_count_arel.lteq(0))
+      @conversations = @conversations.where.not(status: [:resolved, :snoozed]).where(Conversation.unread_messages_exist_arel.not)
     when 'snoozed'
       @conversations = @conversations.where(status: :snoozed)
     when 'resolved'
@@ -193,11 +193,11 @@ class ConversationFinder
 
     resolved_status = Conversation.statuses[:resolved]
     snoozed_status = Conversation.statuses[:snoozed]
-    unread_messages_sql = Conversation.unread_messages_count_arel.to_sql
+    unread_messages_sql = Conversation.unread_messages_exist_arel.to_sql
 
     counts = @conversations.unscope(:order).pick(
-      Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND #{unread_messages_sql} > 0)"),
-      Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND #{unread_messages_sql} = 0)"),
+      Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND #{unread_messages_sql})"),
+      Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND NOT #{unread_messages_sql})"),
       Arel.sql("COUNT(*) FILTER (WHERE status = #{snoozed_status})"),
       Arel.sql("COUNT(*) FILTER (WHERE status = #{resolved_status})"),
       Arel.sql('COUNT(*)')
@@ -207,7 +207,7 @@ class ConversationFinder
 
   def legacy_count_for_all_conversations
     not_resolved_or_snoozed = @conversations.where.not(status: [:resolved, :snoozed])
-    unread_count = not_resolved_or_snoozed.where(Conversation.unread_messages_count_arel.gt(0)).count
+    unread_count = not_resolved_or_snoozed.where(Conversation.unread_messages_exist_arel).count
     not_resolved_or_snoozed_count = not_resolved_or_snoozed.count
 
     [

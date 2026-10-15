@@ -229,14 +229,22 @@ class Conversation < ApplicationRecord
     Arel::Nodes::Grouping.new(unread_messages.ast)
   end
 
+  def self.unread_messages_exist_arel
+    messages = Message.arel_table
+    unread_messages = messages
+                      .project(1)
+                      .where(unread_messages_condition(messages, arel_table))
+
+    Arel::Nodes::Exists.new(unread_messages.ast)
+  end
+
   def self.unread_messages_condition(messages, conversations)
+    last_seen = Arel::Nodes::NamedFunction.new('COALESCE', [conversations[:agent_last_seen_at], Arel.sql("'-infinity'::timestamp")])
+
     messages[:conversation_id].eq(conversations[:id])
                               .and(messages[:account_id].eq(conversations[:account_id]))
                               .and(messages[:message_type].eq(Message.message_types[:incoming]))
-                              .and(
-                                conversations[:agent_last_seen_at].eq(nil)
-                                  .or(messages[:created_at].gt(conversations[:agent_last_seen_at]))
-                              )
+                              .and(messages[:created_at].gt(last_seen))
   end
 
   def recent_messages

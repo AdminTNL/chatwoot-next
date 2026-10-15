@@ -734,6 +734,32 @@ RSpec.describe Conversation do
     end
   end
 
+  describe '.unread_messages_exist_arel' do
+    it 'builds an EXISTS with COALESCE on agent_last_seen_at' do
+      sql = described_class.unread_messages_exist_arel.to_sql
+
+      expect(sql).to include('EXISTS')
+      expect(sql).to include('COALESCE')
+    end
+  end
+
+  describe '.sort_on_unread' do
+    it 'orders conversations with more unread messages first' do
+      conversation_few = create(:conversation, agent_last_seen_at: 1.hour.ago)
+      conversation_many = create(:conversation, account: conversation_few.account, inbox: conversation_few.inbox,
+                                                agent_last_seen_at: 1.hour.ago)
+      create(:message, message_type: :incoming, created_at: 1.minute.ago, conversation: conversation_few,
+                       account: conversation_few.account, inbox: conversation_few.inbox)
+      2.times do |i|
+        create(:message, message_type: :incoming, created_at: (i + 1).minutes.ago, conversation: conversation_many,
+                         account: conversation_few.account, inbox: conversation_few.inbox)
+      end
+
+      ids = described_class.where(id: [conversation_few.id, conversation_many.id]).sort_on_unread('desc').map(&:id)
+      expect(ids).to eq([conversation_many.id, conversation_few.id])
+    end
+  end
+
   describe 'recent_messages' do
     subject(:recent_messages) { conversation.recent_messages }
 
