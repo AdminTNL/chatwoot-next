@@ -31,6 +31,9 @@ export const hasMessageFailedWithExternalError = pendingMessage => {
   return status === MESSAGE_STATUS.FAILED && externalError !== '';
 };
 
+// Contador compartilhado pelas listagens para descartar respostas atrasadas
+let latestListRequestId = 0;
+
 // actions
 const actions = {
   getConversation: async ({ commit }, conversationId) => {
@@ -45,11 +48,14 @@ const actions = {
 
   fetchAllConversations: async ({ commit, state, dispatch }) => {
     commit(types.SET_LIST_LOADING_STATUS);
+    latestListRequestId += 1;
+    const requestId = latestListRequestId;
     try {
       const params = state.conversationFilters;
       const {
         data: { data },
       } = await ConversationApi.get(params);
+      if (requestId !== latestListRequestId) return;
       buildConversationList(
         { commit, dispatch },
         params,
@@ -63,8 +69,11 @@ const actions = {
 
   fetchFilteredConversations: async ({ commit, dispatch }, params) => {
     commit(types.SET_LIST_LOADING_STATUS);
+    latestListRequestId += 1;
+    const requestId = latestListRequestId;
     try {
       const { data } = await ConversationApi.filter(params);
+      if (requestId !== latestListRequestId) return;
       buildConversationList(
         { commit, dispatch },
         params,
@@ -370,7 +379,7 @@ const actions = {
     try {
       await ConversationApi.delete(conversationId);
       commit(types.DELETE_CONVERSATION, conversationId);
-      dispatch('conversationStats/get', {}, { root: true });
+      dispatch('conversationStats/get', undefined, { root: true });
     } catch (error) {
       throw new Error(error);
     }
