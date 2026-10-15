@@ -182,7 +182,9 @@ describe ConversationFinder do
       let(:params) { { team_id: team.id } }
 
       it 'filter conversations by team' do
-        create(:conversation, account: account, inbox: inbox, team: team)
+        create(:team_member, user: user_1, team: team)
+        restricted_inbox.update!(team: team)
+        create(:conversation, account: account, inbox: restricted_inbox)
         result = conversation_finder.perform
         expect(result[:conversations].length).to be 1
       end
