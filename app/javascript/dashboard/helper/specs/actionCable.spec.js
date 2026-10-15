@@ -1,12 +1,18 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 import ActionCableConnector from '../actionCable';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { emitter } from 'shared/helpers/mitt';
 
 vi.mock('shared/helpers/mitt', () => ({
   emitter: {
     emit: vi.fn(),
   },
 }));
+
+vi.mock(
+  'dashboard/helper/AudioAlerts/DashboardAudioNotificationHelper',
+  () => ({ default: { onNewMessage: vi.fn() } })
+);
 
 vi.mock('dashboard/composables/useImpersonation', () => ({
   useImpersonation: () => ({
@@ -73,6 +79,59 @@ describe('ActionCableConnector - Copilot Tests', () => {
         'copilotMessages/upsert',
         copilotData
       );
+    });
+  });
+
+  describe('message.created', () => {
+    const receberMensagem = campos =>
+      actionCable.onReceived({
+        event: 'message.created',
+        data: {
+          account_id: 1,
+          conversation_id: 10,
+          conversation: { last_activity_at: 1700000000 },
+          private: false,
+          ...campos,
+        },
+      });
+
+    const expectDespachosPadrao = () => {
+      expect(mockDispatch).toHaveBeenCalledWith(
+        'addMessage',
+        expect.objectContaining({ conversation_id: 10 })
+      );
+      expect(mockDispatch).toHaveBeenCalledWith(
+        'updateConversationLastActivity',
+        { lastActivityAt: 1700000000, conversationId: 10 }
+      );
+    };
+
+    it('atualiza os contadores quando a mensagem do contato é pública', () => {
+      receberMensagem({ message_type: 0 });
+
+      expect(emitter.emit).toHaveBeenCalledWith('fetch_conversation_stats');
+      expectDespachosPadrao();
+    });
+
+    it('não atualiza os contadores em mensagem de saída', () => {
+      receberMensagem({ message_type: 1 });
+
+      expect(emitter.emit).not.toHaveBeenCalledWith('fetch_conversation_stats');
+      expectDespachosPadrao();
+    });
+
+    it('não atualiza os contadores em mensagem de atividade', () => {
+      receberMensagem({ message_type: 2 });
+
+      expect(emitter.emit).not.toHaveBeenCalledWith('fetch_conversation_stats');
+      expectDespachosPadrao();
+    });
+
+    it('não atualiza os contadores em mensagem privada do contato', () => {
+      receberMensagem({ message_type: 0, private: true });
+
+      expect(emitter.emit).not.toHaveBeenCalledWith('fetch_conversation_stats');
+      expectDespachosPadrao();
     });
   });
 

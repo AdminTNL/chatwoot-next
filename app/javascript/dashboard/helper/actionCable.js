@@ -134,6 +134,9 @@ class ActionCableConnector extends BaseActionCableConnector {
       lastActivityAt,
       conversationId,
     });
+    if (data.message_type === 0 && !data.private) {
+      this.fetchConversationStats();
+    }
   };
 
   // eslint-disable-next-line class-methods-use-this
