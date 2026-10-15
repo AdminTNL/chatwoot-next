@@ -168,10 +168,6 @@ describe ConversationFinder do
       it 'returns the correct meta' do
         result = conversation_finder.perform
         expect(result[:count]).to eq({
-                                       mine_count: 2,
-                                       assigned_count: 3,
-                                       unassigned_count: 1,
-                                       all_count: 4,
                                        unread_conversations_count: 0,
                                        in_progress_conversations_count: 4,
                                        snoozed_conversations_count: 0,
@@ -294,10 +290,6 @@ describe ConversationFinder do
       it 'returns the correct counts' do
         result = conversation_finder.perform_meta_only
         expect(result[:count]).to eq({
-                                       mine_count: 2,
-                                       assigned_count: 3,
-                                       unassigned_count: 1,
-                                       all_count: 4,
                                        unread_conversations_count: 0,
                                        in_progress_conversations_count: 4,
                                        snoozed_conversations_count: 0,
@@ -445,10 +437,19 @@ describe ConversationFinder do
         result = described_class.new(user_1, { assignee_type: 'me' }).perform
 
         expect(result[:conversations].length).to be 2
-        expect(result[:count][:mine_count]).to eq(2)
-        expect(result[:count][:assigned_count]).to eq(3)
-        expect(result[:count][:unassigned_count]).to eq(1)
-        expect(result[:count][:all_count]).to eq(4)
+        expect(result[:count].keys).not_to include(:mine_count, :assigned_count, :unassigned_count, :all_count)
+      end
+
+      it 'returns the 5 tab counts when searching with q (legacy count path)' do
+        create(:message, conversation: account.conversations.first, account: account, inbox: inbox,
+                         content: 'needle-in-haystack', message_type: :incoming)
+
+        result = described_class.new(user_1, { q: 'needle-in-haystack' }).perform
+
+        expect(result[:count].keys).to contain_exactly(
+          :unread_conversations_count, :in_progress_conversations_count, :snoozed_conversations_count,
+          :resolved_conversations_count, :all_conversations_count
+        )
       end
 
       it 'returns the same 5 new counts from perform_meta_only as from perform, even without read_status in the request' do
@@ -471,9 +472,9 @@ describe ConversationFinder do
 
         result = described_class.new(user_1, {}).perform_meta_only
 
-        # one query for the read-status counts computed pre-status-filter (set_read_status_counts),
-        # one for the legacy mine/unassigned/all counts computed post-status-filter - never one per conversation.
-        expect(count_queries.size).to eq(2)
+        # a single query for the read-status counts computed pre-status-filter (set_read_status_counts)
+        # - never one per conversation.
+        expect(count_queries.size).to eq(1)
         expect(result[:count][:in_progress_conversations_count]).to be >= 60
       ensure
         ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber

@@ -41,36 +41,15 @@ class ConversationFinder
   def perform
     set_up
 
-    mine_count, unassigned_count, all_count = set_count_for_all_conversations
-    assigned_count = all_count - unassigned_count
-
     filter_by_assignee_type
 
-    {
-      conversations: conversations,
-      count: {
-        mine_count: mine_count,
-        assigned_count: assigned_count,
-        unassigned_count: unassigned_count,
-        all_count: all_count
-      }.merge(@read_status_counts)
-    }
+    { conversations: conversations, count: @read_status_counts }
   end
 
   def perform_meta_only
     set_up
 
-    mine_count, unassigned_count, all_count, = set_count_for_all_conversations
-    assigned_count = all_count - unassigned_count
-
-    {
-      count: {
-        mine_count: mine_count,
-        assigned_count: assigned_count,
-        unassigned_count: unassigned_count,
-        all_count: all_count
-      }.merge(@read_status_counts)
-    }
+    { count: @read_status_counts }
   end
 
   private
@@ -217,16 +196,13 @@ class ConversationFinder
     unread_messages_sql = Conversation.unread_messages_count_arel.to_sql
 
     counts = @conversations.unscope(:order).pick(
-      Arel.sql("COUNT(*) FILTER (WHERE assignee_id = #{current_user.id})"),
-      Arel.sql('COUNT(*) FILTER (WHERE assignee_id IS NULL)'),
-      Arel.sql('COUNT(*)'),
       Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND #{unread_messages_sql} > 0)"),
       Arel.sql("COUNT(*) FILTER (WHERE status NOT IN (#{resolved_status}, #{snoozed_status}) AND #{unread_messages_sql} = 0)"),
       Arel.sql("COUNT(*) FILTER (WHERE status = #{snoozed_status})"),
       Arel.sql("COUNT(*) FILTER (WHERE status = #{resolved_status})"),
       Arel.sql('COUNT(*)')
     )
-    counts || [0, 0, 0, 0, 0, 0, 0, 0]
+    counts || [0, 0, 0, 0, 0]
   end
 
   def legacy_count_for_all_conversations
@@ -235,9 +211,6 @@ class ConversationFinder
     not_resolved_or_snoozed_count = not_resolved_or_snoozed.count
 
     [
-      @conversations.assigned_to(current_user).count,
-      @conversations.unassigned.count,
-      @conversations.count,
       unread_count,
       not_resolved_or_snoozed_count - unread_count,
       @conversations.where(status: :snoozed).count,
@@ -247,8 +220,7 @@ class ConversationFinder
   end
 
   def set_read_status_counts
-    _mine_count, _unassigned_count, _all_count,
-      unread_count, in_progress_count, snoozed_count, resolved_count, all_conversations_count = set_count_for_all_conversations
+    unread_count, in_progress_count, snoozed_count, resolved_count, all_conversations_count = set_count_for_all_conversations
 
     @read_status_counts = {
       unread_conversations_count: unread_count,
