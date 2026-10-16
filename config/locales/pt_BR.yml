@@ -52,8 +52,6 @@ pt_BR:
       failed: Registro falhou
     voice:
       call_already_accepted: '%{agent_name} já está atendendo a chamada.'
-    assignment_policy:
-      not_found: Política de atribuição não encontrada
     attachments:
       invalid: Anexo inválido
     upload:

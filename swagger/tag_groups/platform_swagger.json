@@ -1919,10 +1919,6 @@
             "type": "string",
             "description": "Website Token"
           },
-          "enable_auto_assignment": {
-            "type": "boolean",
-            "description": "The flag which shows whether Auto Assignment is enabled or not"
-          },
           "web_widget_script": {
             "type": "string",
             "description": "Script used to load the website widget"
@@ -1967,10 +1963,6 @@
           "csat_survey_enabled": {
             "type": "boolean",
             "description": "The flag to enable CSAT survey"
-          },
-          "auto_assignment_config": {
-            "type": "object",
-            "description": "Configuration settings for auto assignment"
           },
           "out_of_office_message": {
             "type": [
@@ -2505,10 +2497,6 @@
               "null"
             ],
             "description": "The description about the team"
-          },
-          "allow_auto_assign": {
-            "type": "boolean",
-            "description": "If this setting is turned on, the system would automatically assign the conversation to an agent in the team while assigning the conversation to a team"
           },
           "account_id": {
             "type": "number",
@@ -4051,11 +4039,6 @@
               }
             }
           },
-          "enable_auto_assignment": {
-            "type": "boolean",
-            "description": "Enable Auto Assignment.",
-            "example": true
-          },
           "working_hours_enabled": {
             "type": "boolean",
             "description": "Enable working hours.",
@@ -4220,11 +4203,6 @@
                 }
               }
             }
-          },
-          "enable_auto_assignment": {
-            "type": "boolean",
-            "description": "Enable Auto Assignment.",
-            "example": true
           },
           "working_hours_enabled": {
             "type": "boolean",
@@ -5085,11 +5063,6 @@
             "type": "string",
             "description": "The description of the team",
             "example": "This is a team of support agents"
-          },
-          "allow_auto_assign": {
-            "type": "boolean",
-            "description": "If this setting is turned on, the system would automatically assign the conversation to an agent in the team while assigning the conversation to a team",
-            "example": true
           }
         }
       },

@@ -567,7 +567,6 @@
     "EDIT": {
       "API": {
         "SUCCESS_MESSAGE": "Configurações de caixa de entrada atualizadas com sucesso",
-        "AUTO_ASSIGNMENT_SUCCESS_MESSAGE": "Agente atualizado com sucesso",
         "ERROR_MESSAGE": "Não foi possível atualizar as configurações da caixa de entrada. Por favor, tente novamente mais tarde."
       },
       "EMAIL_COLLECT_BOX": {
@@ -769,12 +768,9 @@
         "REQUIRE_LABEL": "Exigir validação de identidade para todas as conversas",
         "REQUIRE_DESCRIPTION": "Quando ativado, os usuários devem fornecer um token de identidade válido para iniciar conversas. Solicitações sem tokens válidos serão rejeitadas."
       },
-      "AGENT_ASSIGNMENT": "Atribuição de conversa",
-      "AGENT_ASSIGNMENT_SUB_TEXT": "Atualizar configurações de atribuição de conversa",
       "UPDATE": "Atualizar",
       "ENABLE_EMAIL_COLLECT_BOX": "Ativar caixa de coleta de e-mail",
       "ENABLE_EMAIL_COLLECT_BOX_SUB_TEXT": "Ativar ou desativar caixa de coleta de e-mails em novas conversas",
-      "AUTO_ASSIGNMENT": "Habilitar atribuição automática",
       "SENDER_NAME_SECTION": "Habilitar o Nome do Agente no E-mail",
       "SENDER_NAME_SECTION_TEXT": "Ativar/Desativar exibição do nome do agente no e-mail, se estiver desativado, exibirá o nome da empresa",
       "ENABLE_CONTINUITY_VIA_EMAIL": "Habilitar continuidade das conversas por e-mail",
@@ -799,7 +795,6 @@
       },
       "INBOX_UPDATE_TITLE": "Configurações da Caixa de Entrada",
       "INBOX_UPDATE_SUB_TEXT": "Atualize suas configurações de caixa de entrada",
-      "AUTO_ASSIGNMENT_SUB_TEXT": "Ativar ou desativar a atribuição automática de novas conversas aos agentes adicionados a essa caixa de entrada.",
       "HMAC_VERIFICATION": "Validação de Identidade do Usuário",
       "HMAC_DESCRIPTION": "Para validar a identidade do usuário, você pode passar um `identifier_hash` para cada usuário. Você pode gerar um hash HMAC sha256 usando o `identifier` com a chave mostrada aqui.",
       "HMAC_LINK_TO_DOCS": "Você pode ler mais aqui.",
@@ -852,58 +847,6 @@
       "NONE": "Nenhuma",
       "REMOVE": "Remover Centro de Ajuda",
       "SUB_TEXT": "Anexe um Centro de Ajuda com a caixa de entrada"
-    },
-    "AUTO_ASSIGNMENT": {
-      "MAX_ASSIGNMENT_LIMIT": "Limite de atribuição automática",
-      "MAX_ASSIGNMENT_LIMIT_RANGE_ERROR": "Por favor, insira um valor maior que 0",
-      "MAX_ASSIGNMENT_LIMIT_SUB_TEXT": "Limitar o número máximo de conversas desta caixa de entrada que pode ser atribuído automaticamente a um agente"
-    },
-    "ASSIGNMENT": {
-      "TITLE": "Atribuição de conversa",
-      "DESCRIPTION": "Atribua automaticamente as conversas recebidas aos agentes disponíveis com base nas políticas de atribuição",
-      "ENABLE_AUTO_ASSIGNMENT": "Ativar atribuição automática de conversas",
-      "DEFAULT_RULES_TITLE": "Regras de atribuição padrão",
-      "DEFAULT_RULES_DESCRIPTION": "Utilizando o comportamento de atribuição padrão para todas as conversas",
-      "DEFAULT_RULE_1": "Conversas criadas mais antigas primeiro",
-      "DEFAULT_RULE_2": "Distribuição em rodízio",
-      "CUSTOMIZE_WITH_POLICY": "Personalizar com política de atribuição",
-      "USING_POLICY": "Utilizando política de atribuição personalizada para esta caixa de entrada",
-      "CUSTOMIZE_POLICY": "Personalizar com política de atribuição",
-      "DELETE_POLICY": "Excluir política",
-      "POLICY_LABEL": "Política de atribuição",
-      "ASSIGNMENT_ORDER_LABEL": "Ordem de Atribuição",
-      "ASSIGNMENT_METHOD_LABEL": "Método de Atribuição",
-      "POLICY_STATUS": {
-        "ACTIVE": "Ativo",
-        "INACTIVE": "Inativa"
-      },
-      "PRIORITY": {
-        "EARLIEST_CREATED": "Criado recentemente",
-        "LONGEST_WAITING": "Maior tempo de espera"
-      },
-      "METHOD": {
-        "ROUND_ROBIN": "Rodízio",
-        "BALANCED": "Atribuição equilibrada"
-      },
-      "UPGRADE_PROMPT": "Políticas de atribuição personalizadas estão disponíveis no plano Business",
-      "UPGRADE_TO_BUSINESS": "Atualizar para o Business",
-      "DEFAULT_POLICY_LINKED": "Política padrão vinculada",
-      "DEFAULT_POLICY_DESCRIPTION": "Vincule uma política de atribuição personalizada para definir como as conversas serão atribuídas aos agentes nesta caixa de entrada.",
-      "LINK_EXISTING_POLICY": "Vincular política existente",
-      "CREATE_NEW_POLICY": "Criar nova política",
-      "NO_POLICIES": "Nenhuma política de atribuição encontrada",
-      "VIEW_ALL_POLICIES": "Ver todas as políticas",
-      "CURRENT_BEHAVIOR": "Atualmente utilizando o comportamento de atribuição padrão:",
-      "LINK_SUCCESS": "Política de atribuição vinculada com sucesso",
-      "LINK_ERROR": "Falha ao vincular a política de atribuição"
-    },
-    "ASSIGNMENT_POLICY": {
-      "DELETE_CONFIRM_TITLE": "Excluir política de atribuição?",
-      "DELETE_CONFIRM_MESSAGE": "Tem certeza de que deseja remover esta política de atribuição desta caixa de entrada? A caixa de entrada voltará às regras de atribuição padrão.",
-      "CANCEL": "Cancelar",
-      "CONFIRM_DELETE": "Excluir",
-      "DELETE_SUCCESS": "Política de atribuição removida com sucesso",
-      "DELETE_ERROR": "Falha ao remover a política de atribuição"
     },
     "FACEBOOK_REAUTHORIZE": {
       "TITLE": "Reautorizar",

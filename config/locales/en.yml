@@ -93,8 +93,6 @@ en:
       failed: Signup failed
     voice:
       call_already_accepted: '%{agent_name} is already handling the call.'
-    assignment_policy:
-      not_found: Assignment policy not found
     attachments:
       invalid: Invalid attachment
     upload:

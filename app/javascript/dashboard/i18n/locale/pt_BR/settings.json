@@ -138,10 +138,8 @@
       "EMAIL_NOTIFICATIONS_SECTION": {
         "TITLE": "Notificações por e-mail",
         "NOTE": "Atualize suas preferências de notificação por e-mail aqui",
-        "CONVERSATION_ASSIGNMENT": "Enviar notificações por email quando uma conversa for atribuída a mim",
         "CONVERSATION_CREATION": "Enviar notificações por email quando uma nova conversa for criada",
         "CONVERSATION_MENTION": "Enviar notificações por email quando você for mencionado em uma conversa",
-        "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Envie notificações por e-mail quando uma nova mensagem for criada numa conversa já atribuída",
         "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "Enviar notificações por email quando uma nova mensagem é criada em uma conversa que você participa",
         "SLA_MISSED_FIRST_RESPONSE": "Enviar notificações por e-mail quando uma conversa perder a primeira resposta SLA",
         "SLA_MISSED_NEXT_RESPONSE": "Enviar notificações por e-mail quando uma conversa perder o próximo SLA de resposta",
@@ -154,9 +152,7 @@
         "PUSH": "Notificação ",
         "TYPES": {
           "CONVERSATION_CREATED": "Uma nova conversa foi criada",
-          "CONVERSATION_ASSIGNED": "Uma conversa foi atribuída a você",
           "CONVERSATION_MENTION": "Você foi mencionado em uma conversa",
-          "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Uma nova mensagem foi criada e atribuída",
           "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "Uma nova mensagem foi criada em uma conversa que você participa",
           "SLA_MISSED_FIRST_RESPONSE": "Uma conversa perde o SLA de primeira resposta",
           "SLA_MISSED_NEXT_RESPONSE": "Uma conversa perde o SLA da próxima resposta",
@@ -171,10 +167,8 @@
       "PUSH_NOTIFICATIONS_SECTION": {
         "TITLE": "Notificações via Push",
         "NOTE": "Atualize suas preferências de notificação Push aqui",
-        "CONVERSATION_ASSIGNMENT": "Enviar notificações push quando uma conversa é atribuída a mim",
         "CONVERSATION_CREATION": "Enviar notificações push quando uma nova conversa é criada",
         "CONVERSATION_MENTION": "Enviar notificações push quando você for mencionado em uma conversa",
-        "ASSIGNED_CONVERSATION_NEW_MESSAGE": "Envie notificações quando uma nova mensagem for criada numa conversa já atribuída",
         "PARTICIPATING_CONVERSATION_NEW_MESSAGE": "Enviar notificações push quando uma nova mensagem é criada em uma conversa que você participa",
         "HAS_ENABLED_PUSH": "Você ativou push para este navegador.",
         "REQUEST_PUSH": "Habilitar notificações push",
@@ -358,7 +352,6 @@
     "REPORTS_LABEL": "Etiquetas",
     "REPORTS_INBOX": "Caixa de Entrada",
     "REPORTS_TEAM": "Time",
-    "AGENT_ASSIGNMENT": "Atribuição de Agentes",
     "SET_AVAILABILITY_TITLE": "Defina como",
     "SET_YOUR_AVAILABILITY": "Disponibilidade",
     "SLA": "SLA",
@@ -645,279 +638,6 @@
       "SWITCH_TO_PRIVATE_NOTE": "Mudar para Nota Privada",
       "SWITCH_TO_REPLY": "Mudar para resposta",
       "TOGGLE_SNOOZE_DROPDOWN": "Ativar/desativar soneca"
-    }
-  },
-  "ASSIGNMENT_POLICY": {
-    "INDEX": {
-      "HEADER": {
-        "TITLE": "Atribuição de agentes",
-        "DESCRIPTION": "Defina políticas para gerenciar a carga de trabalho de forma eficaz e encaminhar conversas com base nas necessidades das caixas de entrada e dos agentes. Saiba mais aqui"
-      },
-      "ASSIGNMENT_POLICY": {
-        "TITLE": "Política de atribuição",
-        "DESCRIPTION": "Gerencie como as conversas são atribuídas nas caixas de entrada.",
-        "FEATURES": [
-          "Atribuir conversas de forma uniforme ou com base na capacidade disponível",
-          "Adicione regras de distribuição justa para evitar sobrecarregar qualquer agente",
-          "Adicione caixas de entrada a uma política - uma política por caixa de entrada"
-        ]
-      },
-      "AGENT_CAPACITY_POLICY": {
-        "TITLE": "Política de capacidade dos agentes",
-        "DESCRIPTION": "Gerencie a carga de trabalho dos agentes.",
-        "FEATURES": [
-          "Defina o número máximo de conversas por caixa de entrada",
-          "Criar exceções com base em rótulos e tempo",
-          "Adicione agentes a uma política - uma política por agente"
-        ]
-      }
-    },
-    "AGENT_ASSIGNMENT_POLICY": {
-      "INDEX": {
-        "HEADER": {
-          "TITLE": "Política de atribuição",
-          "CREATE_POLICY": "Nova política"
-        },
-        "CARD": {
-          "ORDER": "Ordem",
-          "PRIORITY": "Prioridade",
-          "ACTIVE": "Ativo",
-          "INACTIVE": "Inativa",
-          "POPOVER": "Caixas de entrada adicionadas",
-          "EDIT": "Alterar"
-        },
-        "NO_RECORDS_FOUND": "Nenhuma política de atribuição encontrada"
-      },
-      "CREATE": {
-        "HEADER": {
-          "TITLE": "Criar política de atribuição"
-        },
-        "CREATE_BUTTON": "Criar política",
-        "API": {
-          "SUCCESS_MESSAGE": "Política de atribuição criada com sucesso",
-          "ERROR_MESSAGE": "Falha ao criar a política de atribuição",
-          "INBOX_LINKED": "A caixa de entrada foi vinculada à política"
-        }
-      },
-      "EDIT": {
-        "HEADER": {
-          "TITLE": "Editar política de atribuição"
-        },
-        "EDIT_BUTTON": "Atualizar política",
-        "CONFIRM_ADD_INBOX_DIALOG": {
-          "TITLE": "Adicionar caixa de entrada",
-          "DESCRIPTION": "A caixa de entrada {inboxName} já está vinculada a outra política. Tem certeza de que deseja vinculá-la a esta política? Ela será desvinculada da outra.",
-          "CONFIRM_BUTTON_LABEL": "Continuar",
-          "CANCEL_BUTTON_LABEL": "Cancelar"
-        },
-        "INBOX_LINK_PROMPT": {
-          "TITLE": "Vincular caixa de entrada à política",
-          "DESCRIPTION": "Deseja vincular esta caixa de entrada à política de atribuição?",
-          "LINK_BUTTON": "Vincular caixa de entrada",
-          "CANCEL_BUTTON": "Pular"
-        },
-        "API": {
-          "SUCCESS_MESSAGE": "Política de atribuição atualizada com sucesso",
-          "ERROR_MESSAGE": "Falha ao atualizar a política de atribuição"
-        },
-        "INBOX_API": {
-          "ADD": {
-            "SUCCESS_MESSAGE": "Caixa de entrada adicionada à política com sucesso",
-            "ERROR_MESSAGE": "Falha ao adicionar a caixa de entrada à política"
-          },
-          "REMOVE": {
-            "SUCCESS_MESSAGE": "Caixa de entrada removida da política com sucesso",
-            "ERROR_MESSAGE": "Caixa de entrada removida da política com sucesso"
-          }
-        }
-      },
-      "FORM": {
-        "NAME": {
-          "LABEL": "Nome da política:",
-          "PLACEHOLDER": "Informe o nome da política"
-        },
-        "DESCRIPTION": {
-          "LABEL": "Descrição:",
-          "PLACEHOLDER": "Insira a descrição"
-        },
-        "STATUS": {
-          "LABEL": "Status:",
-          "PLACEHOLDER": "Selecionar status",
-          "ACTIVE": "Política ativa",
-          "INACTIVE": "Política inativa"
-        },
-        "ASSIGNMENT_ORDER": {
-          "LABEL": "Ordem de atribuição",
-          "ROUND_ROBIN": {
-            "LABEL": "Rodízio",
-            "DESCRIPTION": "Distribuir as conversas de forma uniforme entre os agentes."
-          },
-          "BALANCED": {
-            "LABEL": "Equilibrado",
-            "DESCRIPTION": "Atribuir conversas com base na capacidade disponível.",
-            "PREMIUM_MESSAGE": "Atualize o plano para acessar a atribuição equilibrada e o gerenciamento de capacidade dos agentes.",
-            "PREMIUM_BADGE": "Premium"
-          }
-        },
-        "ASSIGNMENT_PRIORITY": {
-          "LABEL": "Prioridade de atribuição",
-          "EARLIEST_CREATED": {
-            "LABEL": "Criado recentemente",
-            "DESCRIPTION": "A conversa criada primeiro será atribuída primeiro."
-          },
-          "LONGEST_WAITING": {
-            "LABEL": "Maior tempo de espera",
-            "DESCRIPTION": "A conversa que está aguardando há mais tempo é atribuída primeiro."
-          }
-        },
-        "FAIR_DISTRIBUTION": {
-          "LABEL": "Política de distribuição justa",
-          "DESCRIPTION": "Defina o número máximo de conversas que podem ser atribuídas por agente dentro de um período, para evitar sobrecarregar qualquer agente. Este campo obrigatório tem como padrão 100 conversas por hora.",
-          "INPUT_MAX": "Máximo de atribuições",
-          "DURATION": "Conversas por agente a cada"
-        },
-        "INBOXES": {
-          "LABEL": "Caixas de entrada adicionadas",
-          "DESCRIPTION": "Adicionar caixas de entrada às quais esta política será aplicada.",
-          "ADD_BUTTON": "Adicionar caixa de entrada",
-          "DROPDOWN": {
-            "SEARCH_PLACEHOLDER": "Pesquisar e selecionar caixas de entrada para adicionar",
-            "ADD_BUTTON": "Adicionar"
-          },
-          "EMPTY_STATE": "Nenhuma caixa de entrada adicionada a esta política. Adicione uma caixa de entrada para começar",
-          "API": {
-            "SUCCESS_MESSAGE": "Caixa de entrada adicionada à política com sucesso",
-            "ERROR_MESSAGE": "Falha ao adicionar a caixa de entrada à política"
-          }
-        }
-      },
-      "DELETE_POLICY": {
-        "SUCCESS_MESSAGE": "Política de atribuição excluída com sucesso",
-        "ERROR_MESSAGE": "Falha ao excluir a política de atribuição"
-      }
-    },
-    "AGENT_CAPACITY_POLICY": {
-      "INDEX": {
-        "HEADER": {
-          "TITLE": "Capacidade do agente",
-          "CREATE_POLICY": "Nova política"
-        },
-        "CARD": {
-          "POPOVER": "Agentes adicionados",
-          "EDIT": "Alterar"
-        },
-        "NO_RECORDS_FOUND": "Nenhuma política de capacidade dos agentes encontrada"
-      },
-      "CREATE": {
-        "HEADER": {
-          "TITLE": "Criar política de capacidade dos agentes"
-        },
-        "CREATE_BUTTON": "Criar política",
-        "API": {
-          "SUCCESS_MESSAGE": "Política de capacidade dos agentes criada com sucesso",
-          "ERROR_MESSAGE": "Falha ao criar a política de capacidade dos agentes"
-        }
-      },
-      "EDIT": {
-        "HEADER": {
-          "TITLE": "Editar política de capacidade dos agentes"
-        },
-        "EDIT_BUTTON": "Atualizar política",
-        "CONFIRM_ADD_AGENT_DIALOG": {
-          "TITLE": "Adicionar agente",
-          "DESCRIPTION": "{agentName} já está vinculado a outra política. Tem certeza de que deseja vinculá-lo a esta política? Ele será desvinculado da outra.",
-          "CONFIRM_BUTTON_LABEL": "Continuar",
-          "CANCEL_BUTTON_LABEL": "Cancelar"
-        },
-        "API": {
-          "SUCCESS_MESSAGE": "Política de capacidade dos agentes atualizada com sucesso",
-          "ERROR_MESSAGE": "Falha ao atualizar a política de capacidade dos agentes"
-        },
-        "AGENT_API": {
-          "ADD": {
-            "SUCCESS_MESSAGE": "Agente adicionado à política com sucesso",
-            "ERROR_MESSAGE": "Falha ao adicionar o agente à política"
-          },
-          "REMOVE": {
-            "SUCCESS_MESSAGE": "Agente removido da política com sucesso",
-            "ERROR_MESSAGE": "Falha ao remover o agente da política"
-          }
-        },
-        "INBOX_LIMIT_API": {
-          "ADD": {
-            "SUCCESS_MESSAGE": "Limite de caixa de entrada adicionado com sucesso",
-            "ERROR_MESSAGE": "Falha ao adicionar limite de caixa de entrada"
-          },
-          "UPDATE": {
-            "SUCCESS_MESSAGE": "Limite de caixa de entrada atualizado com sucesso",
-            "ERROR_MESSAGE": "Falha ao atualizar limite da caixa de entrada"
-          },
-          "DELETE": {
-            "SUCCESS_MESSAGE": "Limite da caixa de entrada excluído com sucesso",
-            "ERROR_MESSAGE": "Falha ao excluir o limite da caixa de entrada"
-          }
-        }
-      },
-      "FORM": {
-        "NAME": {
-          "LABEL": "Nome da política:",
-          "PLACEHOLDER": "Informe o nome da política"
-        },
-        "DESCRIPTION": {
-          "LABEL": "Descrição:",
-          "PLACEHOLDER": "Insira a descrição"
-        },
-        "INBOX_CAPACITY_LIMIT": {
-          "LABEL": "Limites de capacidade da caixa de entrada",
-          "ADD_BUTTON": "Adicionar caixa de entrada",
-          "FIELD": {
-            "SELECT_INBOX": "Selecionar caixa de entrada",
-            "MAX_CONVERSATIONS": "Máximo de conversas",
-            "SET_LIMIT": "Definir limite"
-          },
-          "EMPTY_STATE": "Nenhum limite de caixa de entrada definido"
-        },
-        "EXCLUSION_RULES": {
-          "LABEL": "Regras de exclusão",
-          "DESCRIPTION": "Conversas que atendam às seguintes condições não serão contabilizadas na capacidade do agente",
-          "TAGS": {
-            "LABEL": "Excluir conversas marcadas com rótulos específicos",
-            "ADD_TAG": "adicionar etiqueta",
-            "DROPDOWN": {
-              "SEARCH_PLACEHOLDER": "Pesquise e selecione etiquetas para adicionar"
-            },
-            "EMPTY_STATE": "Nenhuma etiqueta adicionada a esta política."
-          },
-          "DURATION": {
-            "LABEL": "Excluir conversas mais antigas que um período especificado",
-            "PLACEHOLDER": "Definir duração"
-          }
-        },
-        "USERS": {
-          "LABEL": "Agentes atribuídos",
-          "DESCRIPTION": "Adicione os agentes aos quais esta política será aplicada.",
-          "ADD_BUTTON": "Adicionar agente",
-          "DROPDOWN": {
-            "SEARCH_PLACEHOLDER": "Pesquise e selecione agentes para adicionar",
-            "ADD_BUTTON": "Adicionar"
-          },
-          "EMPTY_STATE": "Nenhum agente adicionado",
-          "API": {
-            "SUCCESS_MESSAGE": "Agente adicionado à política com sucesso",
-            "ERROR_MESSAGE": "Falha ao adicionar o agente à política"
-          }
-        }
-      },
-      "DELETE_POLICY": {
-        "SUCCESS_MESSAGE": "Política de capacidade de agentes excluída com sucesso",
-        "ERROR_MESSAGE": "Falha ao excluir a política de capacidade de agentes"
-      }
-    },
-    "DELETE_POLICY": {
-      "TITLE": "Excluir política",
-      "DESCRIPTION": "Tem certeza de que deseja excluir esta política? Essa ação não pode ser desfeita.",
-      "CONFIRM_BUTTON_LABEL": "Excluir",
-      "CANCEL_BUTTON_LABEL": "Cancelar"
     }
   }
 }
