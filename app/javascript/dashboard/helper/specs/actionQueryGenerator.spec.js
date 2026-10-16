@@ -12,7 +12,6 @@ const testData = [
         id: 1,
         name: 'sales team',
         description: 'This is our internal sales team',
-        allow_auto_assign: true,
         account_id: 1,
         is_member: true,
       },
