@@ -65,14 +65,7 @@ RSpec.describe 'Api::V1::Accounts::AutomationRulesController', type: :request do
               'action_params': ['Welcome to the chatwoot platform.']
             },
             {
-              'action_name': :assign_team,
-              'action_params': [1]
-            },
-            {
               'action_name': :remove_assigned_agent
-            },
-            {
-              'action_name': :remove_assigned_team
             },
             {
               'action_name': :add_label,
@@ -336,7 +329,7 @@ RSpec.describe 'Api::V1::Accounts::AutomationRulesController', type: :request do
 
       it 'returns for cloned automation_rule for account' do
         expect(account.automation_rules.count).to eq(1)
-        expect(account.automation_rules.first.actions.size).to eq(4)
+        expect(account.automation_rules.first.actions.size).to eq(3)
 
         patch "/api/v1/accounts/#{account.id}/automation_rules/#{automation_rule.id}",
               headers: administrator.create_new_auth_token,

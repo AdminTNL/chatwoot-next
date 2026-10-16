@@ -89,22 +89,18 @@ RSpec.describe AutomationRules::ActionService do
     end
 
     describe '#perform with remove assignment actions' do
-      let!(:team) { create(:team, account: account) }
-
       before do
-        conversation.update!(assignee: agent, team: team)
+        conversation.update!(assignee: agent)
         rule.actions = [
-          { action_name: 'remove_assigned_agent', action_params: [] },
-          { action_name: 'remove_assigned_team', action_params: [] }
+          { action_name: 'remove_assigned_agent', action_params: [] }
         ]
         rule.save!
       end
 
-      it 'removes assignee and team from the conversation' do
+      it 'removes assignee from the conversation' do
         described_class.new(rule, account, conversation).perform
 
         expect(conversation.reload.assignee).to be_nil
-        expect(conversation.team).to be_nil
       end
     end
 

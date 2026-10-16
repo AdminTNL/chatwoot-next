@@ -82,9 +82,6 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
               'action_name': :remove_assigned_agent
             },
             {
-              'action_name': :remove_assigned_team
-            },
-            {
               'action_name': :send_message,
               'action_params': ['Welcome to the chatwoot platform.']
             },
@@ -366,7 +363,6 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
       create(:inbox_member, user: user_1, inbox: inbox)
       macro.update!(actions:
                               [
-                                { 'action_name' => 'assign_team', 'action_params' => [team.id] },
                                 { 'action_name' => 'add_label', 'action_params' => %w[support priority_customer] },
                                 { 'action_name' => 'snooze_conversation' },
                                 { 'action_name' => 'assign_agent', 'action_params' => [user_1.id] },
@@ -399,6 +395,7 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
         end
 
         it 'Assign the agent when he is inbox member' do
+          macro.update!(actions: [{ 'action_name' => 'assign_agent', 'action_params' => [user_1.id] }])
           expect(conversation.assignee).to be_nil
 
           perform_enqueued_jobs do
@@ -437,6 +434,7 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
         end
 
         it 'Update the status' do
+          macro.update!(actions: [{ 'action_name' => 'snooze_conversation' }])
           expect(conversation.reload.status).to eql('open')
 
           perform_enqueued_jobs do
@@ -474,34 +472,6 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
           expect(conversation.messages.last.content).to eq('We are sending greeting message to customer.')
           expect(conversation.messages.last.sender).to eq(administrator)
           expect(conversation.messages.last.private).to be_truthy
-        end
-
-        it 'Assign the team if team_ids are present' do
-          expect(conversation.team).to be_nil
-
-          perform_enqueued_jobs do
-            post "/api/v1/accounts/#{account.id}/macros/#{macro.id}/execute",
-                 params: { conversation_ids: [conversation.display_id] },
-                 headers: administrator.create_new_auth_token
-          end
-
-          expect(conversation.reload.team_id).to eq(team.id)
-        end
-
-        it 'Unassign the team' do
-          macro.update!(actions: [
-                          { 'action_name' => 'remove_assigned_team' }
-                        ])
-          conversation.update!(team_id: team.id)
-          expect(conversation.reload.team).not_to be_nil
-
-          perform_enqueued_jobs do
-            post "/api/v1/accounts/#{account.id}/macros/#{macro.id}/execute",
-                 params: { conversation_ids: [conversation.display_id] },
-                 headers: administrator.create_new_auth_token
-          end
-
-          expect(conversation.reload.team_id).to be_nil
         end
 
         it 'Unassign the agent' do

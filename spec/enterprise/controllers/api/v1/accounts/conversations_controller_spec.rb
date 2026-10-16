@@ -49,7 +49,8 @@ RSpec.describe 'Conversations API', type: :request do
     context 'when agent has team access' do
       let(:agent) { create(:user, account: account, role: :agent) }
       let(:team) { create(:team, account: account) }
-      let(:conversation) { create(:conversation, account: account, team: team) }
+      let(:inbox) { create(:inbox, account: account, team: team) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox) }
 
       before do
         create(:team_member, team: team, user: agent)
@@ -243,7 +244,8 @@ RSpec.describe 'Conversations API', type: :request do
 
       before do
         create(:team_member, team: team, user: team_agent)
-        conversation.update!(team: team)
+        conversation.inbox.update!(team: team)
+        conversation.save!
       end
 
       it 'allows accessing conversation reporting events via team membership' do

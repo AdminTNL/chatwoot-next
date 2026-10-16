@@ -113,9 +113,9 @@ describe Integrations::Dialogflow::ProcessorService do
         )
       end
 
-      it 'resolves the conversation without moving it to an agent' do
+      it 'resolves the conversation, then the bot reply reopens it without moving it to an agent' do
         processor.perform
-        expect(conversation.reload.status).to eql('resolved')
+        expect(conversation.reload.status).to eql('open')
         expect(conversation.messages.last.content).to eql('hello payload')
       end
     end

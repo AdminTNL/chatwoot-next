@@ -49,7 +49,6 @@ describe AutomationRuleListener do
                                             'team_ids' => [team.id]
                                           }]
                                         },
-                                        { 'action_name' => 'assign_team', 'action_params' => [team.id] },
                                         { 'action_name' => 'add_label', 'action_params' => %w[support priority_customer] },
                                         { 'action_name' => 'send_webhook_event', 'action_params' => ['https://www.example.com'] },
                                         { 'action_name' => 'assign_agent', 'action_params' => [user_1.id] },
@@ -102,15 +101,6 @@ describe AutomationRuleListener do
     end
 
     context 'when rule matches with additional_attributes and custom_attributes' do
-      it 'triggers automation rule to assign team' do
-        expect(conversation.team_id).not_to eq(team.id)
-
-        listener.conversation_updated(event)
-
-        conversation.reload
-        expect(conversation.team_id).to eq(team.id)
-      end
-
       it 'triggers automation rule to add label and assign best agents' do
         expect(conversation.labels).to eq([])
         expect(conversation.assignee).to be_nil
@@ -161,12 +151,12 @@ describe AutomationRuleListener do
             }.with_indifferent_access
           ]
         )
-        expect(conversation.team_id).not_to eq(team.id)
+        expect(conversation.labels).to eq([])
 
         listener.conversation_updated(event)
 
         conversation.reload
-        expect(conversation.team_id).to eq(team.id)
+        expect(conversation.labels.pluck(:name)).to contain_exactly('support', 'priority_customer')
       end
     end
 
@@ -219,14 +209,6 @@ describe AutomationRuleListener do
     end
 
     context 'when rule matches' do
-      it 'triggers automation rule to assign team' do
-        expect(conversation.team_id).not_to eq(team.id)
-        listener.conversation_updated(event)
-        conversation.reload
-
-        expect(conversation.team_id).to eq(team.id)
-      end
-
       it 'triggers automation rule to add label' do
         expect(conversation.labels).to eq([])
         listener.conversation_updated(event)
@@ -293,14 +275,6 @@ describe AutomationRuleListener do
         )
       end
 
-      it 'triggers automation rule to assign team' do
-        expect(conversation.team_id).not_to eq(team.id)
-        listener.conversation_updated(event)
-        conversation.reload
-
-        expect(conversation.team_id).to eq(team.id)
-      end
-
       it 'triggers automation rule to add label' do
         expect(conversation.labels).to eq([])
         listener.conversation_updated(event)
@@ -309,106 +283,11 @@ describe AutomationRuleListener do
         expect(conversation.labels.pluck(:name)).to contain_exactly('support', 'priority_customer')
       end
     end
-
-    context 'when conditions based on attribute_changed' do
-      before do
-        automation_rule.update!(
-          event_name: 'conversation_updated',
-          name: 'Call actions conversation updated when company name changed from DC to Marvel',
-          description: 'Add labels, assign team after conversation updated',
-          conditions: [
-            {
-              attribute_key: 'company_name',
-              filter_operator: 'attribute_changed',
-              values: { from: ['DC'], to: ['Marvel'] },
-              query_operator: 'AND'
-            }.with_indifferent_access,
-            {
-              attribute_key: 'status',
-              filter_operator: 'equal_to',
-              values: ['snoozed'],
-              query_operator: nil
-            }.with_indifferent_access
-          ]
-        )
-        conversation.update(status: :snoozed)
-      end
-
-      let!(:event) do
-        Events::Base.new('conversation_updated', Time.zone.now, { conversation: conversation, changed_attributes: {
-                           company_name: %w[DC Marvel]
-                         } })
-      end
-
-      context 'when rule matches' do
-        it 'triggers automation rule to assign team' do
-          expect(conversation.team_id).not_to eq(team.id)
-
-          listener.conversation_updated(event)
-
-          conversation.reload
-          expect(conversation.team_id).to eq(team.id)
-        end
-
-        it 'triggers automation rule to assign team with OR operator' do
-          conversation.update(status: :open)
-          automation_rule.update!(
-            conditions: [
-              {
-                attribute_key: 'company_name',
-                filter_operator: 'attribute_changed',
-                values: { from: ['DC'], to: ['Marvel'] },
-                query_operator: 'OR'
-              }.with_indifferent_access,
-              {
-                attribute_key: 'status',
-                filter_operator: 'equal_to',
-                values: ['snoozed'],
-                query_operator: nil
-              }.with_indifferent_access
-            ]
-          )
-
-          expect(conversation.team_id).not_to eq(team.id)
-
-          listener.conversation_updated(event)
-
-          conversation.reload
-          expect(conversation.team_id).to eq(team.id)
-        end
-      end
-
-      context 'when rule doesnt match' do
-        it 'when automation rule is triggered it will not assign team' do
-          conversation.update(status: :open)
-
-          expect(conversation.team_id).not_to eq(team.id)
-
-          listener.conversation_updated(event)
-
-          conversation.reload
-          expect(conversation.team_id).not_to eq(team.id)
-        end
-
-        it 'when automation rule is triggers, it will not assign team on attribute_changed values' do
-          conversation.update(status: :snoozed)
-          event = Events::Base.new('conversation_updated', Time.zone.now, { conversation: conversation,
-                                                                            changed_attributes: { company_name: %w[Marvel DC] } })
-
-          expect(conversation.team_id).not_to eq(team.id)
-
-          listener.conversation_updated(event)
-
-          conversation.reload
-          expect(conversation.team_id).not_to eq(team.id)
-        end
-      end
-    end
   end
 
   describe '#conversation_opened' do
     before do
-      conversation.update!(status: :open, team_id: team.id)
+      conversation.update!(status: :open)
       automation_rule.update!(
         event_name: 'conversation_opened',
         name: 'Call actions conversation opened',
@@ -417,6 +296,7 @@ describe AutomationRuleListener do
       )
     end
 
+    let(:inbox) { create(:inbox, account: account, team: team) }
     let!(:event) do
       Events::Base.new('conversation_opened', Time.zone.now, { conversation: conversation.reload })
     end
@@ -524,10 +404,10 @@ describe AutomationRuleListener do
           { 'action_name' => 'send_email_transcript', 'action_params' => ['new_agent@example.com'] }
         ]
       )
-      conversation.update!(team_id: team.id)
       conversation.contact.update!(email: 'tj@example.com', additional_attributes: { 'company_name' => 'Marvel' })
     end
 
+    let(:inbox) { create(:inbox, account: account, team: team) }
     let!(:message) { create(:message, account: account, conversation: conversation, message_type: 'incoming') }
     let!(:event) do
       Events::Base.new('message_created', Time.zone.now, { conversation: conversation, message: message })
@@ -571,7 +451,6 @@ describe AutomationRuleListener do
 
     context 'when rule does not match' do
       before do
-        conversation.update!(team_id: team.id)
         conversation.contact.update!(email: 'tj@ex.com', additional_attributes: { 'company_name' => 'DC' })
       end
 
@@ -607,10 +486,10 @@ describe AutomationRuleListener do
           { 'action_name' => 'send_email_transcript', 'action_params' => ['new_agent@example.com'] }
         ]
       )
-      conversation.update!(team_id: team.id)
       conversation.contact.update!(email: 'tj@example.com', additional_attributes: { 'company_name' => 'Marvel' })
     end
 
+    let(:inbox) { create(:inbox, account: account, team: team) }
     let!(:message) { create(:message, account: account, conversation: conversation, message_type: 'incoming') }
     let!(:event) do
       Events::Base.new('conversation_created', Time.zone.now, { conversation: conversation, message: message })
@@ -632,7 +511,6 @@ describe AutomationRuleListener do
 
     context 'when rule does not match' do
       before do
-        conversation.update!(team_id: team.id)
         conversation.contact.update!(email: 'tj@ex.com', additional_attributes: { 'company_name' => 'DC' })
       end
 

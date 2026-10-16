@@ -36,6 +36,7 @@ RSpec.describe InboxMember do
     end
 
     it 'invalidates the user built-in filter version when inbox access is removed' do
+      create(:account_user, account: account, user: user)
       inbox_member = create(:inbox_member, inbox: inbox, user: user)
 
       expect do
@@ -44,6 +45,7 @@ RSpec.describe InboxMember do
     end
 
     it 'invalidates the user built-in filter version when the parent inbox is removed' do
+      create(:account_user, account: account, user: user)
       create(:inbox_member, inbox: inbox, user: user)
 
       expect do

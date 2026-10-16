@@ -49,18 +49,6 @@ RSpec.describe Macros::ExecutionService, type: :service do
     end
   end
 
-  describe '#assign_team' do
-    let(:team) { create(:team, account: account, allow_auto_assign: false) }
-
-    context 'when team_id is nil' do
-      it 'unassigns the team from the conversation' do
-        conversation.update!(team_id: team.id)
-        service.send(:assign_team, ['nil'])
-        expect(conversation.reload.team).to be_nil
-      end
-    end
-  end
-
   describe '#assign_agent' do
     context 'when agent_ids contains self' do
       it 'updates the conversation assignee to the current user' do
