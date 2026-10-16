@@ -55,8 +55,9 @@ RSpec.describe SlaEvent, type: :model do
     before do
       # to ensure notifications are not sent to other users
       create(:user, account: account)
-      create(:inbox_member, inbox: inbox, user: assignee)
-      create(:inbox_member, inbox: inbox, user: participant)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: assignee, team: access_team)
+      create(:team_member, user: participant, team: access_team)
       create(:conversation_participant, conversation: conversation, user: participant)
     end
 

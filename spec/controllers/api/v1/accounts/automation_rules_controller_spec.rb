@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Api::V1::Accounts::AutomationRulesController', type: :request do
   let(:account) { create(:account) }
   let(:administrator) { create(:user, account: account, role: :administrator) }
-  let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+  let!(:inbox) { create(:inbox, account: account) }
   let!(:contact) { create(:contact, account: account) }
   let(:contact_inbox) { create(:contact_inbox, inbox_id: inbox.id, contact_id: contact.id) }
 

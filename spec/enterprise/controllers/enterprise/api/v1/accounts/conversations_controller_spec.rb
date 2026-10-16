@@ -13,7 +13,9 @@ RSpec.describe 'Enterprise Conversations API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'updates the conversation if you are an agent with access to inbox' do

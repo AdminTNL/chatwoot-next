@@ -2,13 +2,15 @@ require 'rails_helper'
 
 RSpec.describe Macros::ExecutionService, type: :service do
   let(:account) { create(:account) }
-  let(:conversation) { create(:conversation, account: account) }
+  let(:inbox_team) { create(:team, account: account) }
+  let(:inbox) { create(:inbox, account: account, team: inbox_team) }
+  let(:conversation) { create(:conversation, account: account, inbox: inbox) }
   let(:user) { create(:user, account: account) }
   let(:macro) { create(:macro, account: account) }
   let(:service) { described_class.new(macro, conversation, user) }
 
   before do
-    create(:inbox_member, user: user, inbox: conversation.inbox)
+    create(:team_member, user: user, team: inbox_team)
   end
 
   describe '#perform' do
@@ -61,7 +63,7 @@ RSpec.describe Macros::ExecutionService, type: :service do
       let(:other_user) { create(:user, account: account) }
 
       before do
-        create(:inbox_member, user: other_user, inbox: conversation.inbox)
+        create(:team_member, user: other_user, team: inbox_team)
       end
 
       it 'calls the super method' do

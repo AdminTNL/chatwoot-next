@@ -6,6 +6,7 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
   let(:agent_1) { create(:user, account: account, role: :agent) }
   let(:agent_2) { create(:user, account: account, role: :agent) }
   let(:team_1) { create(:team, account: account) }
+  let(:team_2) { create(:team, account: account) }
   let(:team_inbox) { create(:inbox, account: account, team: team_1) }
 
   before do
@@ -13,11 +14,11 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
     # being created in an inbox that belongs to that team.
     create(:conversation, account_id: account.id, status: :open, inbox: team_inbox)
     create(:conversation, account_id: account.id, status: :open, inbox: team_inbox)
-    create(:conversation, account_id: account.id, status: :open)
-    create(:conversation, account_id: account.id, status: :open)
-    Inbox.where(id: Conversation.all.select(:inbox_id)).find_each do |inbox|
-      create(:inbox_member, inbox: inbox, user: agent_1)
-      create(:inbox_member, inbox: inbox, user: agent_2)
+    create(:conversation, account_id: account.id, status: :open, inbox: create(:inbox, account: account, team: team_2))
+    create(:conversation, account_id: account.id, status: :open, inbox: create(:inbox, account: account, team: team_2))
+    [team_1, team_2].each do |team|
+      create(:team_member, team: team, user: agent_1)
+      create(:team_member, team: team, user: agent_2)
     end
   end
 
@@ -38,7 +39,7 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
       let!(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        Inbox.where(id: Conversation.all.select(:inbox_id)).find_each { |inbox| create(:inbox_member, inbox: inbox, user: agent) }
+        [team_1, team_2].each { |team| create(:team_member, team: team, user: agent) }
       end
 
       it 'Ignores bulk_actions for wrong type' do
@@ -83,8 +84,9 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
       end
 
       it 'ignores a team_id sent for a conversation whose inbox has no team' do
-        params = { type: 'Conversation', fields: { team_id: team_1.id }, ids: Conversation.last(2).pluck(:display_id) }
-        expect(Conversation.last.team_id).to be_nil
+        teamless_conversation = create(:conversation, account: account, status: :open, inbox: create(:inbox, account: account))
+        params = { type: 'Conversation', fields: { team_id: team_1.id }, ids: [teamless_conversation.display_id] }
+        expect(teamless_conversation.team_id).to be_nil
 
         perform_enqueued_jobs do
           post "/api/v1/accounts/#{account.id}/bulk_actions",
@@ -94,7 +96,7 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
           expect(response).to have_http_status(:success)
         end
 
-        expect(Conversation.last.team_id).to be_nil
+        expect(teamless_conversation.reload.team_id).to be_nil
       end
 
       it 'Bulk update conversation assignee id' do
@@ -202,7 +204,7 @@ RSpec.describe 'Api::V1::Accounts::BulkActionsController', type: :request do
       let!(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        Inbox.where(id: Conversation.all.select(:inbox_id)).find_each { |inbox| create(:inbox_member, inbox: inbox, user: agent) }
+        [team_1, team_2].each { |team| create(:team_member, team: team, user: agent) }
       end
 
       it 'Bulk delete conversation labels' do

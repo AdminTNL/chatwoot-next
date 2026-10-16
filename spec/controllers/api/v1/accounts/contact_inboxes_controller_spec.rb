@@ -46,7 +46,8 @@ RSpec.describe 'Contact Inboxes API', type: :request do
       let(:agent_without_inbox_access) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, user: agent_with_inbox_access, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent_with_inbox_access, team: access_team)
       end
 
       it 'returns unauthorized if agent does not have inbox access' do

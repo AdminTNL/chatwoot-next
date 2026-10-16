@@ -19,7 +19,9 @@ RSpec.describe 'Conversation Assignment API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns unauthorized' do
@@ -39,7 +41,9 @@ RSpec.describe 'Conversation Assignment API', type: :request do
       let(:agent_bot) { create(:agent_bot, account: account) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'assigns a user to the conversation' do
@@ -97,7 +101,9 @@ RSpec.describe 'Conversation Assignment API', type: :request do
       end
 
       it 'assignment of an agent in the conversation by bot agent' do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
 
         conversation.update!(assignee_id: nil)
         expect(conversation.reload.assignee).to be_nil
@@ -118,7 +124,9 @@ RSpec.describe 'Conversation Assignment API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         conversation.update!(assignee: agent)
       end
 

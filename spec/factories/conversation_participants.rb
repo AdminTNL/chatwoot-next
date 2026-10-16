@@ -6,7 +6,9 @@ FactoryBot.define do
     before(:build) do |conversation|
       if conversation.user.blank?
         conversation.user = create(:user, account: conversation.account)
-        create(:inbox_member, user: conversation.user, inbox: conversation.conversation.inbox)
+        inbox = conversation.conversation.inbox
+        team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: conversation.user, team: team)
       end
     end
   end

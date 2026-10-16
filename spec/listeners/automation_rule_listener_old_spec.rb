@@ -7,7 +7,7 @@ require 'rails_helper'
 describe AutomationRuleListener do
   let(:listener) { described_class.instance }
   let!(:account) { create(:account) }
-  let(:inbox) { create(:inbox, account: account) }
+  let(:inbox) { create(:inbox, account: account, team: team) }
   let(:contact) { create(:contact, account: account, identifier: '123') }
   let(:conversation) { create(:conversation, inbox: inbox, account: account) }
   let!(:automation_rule) { create(:automation_rule, account: account, name: 'Test Automation Rule') }
@@ -35,8 +35,6 @@ describe AutomationRuleListener do
            attribute_model: 'contact_attribute')
     create(:team_member, user: user_1, team: team)
     create(:team_member, user: user_2, team: team)
-    create(:inbox_member, user: user_1, inbox: inbox)
-    create(:inbox_member, user: user_2, inbox: inbox)
     create(:account_user, user: user_2, account: account)
     create(:account_user, user: user_1, account: account)
 

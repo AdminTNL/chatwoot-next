@@ -2,14 +2,15 @@ require 'rails_helper'
 
 RSpec.describe Conversations::UnreadCounts::BroadcastScope do
   let(:account) { create(:account) }
-  let(:inbox) { create(:inbox, account: account) }
+  let(:team) { create(:team, account: account) }
+  let(:inbox) { create(:inbox, account: account, team: team) }
   let(:conversation) { create(:conversation, account: account, inbox: inbox) }
 
   describe '#perform' do
     context 'when the conversation is present' do
       it 'returns the account and the directly assigned inbox members' do
         agent = create(:user, account: account, role: :agent)
-        create(:inbox_member, inbox: inbox, user: agent)
+        create(:team_member, team: team, user: agent)
         event = Events::Base.new('conversation.unread_count_changed', Time.zone.now, conversation: conversation)
 
         returned_account, members = described_class.new(event).perform
@@ -19,8 +20,6 @@ RSpec.describe Conversations::UnreadCounts::BroadcastScope do
       end
 
       it 'includes agents with access via the inbox team, even without direct inbox membership' do
-        team = create(:team, account: account)
-        inbox.update(team: team)
         team_agent = create(:user, account: account, role: :agent)
         create(:team_member, team: team, user: team_agent)
         event = Events::Base.new('conversation.unread_count_changed', Time.zone.now, conversation: conversation)
@@ -34,7 +33,7 @@ RSpec.describe Conversations::UnreadCounts::BroadcastScope do
     context 'when the conversation is deleted' do
       it 'returns the account and inbox members for the deleted conversation data' do
         agent = create(:user, account: account, role: :agent)
-        create(:inbox_member, inbox: inbox, user: agent)
+        create(:team_member, team: team, user: agent)
         event = Events::Base.new(
           'conversation.unread_count_changed',
           Time.zone.now,

@@ -178,8 +178,11 @@ RSpec.describe Conversation do
     let(:filtered_store) { Conversations::UnreadCounts::FilteredCountStore }
 
     before do
-      create(:inbox_member, user: old_assignee, inbox: conversation.inbox)
-      create(:inbox_member, user: new_assignee, inbox: conversation.inbox)
+      access_team = conversation.inbox.team ||
+                    create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+      create(:team_member, user: old_assignee, team: access_team)
+      create(:team_member, user: new_assignee, team: access_team)
+      conversation.save!
       allow(Rails.configuration.dispatcher).to receive(:dispatch)
       Current.user = old_assignee
     end
@@ -1222,7 +1225,8 @@ RSpec.describe Conversation do
     let(:conversation_start_time) { 5.hours.ago }
 
     before do
-      create(:inbox_member, user: agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
       # rubocop:disable Rails/SkipsModelValidations
       conversation.update_column(:waiting_since, nil)
       conversation.update_column(:created_at, conversation_start_time)

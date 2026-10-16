@@ -200,7 +200,9 @@ RSpec.describe AutomationRules::ActionService do
 
     describe '#perform with assign_agent action' do
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        team = create(:team, account: account)
+        create(:team_member, team: team, user: agent)
+        conversation.inbox.update!(team: team)
         rule.actions << { action_name: 'assign_agent', action_params: ['last_responding_agent'] }
       end
 

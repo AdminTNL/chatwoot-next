@@ -7,13 +7,14 @@ describe ConversationFinder do
   let!(:user_1) { create(:user, account: account) }
   let!(:user_2) { create(:user, account: account) }
   let!(:admin) { create(:user, account: account, role: :administrator) }
-  let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+  let!(:inbox_team) { create(:team, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: inbox_team) }
   let!(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: 'testing_source_id') }
   let!(:restricted_inbox) { create(:inbox, account: account) }
 
   before do
-    create(:inbox_member, user: user_1, inbox: inbox)
-    create(:inbox_member, user: user_2, inbox: inbox)
+    create(:team_member, user: user_1, team: inbox_team)
+    create(:team_member, user: user_2, team: inbox_team)
     create(:conversation, account: account, inbox: inbox, assignee: user_1)
     create(:conversation, account: account, inbox: inbox, assignee: user_1)
     create(:conversation, account: account, inbox: inbox, assignee: user_1, status: 'resolved')
@@ -45,7 +46,9 @@ describe ConversationFinder do
 
       it 'returns conversation from inbox if agent is its member' do
         params = { inbox_id: restricted_inbox.id }
-        create(:inbox_member, user: user_1, inbox: restricted_inbox)
+        restricted_team = create(:team, account: account)
+        create(:team_member, user: user_1, team: restricted_team)
+        restricted_inbox.update!(team: restricted_team)
         result = described_class.new(user_1, params).perform
 
         expect(result[:conversations].map(&:id)).to include(restricted_conversation.id)
@@ -194,7 +197,7 @@ describe ConversationFinder do
       let(:team_agent) { create(:user, account: account, role: :agent) }
       let(:team) { create(:team, account: account) }
 
-      it "includes the team's inbox conversations for an agent who is not a direct inbox_member" do
+      it "includes the team's inbox conversations for an agent who is not a direct inbox member" do
         create(:team_member, user: team_agent, team: team)
         restricted_inbox.update!(team: team)
         team_owned_conversation = create(:conversation, account: account, inbox: restricted_inbox)

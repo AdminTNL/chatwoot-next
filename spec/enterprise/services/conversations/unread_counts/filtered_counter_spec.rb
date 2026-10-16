@@ -9,7 +9,8 @@ RSpec.describe Conversations::UnreadCounts::FilteredCounter do
   let(:store) { Conversations::UnreadCounts::FilteredCountStore }
 
   before do
-    create(:inbox_member, user: agent, inbox: inbox)
+    access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
     account_user.update!(custom_role: create(:custom_role, account: account, permissions: ['conversation_participating_manage']))
   end
 

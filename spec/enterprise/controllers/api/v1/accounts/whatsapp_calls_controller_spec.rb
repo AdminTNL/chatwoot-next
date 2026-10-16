@@ -19,7 +19,8 @@ RSpec.describe 'WhatsApp Calls API', type: :request do
     account.enable_features!('channel_voice')
     channel.provider_config = channel.provider_config.merge('source' => 'embedded_signup', 'calling_enabled' => true)
     channel.save!
-    create(:inbox_member, user: agent, inbox: inbox)
+    access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
     allow(Whatsapp::Providers::WhatsappCloudService).to receive(:new).and_return(provider_service)
   end
 
@@ -126,7 +127,8 @@ RSpec.describe 'WhatsApp Calls API', type: :request do
 
     it 'keeps the existing assignee when the conversation is already assigned' do
       other_agent = create(:user, account: account, role: :agent)
-      create(:inbox_member, user: other_agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: other_agent, team: access_team)
       initiate_conversation.update!(assignee: other_agent)
       allow(provider_service).to receive(:initiate_call).and_return({ 'calls' => [{ 'id' => 'wacid_outbound' }] })
 
@@ -198,7 +200,9 @@ RSpec.describe 'WhatsApp Calls API', type: :request do
 
     it 'returns 422 when the conversation belongs to a non-WhatsApp inbox' do
       twilio_channel = create(:channel_twilio_sms, :with_voice, account: account, phone_number: '+15551239998')
-      create(:inbox_member, user: agent, inbox: twilio_channel.inbox)
+      access_team = twilio_channel.inbox.team ||
+                    create(:team, account: twilio_channel.inbox.account).tap { |new_team| twilio_channel.inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
       twilio_conversation = create(:conversation, account: account, inbox: twilio_channel.inbox)
 
       post "/api/v1/accounts/#{account.id}/whatsapp_calls/initiate",

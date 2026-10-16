@@ -6,7 +6,6 @@ RSpec.describe 'Reports API', type: :request do
   let(:agent) { create(:user, account: account, role: :agent) }
   let!(:user) { create(:user, account: account) }
   let!(:inbox) { create(:inbox, account: account) }
-  let(:inbox_member) { create(:inbox_member, user: user, inbox: inbox) }
   let(:default_timezone) { 'UTC' }
   let(:start_of_today) { Time.current.in_time_zone(default_timezone).beginning_of_day.to_i }
   let(:end_of_today) { Time.current.in_time_zone(default_timezone).end_of_day.to_i }
@@ -115,8 +114,9 @@ RSpec.describe 'Reports API', type: :request do
       let(:agent2) { create(:user, account: account, role: :agent) }
 
       it 'returns unattended conversation count zero for agent1' do
-        create(:inbox_member, user: agent, inbox: inbox)
-        create(:inbox_member, user: agent2, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
+        create(:team_member, user: agent2, team: access_team)
         conversation = create(:conversation, account: account,
                                              inbox: inbox, assignee: agent2)
 

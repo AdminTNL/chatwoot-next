@@ -7,14 +7,15 @@ describe Conversations::FilterService do
   describe 'Frontend alignment tests' do
     let!(:account) { create(:account) }
     let!(:user_1) { create(:user, account: account, role: :administrator) }
-    let!(:inbox) { create(:inbox, account: account) }
+    let!(:inbox_team) { create(:team, account: account) }
+    let!(:inbox) { create(:inbox, account: account, team: inbox_team) }
     let!(:params) { { payload: [], page: 1 } }
 
     before do
       account.conversations.destroy_all
 
-      # Create inbox membership
-      create(:inbox_member, user: user_1, inbox: inbox)
+      # Grant inbox access through the inbox team
+      create(:team_member, user: user_1, team: inbox_team)
 
       # Create custom attribute definition for conversation_type
       create(:custom_attribute_definition,

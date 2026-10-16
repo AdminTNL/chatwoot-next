@@ -23,7 +23,8 @@ RSpec.describe 'Inboxes API', type: :request do
 
       before do
         create(:inbox, account: account)
-        create(:inbox_member, user: agent, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns all inboxes of current_account as administrator' do
@@ -130,7 +131,8 @@ RSpec.describe 'Inboxes API', type: :request do
       end
 
       it 'returns the inbox if assigned inbox is assigned as agent' do
-        create(:inbox_member, user: agent, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
             headers: agent.create_new_auth_token,
             as: :json
@@ -144,7 +146,8 @@ RSpec.describe 'Inboxes API', type: :request do
       it 'returns empty imap details in inbox when agent' do
         email_channel = create(:channel_email, account: account, imap_enabled: true, imap_login: 'test@test.com')
         email_inbox = create(:inbox, channel: email_channel, account: account)
-        create(:inbox_member, user: agent, inbox: email_inbox)
+        access_team = email_inbox.team || create(:team, account: email_inbox.account).tap { |new_team| email_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
 
         imap_connection = double
         allow(Mail).to receive(:connection).and_return(imap_connection)
@@ -193,7 +196,8 @@ RSpec.describe 'Inboxes API', type: :request do
         end
 
         it "doesn't return auth_token and account_sid for agent" do
-          create(:inbox_member, user: agent, inbox: twilio_inbox)
+          access_team = twilio_inbox.team || create(:team, account: twilio_inbox.account).tap { |new_team| twilio_inbox.update!(team: new_team) }
+          create(:team_member, user: agent, team: access_team)
           get "/api/v1/accounts/#{account.id}/inboxes/#{twilio_inbox.id}",
               headers: agent.create_new_auth_token,
               as: :json
@@ -207,7 +211,8 @@ RSpec.describe 'Inboxes API', type: :request do
       it 'fetch API inbox without hmac token when agent' do
         api_channel = create(:channel_api, account: account)
         api_inbox = create(:inbox, channel: api_channel, account: account)
-        create(:inbox_member, user: agent, inbox: api_inbox)
+        access_team = api_inbox.team || create(:team, account: api_inbox.account).tap { |new_team| api_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
 
         get "/api/v1/accounts/#{account.id}/inboxes/#{api_inbox.id}",
             headers: agent.create_new_auth_token,
@@ -235,7 +240,8 @@ RSpec.describe 'Inboxes API', type: :request do
 
     context 'when it is an authenticated user' do
       before do
-        create(:inbox_member, user: agent, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns all assignable inbox members along with administrators' do
@@ -304,7 +310,8 @@ RSpec.describe 'Inboxes API', type: :request do
 
     context 'when it is an authenticated user' do
       before do
-        create(:inbox_member, user: agent, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         inbox.avatar.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
       end
 
@@ -987,7 +994,8 @@ RSpec.describe 'Inboxes API', type: :request do
     let(:inbox) { create(:inbox, account: account) }
 
     before do
-      create(:inbox_member, user: agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
     end
 
     context 'when it is an unauthenticated user' do
@@ -1223,7 +1231,9 @@ RSpec.describe 'Inboxes API', type: :request do
         end
 
         it 'returns health data for agent with inbox access' do
-          create(:inbox_member, user: agent, inbox: whatsapp_inbox)
+          access_team = whatsapp_inbox.team ||
+                        create(:team, account: whatsapp_inbox.account).tap { |new_team| whatsapp_inbox.update!(team: new_team) }
+          create(:team_member, user: agent, team: access_team)
 
           get "/api/v1/accounts/#{account.id}/inboxes/#{whatsapp_inbox.id}/health",
               headers: agent.create_new_auth_token,
@@ -1278,7 +1288,9 @@ RSpec.describe 'Inboxes API', type: :request do
         end
 
         it 'returns bad request error for agent' do
-          create(:inbox_member, user: agent, inbox: non_whatsapp_inbox)
+          access_team = non_whatsapp_inbox.team ||
+                        create(:team, account: non_whatsapp_inbox.account).tap { |new_team| non_whatsapp_inbox.update!(team: new_team) }
+          create(:team_member, user: agent, team: access_team)
 
           get "/api/v1/accounts/#{account.id}/inboxes/#{non_whatsapp_inbox.id}/health",
               headers: agent.create_new_auth_token,

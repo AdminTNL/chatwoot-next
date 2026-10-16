@@ -6,12 +6,11 @@ RSpec.describe Conversations::UnreadCounts::Counter do
   let(:other_agent) { create(:user, account: account, role: :agent) }
   let(:inbox) { create(:inbox, account: account, team: team) }
   let(:label) { create(:label, account: account, title: 'support', show_on_sidebar: true) }
-  let(:team) { create(:team, account: account, allow_auto_assign: false) }
+  let(:team) { create(:team, account: account) }
   let(:account_user) { account.account_users.find_by(user: agent) }
   let(:store) { Conversations::UnreadCounts::Store }
 
   before do
-    create(:inbox_member, user: agent, inbox: inbox)
     create(:team_member, user: agent, team: team)
   end
 

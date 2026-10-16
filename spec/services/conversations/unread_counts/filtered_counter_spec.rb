@@ -5,13 +5,14 @@ RSpec.describe Conversations::UnreadCounts::FilteredCounter do
 
   let(:account) { create(:account) }
   let(:agent) { create(:user, account: account, role: :agent) }
-  let(:visible_inbox) { create(:inbox, account: account) }
+  let(:visible_team) { create(:team, account: account) }
+  let(:visible_inbox) { create(:inbox, account: account, team: visible_team) }
   let(:hidden_inbox) { create(:inbox, account: account) }
   let(:now) { Time.zone.parse('2026-06-29 10:00:00 UTC') }
   let(:store) { Conversations::UnreadCounts::FilteredCountStore }
 
   before do
-    create(:inbox_member, user: agent, inbox: visible_inbox)
+    create(:team_member, user: agent, team: visible_team)
   end
 
   after do

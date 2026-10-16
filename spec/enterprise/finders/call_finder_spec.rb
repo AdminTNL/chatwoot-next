@@ -4,10 +4,11 @@ describe CallFinder do
   let(:account) { create(:account) }
   let(:admin) { create(:user, account: account, role: :administrator) }
   let(:agent) { create(:user, account: account, role: :agent) }
-  let(:inbox) { create(:inbox, account: account) }
+  let(:team) { create(:team, account: account) }
+  let(:inbox) { create(:inbox, account: account, team: team) }
   let(:conversation) { create(:conversation, account: account, inbox: inbox) }
 
-  before { create(:inbox_member, user: agent, inbox: inbox) }
+  before { create(:team_member, user: agent, team: team) }
 
   def perform(user, params = {})
     Current.account = account
@@ -47,7 +48,7 @@ describe CallFinder do
       scoped_agent = create(:user, account: account, role: :agent)
       custom_role = create(:custom_role, account: account, permissions: ['conversation_manage'])
       account.account_users.find_by(user_id: scoped_agent.id).update!(custom_role: custom_role)
-      create(:inbox_member, user: scoped_agent, inbox: inbox)
+      create(:team_member, user: scoped_agent, team: team)
       scoped_call = create(:call, account: account, inbox: inbox, conversation: conversation,
                                   contact: conversation.contact, accepted_by_agent: scoped_agent)
 

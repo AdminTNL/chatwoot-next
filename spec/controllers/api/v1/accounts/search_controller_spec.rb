@@ -10,7 +10,9 @@ RSpec.describe 'Search', type: :request do
     create(:message, conversation: conversation, account: account, content: 'test1')
     create(:message, conversation: conversation, account: account, content: 'test2')
     create(:contact_inbox, contact_id: contact.id, inbox_id: conversation.inbox.id)
-    create(:inbox_member, user: agent, inbox: conversation.inbox)
+    access_team = create(:team, account: conversation.inbox.account)
+    conversation.inbox.update!(team: access_team)
+    create(:team_member, user: agent, team: access_team)
 
     # Create articles for testing
     portal = create(:portal, account: account)
@@ -182,8 +184,12 @@ RSpec.describe 'Search', type: :request do
           recent_conversation = create(:conversation, account: account, contact: recent_contact)
           create(:message, conversation: old_conversation, account: account, content: 'message 1')
           create(:message, conversation: recent_conversation, account: account, content: 'message 2')
-          create(:inbox_member, user: agent, inbox: old_conversation.inbox)
-          create(:inbox_member, user: agent, inbox: recent_conversation.inbox)
+          access_team = create(:team, account: old_conversation.inbox.account)
+          old_conversation.inbox.update!(team: access_team)
+          create(:team_member, user: agent, team: access_team)
+          access_team = create(:team, account: recent_conversation.inbox.account)
+          recent_conversation.inbox.update!(team: access_team)
+          create(:team_member, user: agent, team: access_team)
 
           # Bypass CURRENT_TIMESTAMP default
           # rubocop:disable Rails/SkipsModelValidations
@@ -211,8 +217,12 @@ RSpec.describe 'Search', type: :request do
           recent_conversation = create(:conversation, account: account, contact: recent_contact)
           create(:message, conversation: old_conversation, account: account, content: 'message 1')
           create(:message, conversation: recent_conversation, account: account, content: 'message 2')
-          create(:inbox_member, user: agent, inbox: old_conversation.inbox)
-          create(:inbox_member, user: agent, inbox: recent_conversation.inbox)
+          access_team = create(:team, account: old_conversation.inbox.account)
+          old_conversation.inbox.update!(team: access_team)
+          create(:team_member, user: agent, team: access_team)
+          access_team = create(:team, account: recent_conversation.inbox.account)
+          recent_conversation.inbox.update!(team: access_team)
+          create(:team_member, user: agent, team: access_team)
 
           # Bypass CURRENT_TIMESTAMP default
           # rubocop:disable Rails/SkipsModelValidations
@@ -243,9 +253,15 @@ RSpec.describe 'Search', type: :request do
           create(:message, conversation: very_old_conversation, account: account, content: 'message 1')
           create(:message, conversation: old_conversation, account: account, content: 'message 2')
           create(:message, conversation: recent_conversation, account: account, content: 'message 3')
-          create(:inbox_member, user: agent, inbox: very_old_conversation.inbox)
-          create(:inbox_member, user: agent, inbox: old_conversation.inbox)
-          create(:inbox_member, user: agent, inbox: recent_conversation.inbox)
+          access_team = create(:team, account: very_old_conversation.inbox.account)
+          very_old_conversation.inbox.update!(team: access_team)
+          create(:team_member, user: agent, team: access_team)
+          access_team = create(:team, account: old_conversation.inbox.account)
+          old_conversation.inbox.update!(team: access_team)
+          create(:team_member, user: agent, team: access_team)
+          access_team = create(:team, account: recent_conversation.inbox.account)
+          recent_conversation.inbox.update!(team: access_team)
+          create(:team_member, user: agent, team: access_team)
 
           # Bypass CURRENT_TIMESTAMP default
           # rubocop:disable Rails/SkipsModelValidations

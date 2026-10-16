@@ -18,7 +18,9 @@ RSpec.describe 'Dyte Integration API', type: :request do
     allow(Integrations::Cloudflare::RealtimeKitCredentialsValidator).to receive(:validate)
       .and_return(Integrations::Cloudflare::RealtimeKitCredentialsValidator::Result.new(true, nil))
     create(:integrations_hook, :dyte, account: account)
-    create(:inbox_member, user: agent, inbox: conversation.inbox)
+    access_team = conversation.inbox.team ||
+                  create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
   end
 
   describe 'POST /api/v1/accounts/:account_id/integrations/dyte/create_a_meeting' do

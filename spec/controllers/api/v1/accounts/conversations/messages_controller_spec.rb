@@ -19,7 +19,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'creates a new outgoing message' do
@@ -196,7 +198,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'shows the conversation' do
@@ -226,7 +230,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'deletes the message' do
@@ -286,7 +292,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns not found error' do
@@ -313,7 +321,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+        access_team = message.conversation.inbox.team ||
+                      create(:team, account: message.conversation.inbox.account).tap { |new_team| message.conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'retries the message' do
@@ -339,7 +349,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+        access_team = message.conversation.inbox.team ||
+                      create(:team, account: message.conversation.inbox.account).tap { |new_team| message.conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns not found error' do
@@ -360,7 +372,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
     let(:gateway) { instance_double(AiSuggestionGateway) }
 
     before do
-      create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+      access_team = message.conversation.inbox.team ||
+                    create(:team, account: message.conversation.inbox.account).tap { |new_team| message.conversation.inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
       allow(AiSuggestionGateway).to receive(:new).and_return(gateway)
     end
 
@@ -437,7 +451,9 @@ RSpec.describe 'Conversation Messages API', type: :request do
     let(:gateway) { instance_double(AiSuggestionGateway) }
 
     before do
-      create(:inbox_member, inbox: message.conversation.inbox, user: agent)
+      access_team = message.conversation.inbox.team ||
+                    create(:team, account: message.conversation.inbox.account).tap { |new_team| message.conversation.inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
       allow(AiSuggestionGateway).to receive(:new).and_return(gateway)
     end
 
@@ -498,7 +514,10 @@ RSpec.describe 'Conversation Messages API', type: :request do
         let(:agent) { create(:user, account: account, role: :agent) }
         let!(:conversation) { create(:conversation, inbox: inbox, account: account) }
 
-        before { create(:inbox_member, inbox: inbox, user: agent) }
+        before do
+          access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+          create(:team_member, user: agent, team: access_team)
+        end
 
         it 'returns forbidden' do
           patch api_v1_account_conversation_message_url(
@@ -511,7 +530,10 @@ RSpec.describe 'Conversation Messages API', type: :request do
       end
 
       context 'when agent has API inbox' do
-        before { create(:inbox_member, inbox: api_inbox, user: agent) }
+        before do
+          access_team = api_inbox.team || create(:team, account: api_inbox.account).tap { |new_team| api_inbox.update!(team: new_team) }
+          create(:team_member, user: agent, team: access_team)
+        end
 
         it 'uses StatusUpdateService to perform status update' do
           service = instance_double(Messages::StatusUpdateService)
