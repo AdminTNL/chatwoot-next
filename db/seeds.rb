@@ -43,8 +43,10 @@ unless Rails.env.production?
 
   web_widget = Channel::WebWidget.create!(account: account, website_url: 'https://acme.inc')
 
-  inbox = Inbox.create!(channel: web_widget, account: account, name: 'Acme Support')
-  InboxMember.create!(user: user, inbox: inbox)
+  support_team = Team.create!(account: account, name: 'Support')
+  TeamMember.create!(team: support_team, user: user)
+
+  inbox = Inbox.create!(channel: web_widget, account: account, name: 'Acme Support', team: support_team)
 
   contact_inbox = ContactInboxWithContactBuilder.new(
     source_id: user.id,

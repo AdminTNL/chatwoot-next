@@ -510,7 +510,7 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(response).to have_http_status(:unauthorized)
       end
 
-      it 'updates inbox when administrator' do
+      it 'updates inbox when administrator, ignoring the removed enable_auto_assignment param' do
         patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
               headers: admin.create_new_auth_token,
               params: valid_params,
@@ -518,7 +518,6 @@ RSpec.describe 'Inboxes API', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(response).to conform_schema(200)
-        expect(inbox.reload.enable_auto_assignment).to be_falsey
         expect(inbox.reload.portal_id).to eq(portal.id)
         expect(response.parsed_body['name']).to eq 'new test inbox'
       end
@@ -529,11 +528,10 @@ RSpec.describe 'Inboxes API', type: :request do
 
         patch "/api/v1/accounts/#{account.id}/inboxes/#{api_inbox.id}",
               headers: admin.create_new_auth_token,
-              params: { enable_auto_assignment: false, channel: { webhook_url: 'webhook.test', selected_feature_flags: [] } },
+              params: { channel: { webhook_url: 'webhook.test', selected_feature_flags: [] } },
               as: :json
 
         expect(response).to have_http_status(:success)
-        expect(api_inbox.reload.enable_auto_assignment).to be_falsey
         expect(api_channel.reload.webhook_url).to eq('webhook.test')
       end
 
@@ -548,11 +546,10 @@ RSpec.describe 'Inboxes API', type: :request do
 
         patch "/api/v1/accounts/#{account.id}/inboxes/#{whatsapp_inbox.id}",
               headers: admin.create_new_auth_token,
-              params: { enable_auto_assignment: false, channel: { provider_config: { api_key: 'new_key' } } },
+              params: { channel: { provider_config: { api_key: 'new_key' } } },
               as: :json
 
         expect(response).to have_http_status(:success)
-        expect(whatsapp_inbox.reload.enable_auto_assignment).to be_falsey
         expect(whatsapp_channel.reload.provider_config['api_key']).to eq('new_key')
         expect(whatsapp_channel.reload).not_to be_reauthorization_required
       end
@@ -576,11 +573,10 @@ RSpec.describe 'Inboxes API', type: :request do
 
         patch "/api/v1/accounts/#{account.id}/inboxes/#{email_inbox.id}",
               headers: admin.create_new_auth_token,
-              params: { enable_auto_assignment: false, channel: { email: 'emailtest@email.test' } },
+              params: { channel: { email: 'emailtest@email.test' } },
               as: :json
 
         expect(response).to have_http_status(:success)
-        expect(email_inbox.reload.enable_auto_assignment).to be_falsey
         expect(email_channel.reload.email).to eq('emailtest@email.test')
       end
 

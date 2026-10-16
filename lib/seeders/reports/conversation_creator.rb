@@ -88,7 +88,7 @@ class Seeders::Reports::ConversationCreator
   end
 
   def select_assignee(inbox)
-    rand(10) < 8 ? inbox.members.sample : nil
+    rand(10) < 8 ? inbox.all_member_users.sample : nil
   end
 
   def select_team

@@ -351,7 +351,7 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
 
   describe 'POST /api/v1/accounts/{account.id}/macros/{macro.id}/execute' do
     let!(:macro) { create(:macro, account: account, created_by: administrator, updated_by: administrator) }
-    let(:inbox) { create(:inbox, account: account) }
+    let(:inbox) { create(:inbox, account: account, team: team) }
     let(:contact) { create(:contact, account: account, identifier: '123') }
     let(:conversation) { create(:conversation, inbox: inbox, account: account, status: :open) }
     let(:team) { create(:team, account: account) }
@@ -360,7 +360,6 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
     before do
       create(:team_member, user: user_1, team: team)
       create(:account_user, user: user_1, account: account)
-      create(:inbox_member, user: user_1, inbox: inbox)
       macro.update!(actions:
                               [
                                 { 'action_name' => 'add_label', 'action_params' => %w[support priority_customer] },
@@ -394,7 +393,7 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
           expect(conversation.messages.chat.last.sender).to eq(administrator)
         end
 
-        it 'Assign the agent when he is inbox member' do
+        it 'Assign the agent when he is a member of the inbox team' do
           macro.update!(actions: [{ 'action_name' => 'assign_agent', 'action_params' => [user_1.id] }])
           expect(conversation.assignee).to be_nil
 
@@ -407,8 +406,8 @@ RSpec.describe 'Api::V1::Accounts::MacrosController', type: :request do
           expect(conversation.messages.activity.last.content).to eq("Assigned to #{user_1.name} by #{administrator.name}")
         end
 
-        it 'Assign the agent when he is not inbox member' do
-          InboxMember.last.destroy
+        it 'Assign the agent when he is not a member of the inbox team' do
+          TeamMember.find_by(user: user_1, team: team).destroy
 
           expect(conversation.assignee).to be_nil
 

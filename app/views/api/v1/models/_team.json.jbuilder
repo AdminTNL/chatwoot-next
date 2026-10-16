@@ -1,7 +1,6 @@
 json.id resource.id
 json.name resource.name
 json.description resource.description
-json.allow_auto_assign resource.allow_auto_assign
 json.icon resource.icon
 json.icon_color resource.icon_color
 json.label_prefix resource.label_prefix

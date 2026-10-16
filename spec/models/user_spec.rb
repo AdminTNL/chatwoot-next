@@ -15,7 +15,6 @@ RSpec.describe User do
     it { is_expected.to have_many(:accounts).through(:account_users) }
     it { is_expected.to have_many(:account_users) }
     it { is_expected.to have_many(:assigned_conversations).dependent(:nullify) }
-    it { is_expected.to have_many(:inbox_members).dependent(:destroy_async) }
     it { is_expected.to have_many(:notification_settings).dependent(:destroy_async) }
     it { is_expected.to have_many(:messages) }
     it { is_expected.to have_many(:reporting_events) }
@@ -260,24 +259,16 @@ RSpec.describe User do
     let(:other_account) { create(:account) }
     let(:agent) { create(:user, account: account, role: :agent) }
 
-    it 'returns inboxes the user is a direct member of via inbox_members (no team)' do
-      inbox = create(:inbox, account: account)
-      create(:inbox_member, user: agent, inbox: inbox)
-
-      result = agent.accessible_inboxes(account)
-
-      expect(result).to be_a(ActiveRecord::Relation)
-      expect(result).to contain_exactly(inbox)
-    end
-
-    it 'returns inboxes owned by a team the user belongs to, with no direct inbox_members row' do
+    it 'returns inboxes owned by a team the user belongs to' do
       team = create(:team, account: account)
       create(:team_member, user: agent, team: team)
       inbox = create(:inbox, account: account, team: team)
 
       result = agent.accessible_inboxes(account)
 
+      expect(result).to be_a(ActiveRecord::Relation)
       expect(result).to contain_exactly(inbox)
+      expect(result.where(id: inbox.id).pluck(:id)).to eq([inbox.id])
     end
 
     it 'does not grant access to an inbox with no team even if the user belongs to some team' do
@@ -299,17 +290,6 @@ RSpec.describe User do
       result = agent.accessible_inboxes(account)
 
       expect(result).to be_empty
-    end
-
-    it 'returns the inbox once, without duplicates, when both access paths apply' do
-      team = create(:team, account: account)
-      create(:team_member, user: agent, team: team)
-      inbox = create(:inbox, account: account, team: team)
-      create(:inbox_member, user: agent, inbox: inbox)
-
-      result = agent.accessible_inboxes(account)
-
-      expect(result.to_a).to eq([inbox])
     end
 
     it 'does not leak access across accounts even when a same-named team exists elsewhere' do
@@ -339,7 +319,7 @@ RSpec.describe User do
       expect(agent.accessible_inboxes(account)).to contain_exactly(inbox)
     end
 
-    it 'returns an empty relation for a user with no team and no inbox_members' do
+    it 'returns an empty relation for a user with no team' do
       create(:inbox, account: account)
 
       expect(agent.accessible_inboxes(account)).to be_empty

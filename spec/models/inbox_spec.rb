@@ -21,10 +21,6 @@ RSpec.describe Inbox do
 
     it { is_expected.to have_many(:contacts).through(:contact_inboxes) }
 
-    it { is_expected.to have_many(:inbox_members).dependent(:destroy_async) }
-
-    it { is_expected.to have_many(:members).through(:inbox_members).source(:user) }
-
     it { is_expected.to have_many(:conversations).dependent(:destroy_async) }
 
     it { is_expected.to have_many(:messages).dependent(:destroy_async) }
@@ -137,7 +133,6 @@ RSpec.describe Inbox do
     let(:team) { create(:team, account: account) }
     let(:inbox) { create(:inbox, account: account, team: team) }
     let(:team_agent) { create(:user, account: account, role: :agent) }
-    let(:legacy_agent) { create(:user, account: account, role: :agent) }
     let(:both_agent) { create(:user, account: account, role: :agent) }
     let(:other_team_agent) { create(:user, account: account, role: :agent) }
     let(:admin) { create(:user, account: account, role: :administrator) }
@@ -146,25 +141,33 @@ RSpec.describe Inbox do
       admin
       create(:team_member, team: team, user: team_agent)
       create(:team_member, team: team, user: both_agent)
-      create(:inbox_member, inbox: inbox, user: both_agent)
-      create(:inbox_member, inbox: inbox, user: legacy_agent)
       create(:team_member, team: create(:team, account: account), user: other_team_agent)
     end
 
-    it 'unites team members and legacy inbox members without duplicates' do
-      expect(inbox.all_member_users).to contain_exactly(team_agent, legacy_agent, both_agent)
-      expect(inbox.all_member_user_ids).to contain_exactly(team_agent.id, legacy_agent.id, both_agent.id)
+    it 'returns exactly the team members without duplicates' do
+      expect(inbox.all_member_users).to contain_exactly(team_agent, both_agent)
+      expect(inbox.all_member_user_ids).to contain_exactly(team_agent.id, both_agent.id)
+    end
+
+    it 'does not include users from another team' do
+      expect(inbox.all_member_users).not_to include(other_team_agent)
     end
 
     it 'adds administrators to assignable agents' do
-      expect(inbox.assignable_agents).to contain_exactly(team_agent, legacy_agent, both_agent, admin)
+      expect(inbox.assignable_agents).to contain_exactly(team_agent, both_agent, admin)
     end
 
-    it 'returns only administrators and legacy members for an inbox without team' do
+    it 'lists an administrator who is also a team member once' do
+      create(:team_member, team: team, user: admin)
+
+      expect(inbox.assignable_agents.count(admin)).to eq(1)
+    end
+
+    it 'returns no members and only administrators as assignable for an inbox without team' do
       inbox.update!(team: nil)
 
-      expect(inbox.all_member_users).to contain_exactly(legacy_agent, both_agent)
-      expect(inbox.assignable_agents).to contain_exactly(legacy_agent, both_agent, admin)
+      expect(inbox.all_member_users).to be_empty
+      expect(inbox.assignable_agents).to contain_exactly(admin)
     end
 
     it 'does not include team members from another account' do
@@ -178,54 +181,7 @@ RSpec.describe Inbox do
       inbox.send(:capture_filtered_unread_count_user_ids)
 
       expect(inbox.instance_variable_get(:@filtered_unread_count_user_ids))
-        .to contain_exactly(team_agent.id, legacy_agent.id, both_agent.id, admin.id)
-    end
-  end
-
-  describe '#add_members' do
-    let(:inbox) { FactoryBot.create(:inbox) }
-
-    before do
-      allow(Rails.configuration.dispatcher).to receive(:dispatch)
-    end
-
-    it 'handles adds all members and resets cache keys' do
-      users = FactoryBot.create_list(:user, 3)
-      inbox.add_members(users.map(&:id))
-      expect(inbox.reload.inbox_members.size).to eq(3)
-
-      expect(Rails.configuration.dispatcher).to have_received(:dispatch).at_least(:once)
-                                                                        .with(
-                                                                          'account.cache_invalidated',
-                                                                          kind_of(Time),
-                                                                          account: inbox.account,
-                                                                          cache_keys: inbox.account.cache_keys
-                                                                        )
-    end
-  end
-
-  describe '#remove_members' do
-    let(:inbox) { FactoryBot.create(:inbox) }
-    let(:users) { FactoryBot.create_list(:user, 3) }
-
-    before do
-      inbox.add_members(users.map(&:id))
-      allow(Rails.configuration.dispatcher).to receive(:dispatch)
-    end
-
-    it 'removes the members and resets cache keys' do
-      expect(inbox.reload.inbox_members.size).to eq(3)
-
-      inbox.remove_members(users.map(&:id))
-      expect(inbox.reload.inbox_members.size).to eq(0)
-
-      expect(Rails.configuration.dispatcher).to have_received(:dispatch).at_least(:once)
-                                                                        .with(
-                                                                          'account.cache_invalidated',
-                                                                          kind_of(Time),
-                                                                          account: inbox.account,
-                                                                          cache_keys: inbox.account.cache_keys
-                                                                        )
+        .to contain_exactly(team_agent.id, both_agent.id, admin.id)
     end
   end
 

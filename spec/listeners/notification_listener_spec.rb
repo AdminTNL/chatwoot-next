@@ -189,15 +189,6 @@ describe NotificationListener do
       expect { listener.public_send(listener_method, event) }.not_to have_enqueued_job(Notification::DeliveryOnlyJob)
     end
 
-    it 'still notifies agents with legacy inbox membership' do
-      legacy_agent = create(:user, account: account)
-      create(:inbox_member, user: legacy_agent, inbox: team_inbox)
-      enable_push(legacy_agent)
-
-      expect { listener.public_send(listener_method, event) }
-        .to have_enqueued_job(Notification::DeliveryOnlyJob).with(hash_including(user_id: legacy_agent.id))
-    end
-
     it 'keeps an unread mention untouched' do
       agent = team_agents.first
       enable_push(agent)

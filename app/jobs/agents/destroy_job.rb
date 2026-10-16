@@ -5,18 +5,11 @@ class Agents::DestroyJob < ApplicationJob
     ActiveRecord::Base.transaction do
       destroy_notification_setting(account, user)
       remove_user_from_teams(account, user)
-      remove_user_from_inboxes(account, user)
       unassign_conversations(account, user)
     end
   end
 
   private
-
-  def remove_user_from_inboxes(account, user)
-    inboxes = account.inboxes.all
-    inbox_members = user.inbox_members.where(inbox_id: inboxes.pluck(:id))
-    inbox_members.destroy_all
-  end
 
   def remove_user_from_teams(account, user)
     teams = account.teams.all

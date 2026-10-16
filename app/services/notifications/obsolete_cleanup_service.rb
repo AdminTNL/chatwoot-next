@@ -28,9 +28,6 @@ class Notifications::ObsoleteCleanupService
         AND NOT EXISTS (
           SELECT 1 FROM team_members tm WHERE tm.user_id = n.user_id AND tm.team_id = c.team_id
         )
-        AND NOT EXISTS (
-          SELECT 1 FROM inbox_members im WHERE im.user_id = n.user_id AND im.inbox_id = c.inbox_id
-        )
     SQL
   end
 

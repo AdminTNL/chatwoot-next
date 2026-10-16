@@ -25,7 +25,7 @@ class Seeders::Reports::AssistantConversationCreator
     @assistant = assistant
     @inbox = inbox
     @contacts = resources[:contacts]
-    @agents = inbox.members.to_a.presence || resources[:agents]
+    @agents = inbox.all_member_users.to_a.presence || resources[:agents]
   end
 
   def create_conversation(created_at:, outcome:)
