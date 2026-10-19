@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_19_110000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -51,10 +51,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
     t.integer "availability", default: 0, null: false
     t.boolean "auto_offline", default: true, null: false
     t.bigint "custom_role_id"
-    t.bigint "agent_capacity_policy_id"
     t.index ["account_id", "user_id"], name: "uniq_user_id_per_account_id", unique: true
     t.index ["account_id"], name: "index_account_users_on_account_id"
-    t.index ["agent_capacity_policy_id"], name: "index_account_users_on_agent_capacity_policy_id"
     t.index ["custom_role_id"], name: "index_account_users_on_custom_role_id"
     t.index ["user_id"], name: "index_account_users_on_user_id"
   end
@@ -136,16 +134,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
     t.index ["account_id"], name: "index_agent_bots_on_account_id"
   end
 
-  create_table "agent_capacity_policies", force: :cascade do |t|
-    t.bigint "account_id", null: false
-    t.string "name", limit: 255, null: false
-    t.text "description"
-    t.jsonb "exclusion_rules", default: {}, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["account_id"], name: "index_agent_capacity_policies_on_account_id"
-  end
-
   create_table "agent_sessions", force: :cascade do |t|
     t.integer "session_type", null: false
     t.string "subject_type", null: false
@@ -220,23 +208,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
     t.index ["slug"], name: "index_articles_on_slug", unique: true
     t.index ["status"], name: "index_articles_on_status"
     t.index ["views"], name: "index_articles_on_views"
-  end
-
-  create_table "assignment_policies", force: :cascade do |t|
-    t.bigint "account_id", null: false
-    t.string "name", limit: 255, null: false
-    t.text "description"
-    t.integer "assignment_order", default: 0, null: false
-    t.integer "conversation_priority", default: 0, null: false
-    t.integer "fair_distribution_limit", default: 100, null: false
-    t.integer "fair_distribution_window", default: 3600, null: false
-    t.boolean "enabled", default: true, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.integer "exclude_older_than_hours", default: 168
-    t.index ["account_id", "name"], name: "index_assignment_policies_on_account_id_and_name", unique: true
-    t.index ["account_id"], name: "index_assignment_policies_on_account_id"
-    t.index ["enabled"], name: "index_assignment_policies_on_enabled"
   end
 
   create_table "attachments", id: :serial, force: :cascade do |t|
@@ -998,35 +969,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
     t.datetime "updated_at", null: false
   end
 
-  create_table "inbox_assignment_policies", force: :cascade do |t|
-    t.bigint "inbox_id", null: false
-    t.bigint "assignment_policy_id", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["assignment_policy_id"], name: "index_inbox_assignment_policies_on_assignment_policy_id"
-    t.index ["inbox_id"], name: "index_inbox_assignment_policies_on_inbox_id", unique: true
-  end
-
-  create_table "inbox_capacity_limits", force: :cascade do |t|
-    t.bigint "agent_capacity_policy_id", null: false
-    t.bigint "inbox_id", null: false
-    t.integer "conversation_limit", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["agent_capacity_policy_id", "inbox_id"], name: "idx_on_agent_capacity_policy_id_inbox_id_71c7ec4caf", unique: true
-    t.index ["agent_capacity_policy_id"], name: "index_inbox_capacity_limits_on_agent_capacity_policy_id"
-    t.index ["inbox_id"], name: "index_inbox_capacity_limits_on_inbox_id"
-  end
-
-  create_table "inbox_members", id: :serial, force: :cascade do |t|
-    t.integer "user_id", null: false
-    t.integer "inbox_id", null: false
-    t.datetime "created_at", precision: nil, null: false
-    t.datetime "updated_at", precision: nil, null: false
-    t.index ["inbox_id", "user_id"], name: "index_inbox_members_on_inbox_id_and_user_id", unique: true
-    t.index ["inbox_id"], name: "index_inbox_members_on_inbox_id"
-  end
-
   create_table "inboxes", id: :serial, force: :cascade do |t|
     t.integer "channel_id", null: false
     t.integer "account_id", null: false
@@ -1034,7 +976,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.string "channel_type"
-    t.boolean "enable_auto_assignment", default: true
     t.boolean "greeting_enabled", default: false
     t.string "greeting_message"
     t.string "email_address"
@@ -1044,7 +985,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
     t.boolean "enable_email_collect", default: true
     t.boolean "csat_survey_enabled", default: false
     t.boolean "allow_messages_after_resolved", default: true
-    t.jsonb "auto_assignment_config", default: {}
     t.boolean "lock_to_single_conversation", default: false, null: false
     t.bigint "portal_id"
     t.integer "sender_name_type", default: 0, null: false
@@ -1408,7 +1348,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_18_100000) do
   create_table "teams", force: :cascade do |t|
     t.string "name", null: false
     t.text "description"
-    t.boolean "allow_auto_assign", default: true
     t.bigint "account_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
