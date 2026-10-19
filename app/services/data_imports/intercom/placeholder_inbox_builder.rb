@@ -34,7 +34,6 @@ class DataImports::Intercom::PlaceholderInboxBuilder
     @account.inboxes.create!(
       name: "Intercom Import - #{bucket[:name]}",
       channel: channel,
-      enable_auto_assignment: false,
       allow_messages_after_resolved: false
     )
   end

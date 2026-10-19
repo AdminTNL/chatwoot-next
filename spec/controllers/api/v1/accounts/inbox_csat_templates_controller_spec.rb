@@ -13,7 +13,8 @@ RSpec.describe Api::V1::Accounts::InboxCsatTemplatesController, type: :request d
   let(:analysis_service) { instance_double(CsatTemplateUtilityAnalysisService) }
 
   before do
-    create(:inbox_member, user: agent, inbox: whatsapp_inbox)
+    access_team = whatsapp_inbox.team || create(:team, account: whatsapp_inbox.account).tap { |new_team| whatsapp_inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
     allow(Whatsapp::CsatTemplateService).to receive(:new).and_return(mock_service)
     allow(CsatTemplateUtilityAnalysisService).to receive(:new).and_return(analysis_service)
   end

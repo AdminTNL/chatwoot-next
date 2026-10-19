@@ -159,7 +159,6 @@ export const mockTeamsList = [
     id: 5,
     name: 'design',
     description: 'design team',
-    allow_auto_assign: true,
     account_id: 1,
     is_member: false,
   },

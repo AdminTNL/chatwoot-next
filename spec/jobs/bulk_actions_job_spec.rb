@@ -13,7 +13,9 @@ RSpec.describe BulkActionsJob do
 
   before do
     [conversation_1, conversation_2, conversation_3].each do |conversation|
-      create(:inbox_member, inbox: conversation.inbox, user: agent)
+      access_team = conversation.inbox.team ||
+                    create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
     end
   end
 
@@ -86,13 +88,14 @@ RSpec.describe BulkActionsJob do
         ids: conversation_ids
       }
 
-      expect(conversation_1.team_id).to be_nil
+      expect(conversation_1.reload.team_id).not_to eq(team.id)
 
       described_class.perform_now(account: account, params: params, user: agent)
 
-      expect(conversation_1.reload.team_id).to be_nil
-      expect(conversation_2.reload.team_id).to be_nil
-      expect(conversation_3.reload.team_id).to be_nil
+      expect(conversation_1.reload.team_id).to eq(conversation_1.inbox.team_id)
+      expect(conversation_2.reload.team_id).to eq(conversation_2.inbox.team_id)
+      expect(conversation_3.reload.team_id).to eq(conversation_3.inbox.team_id)
+      expect(conversation_1.reload.team_id).not_to eq(team.id)
     end
 
     it 'skips conversations whose inbox the agent does not belong to' do

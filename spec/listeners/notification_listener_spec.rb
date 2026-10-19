@@ -22,7 +22,8 @@ describe NotificationListener do
       allow(Messages::MentionService).to receive(:new).and_return(mention_service)
       allow(mention_service).to receive(:perform)
 
-      create(:inbox_member, user: first_agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: first_agent, team: access_team)
       conversation.reload
 
       message = build(
@@ -43,7 +44,8 @@ describe NotificationListener do
       allow(Messages::NewMessageNotificationService).to receive(:new).and_return(notification_service)
       allow(notification_service).to receive(:perform)
 
-      create(:inbox_member, user: first_agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: first_agent, team: access_team)
       conversation.reload
 
       message = build(
@@ -65,7 +67,8 @@ describe NotificationListener do
         allow(NotificationBuilder).to receive(:new).and_return(builder)
         allow(builder).to receive(:perform)
 
-        create(:inbox_member, user: first_agent, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: first_agent, team: access_team)
         conversation.reload
 
         message = build(
@@ -88,7 +91,8 @@ describe NotificationListener do
     let(:event_name) { :'message.created' }
 
     it 'will not create duplicate new message notification for the same user for mentions participation & assignment' do
-      create(:inbox_member, user: first_agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: first_agent, team: access_team)
       conversation.update(assignee: first_agent)
 
       message = build(
@@ -106,7 +110,8 @@ describe NotificationListener do
     end
 
     it 'will create a mention notification when a user is mentioned in a private note' do
-      create(:inbox_member, user: first_agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: first_agent, team: access_team)
 
       message = build(
         :message,
@@ -123,7 +128,8 @@ describe NotificationListener do
     end
 
     it 'will not create new message notifications for private messages without mentions' do
-      create(:inbox_member, user: first_agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: first_agent, team: access_team)
       conversation.update(assignee: first_agent)
       # participants is created by async job. so creating it directly for testcase
       conversation.conversation_participants.first_or_create(user: first_agent)
@@ -183,15 +189,6 @@ describe NotificationListener do
       expect { listener.public_send(listener_method, event) }.not_to have_enqueued_job(Notification::DeliveryOnlyJob)
     end
 
-    it 'still notifies agents with legacy inbox membership' do
-      legacy_agent = create(:user, account: account)
-      create(:inbox_member, user: legacy_agent, inbox: team_inbox)
-      enable_push(legacy_agent)
-
-      expect { listener.public_send(listener_method, event) }
-        .to have_enqueued_job(Notification::DeliveryOnlyJob).with(hash_including(user_id: legacy_agent.id))
-    end
-
     it 'keeps an unread mention untouched' do
       agent = team_agents.first
       enable_push(agent)
@@ -220,7 +217,8 @@ describe NotificationListener do
     let(:event_name) { :'conversation.assignee_changed' }
 
     it 'does not create any notification' do
-      create(:inbox_member, user: user, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: user, team: access_team)
       event = Events::Base.new(event_name, Time.zone.now, conversation: conversation, data: { notifiable_assignee_change: true })
 
       expect { listener.assignee_changed(event) }.not_to(change(Notification, :count))

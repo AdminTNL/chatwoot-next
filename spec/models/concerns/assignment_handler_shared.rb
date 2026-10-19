@@ -9,14 +9,13 @@ shared_examples_for 'assignment_handler' do
       create(:user, email: 'agent@example.com', account: conversation.account, role: :agent, auto_offline: false)
     end
     let(:team) do
-      create(:team, account: conversation.account, allow_auto_assign: false)
+      create(:team, account: conversation.account)
     end
 
     context 'when agent is current user' do
       before do
         Current.user = agent
         create(:team_member, team: team, user: agent)
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
         conversation.inbox.reload
       end
 
@@ -36,19 +35,7 @@ shared_examples_for 'assignment_handler' do
                                 content: "Unassigned from #{team.name} by #{agent.name}" }))
       end
 
-      it 'changes assignee to nil if they doesnt belong to the team and allow_auto_assign is false' do
-        expect(team.allow_auto_assign).to be false
-
-        conversation.inbox.update!(team: team)
-        conversation.save
-
-        expect(conversation.reload.assignee).to be_nil
-      end
-
-      # Auto-atribuição desligada (spec 040): allow_auto_assign não escolhe mais um agente.
-      it 'clears an outside assignee and picks no new one even if allow_auto_assign is enabled' do
-        team.update!(allow_auto_assign: true)
-
+      it 'changes assignee to nil if they doesnt belong to the team' do
         conversation.inbox.update!(team: team)
         conversation.save
 
@@ -56,9 +43,7 @@ shared_examples_for 'assignment_handler' do
       end
 
       it 'wont change assignee if he is already a team member' do
-        team.update!(allow_auto_assign: true)
         assignee = create(:user, account: conversation.account, role: :agent)
-        create(:inbox_member, user: assignee, inbox: conversation.inbox)
         create(:team_member, team: team, user: assignee)
         conversation.update(assignee: assignee)
 

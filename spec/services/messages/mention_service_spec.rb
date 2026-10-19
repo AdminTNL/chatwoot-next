@@ -7,15 +7,15 @@ describe Messages::MentionService do
   let!(:second_agent) { create(:user, account: account) }
   let!(:third_agent) { create(:user, account: account) }
   let!(:admin_user) { create(:user, account: account, role: :administrator) }
-  let!(:inbox) { create(:inbox, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: create(:team, account: account, name: 'Inbox Team')) }
   let!(:conversation) { create(:conversation, account: account, inbox: inbox, assignee: user) }
   let!(:team) { create(:team, account: account, name: 'Support Team') }
   let!(:empty_team) { create(:team, account: account, name: 'Empty Team') }
   let(:builder) { double }
 
   before do
-    create(:inbox_member, user: first_agent, inbox: inbox)
-    create(:inbox_member, user: second_agent, inbox: inbox)
+    create(:team_member, user: first_agent, team: inbox.team)
+    create(:team_member, user: second_agent, team: inbox.team)
     create(:team_member, user: first_agent, team: team)
     create(:team_member, user: second_agent, team: team)
     conversation.reload
@@ -507,8 +507,8 @@ describe Messages::MentionService do
           private: true
         )
 
-        # Make third_agent an inbox member
-        create(:inbox_member, user: third_agent, inbox: inbox)
+        # Give third_agent access to the inbox through its team
+        create(:team_member, user: third_agent, team: inbox.team)
 
         described_class.new(message: message).perform
 

@@ -36,15 +36,6 @@ RSpec.describe Notifications::AccessCleanupService do
     expect(Notification.exists?(n.id)).to be(true)
   end
 
-  it 'keeps notifications of conversations reachable through a legacy inbox membership' do
-    create(:inbox_member, user: agent, inbox: conversation_a.inbox)
-    n = notify(agent, conversation_a)
-
-    run([agent])
-
-    expect(Notification.exists?(n.id)).to be(true)
-  end
-
   it 'does not touch notifications of other accounts' do
     other_account = create(:account)
     other_conversation = create(:conversation, account: other_account)

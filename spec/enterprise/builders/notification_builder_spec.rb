@@ -8,7 +8,8 @@ describe NotificationBuilder do
     let!(:account_user) { agent.account_users.find_by(account: account) }
 
     before do
-      create(:inbox_member, user: agent, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
       notification_setting = agent.notification_settings.find_by(account_id: account.id)
       notification_setting.selected_email_flags = [:email_conversation_creation]
       notification_setting.selected_push_flags = [:push_conversation_creation]
@@ -57,7 +58,8 @@ describe NotificationBuilder do
 
       it 'does not create a notification for conversations assigned to someone else' do
         other_agent = create(:user, account: account, role: :agent)
-        create(:inbox_member, user: other_agent, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: other_agent, team: access_team)
         conversation = create(:conversation, account: account, inbox: inbox, assignee: other_agent)
 
         expect { build_notification(conversation) }.not_to(change { agent.notifications.count })

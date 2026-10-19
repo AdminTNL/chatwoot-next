@@ -6,7 +6,8 @@ describe Contacts::FilterService do
   let!(:account) { create(:account) }
   let!(:first_user) { create(:user, account: account) }
   let!(:second_user) { create(:user, account: account) }
-  let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+  let!(:inbox_team) { create(:team, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: inbox_team) }
   let!(:en_contact) do
     create(:contact,
            account: account,
@@ -28,8 +29,8 @@ describe Contacts::FilterService do
   end
 
   before do
-    create(:inbox_member, user: first_user, inbox: inbox)
-    create(:inbox_member, user: second_user, inbox: inbox)
+    create(:team_member, user: first_user, team: inbox_team)
+    create(:team_member, user: second_user, team: inbox_team)
     create(:conversation, account: account, inbox: inbox, assignee: first_user, contact: en_contact)
     create(:conversation, account: account, inbox: inbox, contact: el_contact)
     # first_user/second_user are restricted agents (spec 12): every contact used across this
@@ -484,7 +485,8 @@ describe Contacts::FilterService do
   # Segments/Custom Views, which run through the same base_relation) never leaks a
   # contact outside the requesting agent's accessible inboxes.
   describe 'contact access scope (spec 12)' do
-    let!(:other_inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+    let!(:other_team) { create(:team, account: account) }
+    let!(:other_inbox) { create(:inbox, account: account, team: other_team) }
     let!(:unscoped_agent) { create(:user, account: account) }
     let!(:admin) { create(:user, :administrator, account: account) }
     let(:all_contacts_payload) do
@@ -505,7 +507,7 @@ describe Contacts::FilterService do
     end
 
     it 'does not duplicate a contact with conversations in two inboxes accessible to the agent' do
-      create(:inbox_member, user: first_user, inbox: other_inbox)
+      create(:team_member, user: first_user, team: other_team)
       create(:conversation, account: account, inbox: other_inbox, contact: en_contact)
 
       result = filter_service.new(account, first_user, { payload: all_contacts_payload, page: 1 }).perform

@@ -115,9 +115,6 @@
         "LABEL": "Descrição do time",
         "PLACEHOLDER": "Breve descrição sobre este time."
       },
-      "AUTO_ASSIGN": {
-        "LABEL": "Permitir atribuição automática para este time."
-      },
       "SUBMIT_CREATE": "Criar novo time"
     }
   }

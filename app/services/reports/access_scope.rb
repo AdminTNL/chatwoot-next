@@ -118,9 +118,8 @@ class Reports::AccessScope
   end
 
   def compute_agent_ids
-    via_inbox = InboxMember.where(inbox_id: inbox_ids).distinct.pluck(:user_id)
     via_team = TeamMember.where(team_id: team_ids).distinct.pluck(:user_id)
 
-    (via_inbox + via_team + [@user.id]).uniq
+    (via_team + [@user.id]).uniq
   end
 end

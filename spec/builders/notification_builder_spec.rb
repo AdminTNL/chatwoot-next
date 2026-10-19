@@ -10,7 +10,8 @@ describe NotificationBuilder do
     let!(:primary_actor) { create(:conversation, account: account, inbox: inbox) }
 
     before do
-      create(:inbox_member, user: user, inbox: inbox)
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: user, team: access_team)
       notification_setting = user.notification_settings.find_by(account_id: account.id)
       notification_setting.selected_email_flags = [:email_conversation_creation]
       notification_setting.selected_push_flags = [:push_conversation_creation]

@@ -60,10 +60,6 @@ properties:
             items:
               type: string
             example: ['billing']
-  enable_auto_assignment:
-    type: boolean
-    description: Enable Auto Assignment.
-    example: true
   working_hours_enabled:
     type: boolean
     description: Enable working hours.

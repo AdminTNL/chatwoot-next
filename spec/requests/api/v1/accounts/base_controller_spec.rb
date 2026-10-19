@@ -7,7 +7,9 @@ RSpec.describe 'Api::V1::Accounts::BaseController', type: :request do
   let(:agent) { create(:user, account: account, role: :agent) }
 
   before do
-    create(:inbox_member, inbox: inbox, user: agent)
+    access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
+    conversation.save!
   end
 
   context 'when agent bot belongs to the account' do

@@ -10,7 +10,10 @@ RSpec.describe 'Api::V1::Accounts::Captain::MessageReports', type: :request do
     create(:message, account: account, conversation: conversation, message_type: :outgoing, sender: assistant)
   end
 
-  before { create(:inbox_member, user: agent, inbox: inbox) }
+  before do
+    access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
+  end
 
   def json_response
     JSON.parse(response.body, symbolize_names: true)

@@ -3,13 +3,10 @@ describe ParticipationListener do
   let(:listener) { described_class.instance }
   let!(:account) { create(:account) }
   let!(:admin) { create(:user, account: account, role: :administrator) }
-  let!(:inbox) { create(:inbox, account: account) }
-  let!(:agent) { create(:user, account: account, role: :agent) }
+  let!(:team) { create(:team, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: team) }
+  let!(:agent) { create(:user, account: account, role: :agent).tap { |user| create(:team_member, team: team, user: user) } }
   let!(:conversation) { create(:conversation, account: account, inbox: inbox, assignee: agent) }
-
-  before do
-    create(:inbox_member, inbox: inbox, user: agent)
-  end
 
   describe '#assignee_changed' do
     let(:event_name) { :assignee_changed }

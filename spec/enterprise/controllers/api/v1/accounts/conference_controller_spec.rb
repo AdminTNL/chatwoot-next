@@ -38,7 +38,10 @@ RSpec.describe Api::V1::Accounts::ConferenceController, type: :request do
     end
 
     context 'when authenticated agent with inbox access' do
-      before { create(:inbox_member, inbox: voice_inbox, user: agent) }
+      before do
+        access_team = voice_inbox.team || create(:team, account: voice_inbox.account).tap { |new_team| voice_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
+      end
 
       it 'returns token payload' do
         fake_token = instance_double(Twilio::JWT::AccessToken, to_jwt: 'jwt-token', add_grant: nil)
@@ -67,7 +70,8 @@ RSpec.describe Api::V1::Accounts::ConferenceController, type: :request do
 
     context 'when authenticated agent with inbox access' do
       before do
-        create(:inbox_member, inbox: voice_inbox, user: agent)
+        access_team = voice_inbox.team || create(:team, account: voice_inbox.account).tap { |new_team| voice_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         create(
           :call,
           account: account,
@@ -132,7 +136,8 @@ RSpec.describe Api::V1::Accounts::ConferenceController, type: :request do
 
     context 'when authenticated agent with inbox access' do
       before do
-        create(:inbox_member, inbox: voice_inbox, user: agent)
+        access_team = voice_inbox.team || create(:team, account: voice_inbox.account).tap { |new_team| voice_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         create(
           :call,
           account: account,

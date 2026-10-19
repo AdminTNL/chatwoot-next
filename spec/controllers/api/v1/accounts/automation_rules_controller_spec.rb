@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe 'Api::V1::Accounts::AutomationRulesController', type: :request do
   let(:account) { create(:account) }
   let(:administrator) { create(:user, account: account, role: :administrator) }
-  let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+  let!(:inbox) { create(:inbox, account: account) }
   let!(:contact) { create(:contact, account: account) }
   let(:contact_inbox) { create(:contact_inbox, inbox_id: inbox.id, contact_id: contact.id) }
 
@@ -65,14 +65,7 @@ RSpec.describe 'Api::V1::Accounts::AutomationRulesController', type: :request do
               'action_params': ['Welcome to the chatwoot platform.']
             },
             {
-              'action_name': :assign_team,
-              'action_params': [1]
-            },
-            {
               'action_name': :remove_assigned_agent
-            },
-            {
-              'action_name': :remove_assigned_team
             },
             {
               'action_name': :add_label,
@@ -336,7 +329,7 @@ RSpec.describe 'Api::V1::Accounts::AutomationRulesController', type: :request do
 
       it 'returns for cloned automation_rule for account' do
         expect(account.automation_rules.count).to eq(1)
-        expect(account.automation_rules.first.actions.size).to eq(4)
+        expect(account.automation_rules.first.actions.size).to eq(3)
 
         patch "/api/v1/accounts/#{account.id}/automation_rules/#{automation_rule.id}",
               headers: administrator.create_new_auth_token,

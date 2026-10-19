@@ -12,7 +12,8 @@ RSpec.describe '/api/v1/accounts/{account.id}/contacts/:id/conversations', type:
   let(:unknown) { create(:user, account: account, role: nil) }
 
   before do
-    create(:inbox_member, user: agent, inbox: inbox_1)
+    access_team = inbox_1.team || create(:team, account: inbox_1.account).tap { |new_team| inbox_1.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
     2.times.each do
       create(:conversation, account: account, inbox: inbox_1, contact: contact, contact_inbox: contact_inbox_1)
       create(:conversation, account: account, inbox: inbox_2, contact: contact, contact_inbox: contact_inbox_2)

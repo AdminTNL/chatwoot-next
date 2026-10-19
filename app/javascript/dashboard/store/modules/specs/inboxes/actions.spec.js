@@ -107,12 +107,12 @@ describe('#actions', () => {
   describe('#updateInbox', () => {
     it('sends correct actions if API is success', async () => {
       const updatedInbox = inboxList[0];
-      updatedInbox.enable_auto_assignment = false;
+      updatedInbox.name = 'Updated inbox';
 
       axios.patch.mockResolvedValue({ data: updatedInbox });
       await actions.updateInbox(
         { commit },
-        { id: updatedInbox.id, inbox: { enable_auto_assignment: false } }
+        { id: updatedInbox.id, inbox: { name: 'Updated inbox' } }
       );
       expect(commit.mock.calls).toEqual([
         [types.default.SET_INBOXES_UI_FLAG, { isUpdating: true }],
@@ -125,7 +125,7 @@ describe('#actions', () => {
       await expect(
         actions.updateInbox(
           { commit },
-          { id: inboxList[0].id, inbox: { enable_auto_assignment: false } }
+          { id: inboxList[0].id, inbox: { name: 'Updated inbox' } }
         )
       ).rejects.toThrow(Error);
       expect(commit.mock.calls).toEqual([

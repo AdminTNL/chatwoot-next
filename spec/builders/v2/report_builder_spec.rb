@@ -13,7 +13,8 @@ describe V2::ReportBuilder do
       travel_to(Time.zone.today) do
         user = create(:user, account: account)
         inbox = create(:inbox, account: account)
-        create(:inbox_member, user: user, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: user, team: access_team)
 
         gravatar_url = 'https://www.gravatar.com'
         favicon_url = 'https://www.google.com/s2/favicons'

@@ -25,9 +25,8 @@ RSpec.describe '/api/v1/widget/labels', type: :request do
     end
 
     context 'with correct website token and a defined label' do
-      before do
-        account.labels.create!(title: 'customer-support')
-      end
+      let!(:label) { create(:label, account: account, title: 'customer-support') }
+      let(:params) { { website_token: web_widget.website_token, label: label.title } }
 
       it 'add the label to the conversation' do
         post '/api/v1/widget/labels',
@@ -37,7 +36,7 @@ RSpec.describe '/api/v1/widget/labels', type: :request do
 
         expect(response).to have_http_status(:success)
         expect(conversation.reload.label_list.count).to eq 1
-        expect(conversation.reload.label_list.first).to eq 'customer-support'
+        expect(conversation.reload.label_list.first).to eq label.title
       end
     end
 

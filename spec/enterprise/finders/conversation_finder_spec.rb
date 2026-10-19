@@ -5,11 +5,12 @@ RSpec.describe ConversationFinder do
     let(:account) { create(:account) }
     let(:agent) { create(:user, account: account, role: :agent) }
     let(:other_agent) { create(:user, account: account, role: :agent) }
-    let(:inbox) { create(:inbox, account: account) }
+    let(:team) { create(:team, account: account) }
+    let(:inbox) { create(:inbox, account: account, team: team) }
 
     before do
       Current.account = account
-      create(:inbox_member, user: agent, inbox: inbox)
+      create(:team_member, user: agent, team: team)
       account.account_users.find_by(user: agent).update!(
         role: :agent,
         custom_role: create(:custom_role, account: account, permissions: %w[conversation_participating_manage])
@@ -23,7 +24,7 @@ RSpec.describe ConversationFinder do
 
       2.times do
         participant = create(:user, account: account, role: :agent)
-        create(:inbox_member, user: participant, inbox: inbox)
+        create(:team_member, user: participant, team: team)
         create(:conversation_participant, account: account, conversation: assigned_conversation, user: participant)
       end
       create(:conversation_participant, account: account, conversation: participating_conversation, user: agent)
@@ -31,10 +32,6 @@ RSpec.describe ConversationFinder do
       result = described_class.new(agent, { status: 'open' }).perform_meta_only
 
       expect(result[:count]).to eq({
-                                     mine_count: 1,
-                                     assigned_count: 2,
-                                     unassigned_count: 0,
-                                     all_count: 2,
                                      unread_conversations_count: 0,
                                      in_progress_conversations_count: 2,
                                      snoozed_conversations_count: 0,

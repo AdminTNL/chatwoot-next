@@ -18,7 +18,9 @@ RSpec.describe '/api/v1/accounts/{account.id}/contacts/:id/contact_inboxes', typ
 
     context 'when authenticated user with access to inbox' do
       it 'creates a contact inbox' do
-        create(:inbox_member, inbox: channel_api.inbox, user: agent)
+        access_team = channel_api.inbox.team ||
+                      create(:team, account: channel_api.inbox.account).tap { |new_team| channel_api.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         expect do
           post "/api/v1/accounts/#{account.id}/contacts/#{contact.id}/contact_inboxes",
                params: { inbox_id: channel_api.inbox.id },
@@ -33,7 +35,9 @@ RSpec.describe '/api/v1/accounts/{account.id}/contacts/:id/contact_inboxes', typ
       end
 
       it 'creates a valid email contact inbox' do
-        create(:inbox_member, inbox: channel_email.inbox, user: agent)
+        access_team = channel_email.inbox.team ||
+                      create(:team, account: channel_email.inbox.account).tap { |new_team| channel_email.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         expect do
           post "/api/v1/accounts/#{account.id}/contacts/#{contact.id}/contact_inboxes",
                params: { inbox_id: channel_email.inbox.id },
@@ -46,7 +50,9 @@ RSpec.describe '/api/v1/accounts/{account.id}/contacts/:id/contact_inboxes', typ
       end
 
       it 'creates an hmac verified contact inbox' do
-        create(:inbox_member, inbox: channel_api.inbox, user: agent)
+        access_team = channel_api.inbox.team ||
+                      create(:team, account: channel_api.inbox.account).tap { |new_team| channel_api.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         expect do
           post "/api/v1/accounts/#{account.id}/contacts/#{contact.id}/contact_inboxes",
                params: { inbox_id: channel_api.inbox.id, hmac_verified: true },
@@ -61,7 +67,9 @@ RSpec.describe '/api/v1/accounts/{account.id}/contacts/:id/contact_inboxes', typ
       end
 
       it 'throws error for invalid source id' do
-        create(:inbox_member, inbox: channel_twilio_sms.inbox, user: agent)
+        access_team = channel_twilio_sms.inbox.team ||
+                      create(:team, account: channel_twilio_sms.inbox.account).tap { |new_team| channel_twilio_sms.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         expect do
           post "/api/v1/accounts/#{account.id}/contacts/#{contact.id}/contact_inboxes",
                params: { inbox_id: channel_twilio_sms.inbox.id },

@@ -6,7 +6,9 @@ RSpec.describe 'Conversation Participants API', type: :request do
   let(:agent) { create(:user, account: account, role: :agent) }
 
   before do
-    create(:inbox_member, inbox: conversation.inbox, user: agent)
+    access_team = conversation.inbox.team ||
+                  create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
   end
 
   describe 'GET /api/v1/accounts/{account.id}/conversations/<id>/paricipants' do
@@ -22,8 +24,10 @@ RSpec.describe 'Conversation Participants API', type: :request do
       let(:participant2) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: participant1)
-        create(:inbox_member, inbox: conversation.inbox, user: participant2)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: participant1, team: access_team)
+        create(:team_member, user: participant2, team: access_team)
       end
 
       it 'returns all the partipants for the conversation' do
@@ -52,7 +56,9 @@ RSpec.describe 'Conversation Participants API', type: :request do
       let(:participant) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: participant)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: participant, team: access_team)
       end
 
       it 'creates a new participants when its authorized agent' do
@@ -74,6 +80,7 @@ RSpec.describe 'Conversation Participants API', type: :request do
         conversation.inbox.update!(team: team)
         team_agent = create(:user, account: account, role: :agent)
         create(:team_member, team: team, user: team_agent)
+        create(:team_member, team: team, user: agent)
 
         post api_v1_account_conversation_participants_url(account_id: account.id, conversation_id: conversation.display_id),
              params: { user_ids: [team_agent.id] },
@@ -117,9 +124,13 @@ RSpec.describe 'Conversation Participants API', type: :request do
       let(:participant_to_be_removed) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: participant)
-        create(:inbox_member, inbox: conversation.inbox, user: participant_to_be_added)
-        create(:inbox_member, inbox: conversation.inbox, user: participant_to_be_removed)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: participant, team: access_team)
+        create(:team_member, user: participant_to_be_added, team: access_team)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: participant_to_be_removed, team: access_team)
       end
 
       it 'updates participants when its authorized agent' do
@@ -172,7 +183,9 @@ RSpec.describe 'Conversation Participants API', type: :request do
       let(:participant) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: participant)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: participant, team: access_team)
       end
 
       it 'deletes participants when its authorized agent' do

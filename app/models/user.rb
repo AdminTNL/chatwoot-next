@@ -96,8 +96,6 @@ class User < ApplicationRecord
   has_many :conversation_participants, dependent: :destroy_async
   has_many :participating_conversations, through: :conversation_participants, source: :conversation
 
-  has_many :inbox_members, dependent: :destroy_async
-  has_many :inboxes, through: :inbox_members, source: :inbox
   has_many :messages, as: :sender, dependent: :nullify
   has_many :invitees, through: :account_users, class_name: 'User', foreign_key: 'inviter_id', source: :inviter, dependent: :nullify
 
@@ -139,18 +137,15 @@ class User < ApplicationRecord
     administrator? ? Current.account.inboxes : accessible_inboxes(Current.account)
   end
 
-  # Inboxes the user can access in the given account, combining:
-  #   - direct membership via `inbox_members`
-  #   - inheritance via team membership (inbox.team_id in user's teams for this account)
+  # Inboxes the user can access in the given account, via team membership
+  # (inbox.team_id in user's teams for this account).
   #
   # Returns an ActiveRecord::Relation (not an Array) with no duplicates, so callers
   # can safely chain `.where(...)` / `.pluck(:id)` on top of it.
   def accessible_inboxes(account)
-    member_inbox_ids = inbox_members.select(:inbox_id)
     team_ids = teams.where(account_id: account.id).select(:id)
 
-    Inbox.where(account_id: account.id, id: member_inbox_ids)
-         .or(Inbox.where(account_id: account.id, team_id: team_ids))
+    Inbox.where(account_id: account.id, team_id: team_ids)
   end
 
   def serializable_hash(options = nil)

@@ -18,6 +18,9 @@
 #  index_teams_on_name_and_account_id  (name,account_id) UNIQUE
 #
 class Team < ApplicationRecord
+  # colunas removidas do código; drop em migration posterior
+  self.ignored_columns += %w[allow_auto_assign]
+
   include AccountCacheRevalidator
 
   belongs_to :account

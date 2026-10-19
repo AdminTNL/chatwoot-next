@@ -43,11 +43,13 @@
 #
 
 class Inbox < ApplicationRecord
+  # colunas removidas do código; drop em migration posterior
+  self.ignored_columns += %w[enable_auto_assignment auto_assignment_config]
+
   include Reportable
   include Avatarable
   include OutOfOffisable
   include AccountCacheRevalidator
-  include InboxAgentAvailability
 
   # Not allowing characters:
   validates :name, presence: true
@@ -55,7 +57,6 @@ class Inbox < ApplicationRecord
   validates :timezone, inclusion: { in: TZInfo::Timezone.all_identifiers }
   validates :out_of_office_message, length: { maximum: Limits::OUT_OF_OFFICE_MESSAGE_MAX_LENGTH }
   validates :greeting_message, length: { maximum: Limits::GREETING_MESSAGE_MAX_LENGTH }
-  validate :ensure_valid_max_assignment_limit
   validate { errors.add(:team, 'must belong to the same account as the inbox') if team.present? && team.account_id != account_id }
 
   belongs_to :account
@@ -68,13 +69,9 @@ class Inbox < ApplicationRecord
   has_many :contact_inboxes, dependent: :destroy_async
   has_many :contacts, through: :contact_inboxes
 
-  has_many :inbox_members, dependent: :destroy_async
-  has_many :members, through: :inbox_members, source: :user
   has_many :conversations, dependent: :destroy_async
   has_many :messages, dependent: :destroy_async
 
-  has_one :inbox_assignment_policy, dependent: :destroy
-  has_one :assignment_policy, through: :inbox_assignment_policy
   has_one :agent_bot_inbox, dependent: :destroy_async
   has_one :agent_bot, through: :agent_bot_inbox
   has_many :webhooks, dependent: :destroy_async
@@ -83,7 +80,6 @@ class Inbox < ApplicationRecord
   enum sender_name_type: { friendly: 0, professional: 1 }
 
   before_destroy :capture_filtered_unread_count_user_ids, prepend: true
-  after_destroy :delete_round_robin_agents
 
   after_create_commit :dispatch_create_event
   after_update_commit :dispatch_update_event
@@ -91,22 +87,6 @@ class Inbox < ApplicationRecord
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
 
   scope :order_by_name, -> { order('lower(name) ASC') }
-
-  # Adds multiple members to the inbox
-  # @param user_ids [Array<Integer>] Array of user IDs to add as members
-  # @return [void]
-  def add_members(user_ids)
-    inbox_members.create!(user_ids.map { |user_id| { user_id: user_id } })
-    update_account_cache
-  end
-
-  # Removes multiple members from the inbox
-  # @param user_ids [Array<Integer>] Array of user IDs to remove
-  # @return [void]
-  def remove_members(user_ids)
-    inbox_members.where(user_id: user_ids).destroy_all
-    update_account_cache
-  end
 
   # Sanitizes inbox name for balanced email provider compatibility
   # ALLOWS: /'._- and Unicode letters/numbers/emojis
@@ -178,11 +158,9 @@ class Inbox < ApplicationRecord
     (all_member_users + account.administrators).uniq
   end
 
-  # Users with access via direct membership or the inbox's team
+  # Users with access via the inbox's team
   def all_member_users
-    direct_ids = inbox_members.select(:user_id)
-    team_user_ids = TeamMember.where(team_id: team_id).select(:user_id)
-    account.users.where(id: direct_ids).or(account.users.where(id: team_user_ids))
+    account.users.where(id: TeamMember.where(team_id: team_id).select(:user_id))
   end
 
   def all_member_user_ids
@@ -216,14 +194,6 @@ class Inbox < ApplicationRecord
     when 'Channel::Whatsapp'
       "#{ENV.fetch('FRONTEND_URL', nil)}/webhooks/whatsapp/#{channel.phone_number}"
     end
-  end
-
-  def member_ids_with_assignment_capacity
-    members.ids
-  end
-
-  def auto_assignment_v2_enabled?
-    account.feature_enabled?('assignment_v2')
   end
 
   # Callers (Reauthorizable) only invoke this on a real transition, so the previous
@@ -275,14 +245,6 @@ class Inbox < ApplicationRecord
   def enqueue_team_change
     previous_team_id, new_team_id = saved_change_to_team_id
     Inboxes::TeamChangeJob.perform_later(inbox_id: id, previous_team_id: previous_team_id, new_team_id: new_team_id)
-  end
-
-  def ensure_valid_max_assignment_limit
-    # overridden in enterprise/app/models/enterprise/inbox.rb
-  end
-
-  def delete_round_robin_agents
-    ::AutoAssignment::InboxRoundRobinService.new(inbox: self).clear_queue
   end
 
   def capture_filtered_unread_count_user_ids

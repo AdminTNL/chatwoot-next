@@ -309,11 +309,6 @@
     "NATIVE_APP_ADVISORY": "This message was sent from the native app. Reply from Chatwoot to maintain the message window.",
     "SEND_FAILED": "Couldn't send message! Try again",
     "TRY_AGAIN": "retry",
-    "ASSIGNMENT": {
-      "SELECT_AGENT": "Select Agent",
-      "REMOVE": "Remove",
-      "ASSIGN": "Assign"
-    },
     "CONTEXT_MENU": {
       "COPY": "Copy",
       "REPLY_TO": "Reply to this message",

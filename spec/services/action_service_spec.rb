@@ -42,7 +42,11 @@ describe ActionService do
 
   describe '#assign_agent' do
     let(:agent) { create(:user, account: account, role: :agent) }
-    let(:inbox_member) { create(:inbox_member, inbox: conversation.inbox, user: agent) }
+    let(:agent_team) { create(:team, account: account) }
+    let(:agent_team_member) do
+      conversation.inbox.update!(team: agent_team)
+      create(:team_member, team: agent_team, user: agent)
+    end
     let(:conversation) { create(:conversation, :with_assignee, account: account) }
     let(:action_service) { described_class.new(conversation) }
 
@@ -53,7 +57,7 @@ describe ActionService do
 
     context 'when agent is confirmed' do
       it 'assigns the agent to the conversation' do
-        inbox_member
+        agent_team_member
         action_service.assign_agent([agent.id])
         expect(conversation.reload.assignee).to eq(agent)
       end
@@ -79,10 +83,13 @@ describe ActionService do
 
     context 'when agent is unconfirmed' do
       let(:unconfirmed_agent) { create(:user, account: account, role: :agent, skip_confirmation: false) }
-      let(:unconfirmed_inbox_member) { create(:inbox_member, inbox: conversation.inbox, user: unconfirmed_agent) }
+      let(:unconfirmed_team_member) do
+        conversation.inbox.update!(team: agent_team)
+        create(:team_member, team: agent_team, user: unconfirmed_agent)
+      end
 
       it 'does not assign unconfirmed agent to the conversation' do
-        unconfirmed_inbox_member
+        unconfirmed_team_member
         original_assignee = conversation.assignee
         action_service.assign_agent([unconfirmed_agent.id])
         expect(conversation.reload.assignee).to eq(original_assignee)
@@ -92,8 +99,8 @@ describe ActionService do
     context 'when assigning the last responding agent' do
       it 'assigns the last agent who replied publicly' do
         note_author = create(:user, account: account, role: :agent)
-        inbox_member
-        create(:inbox_member, inbox: conversation.inbox, user: note_author)
+        agent_team_member
+        create(:team_member, team: agent_team, user: note_author)
         create(:message, message_type: :outgoing, account: account,
                          inbox: conversation.inbox, conversation: conversation, sender: agent)
         create(:message, message_type: :outgoing, private: true, account: account,
@@ -105,7 +112,7 @@ describe ActionService do
       end
 
       it 'does not assign the conversation when there is no public agent reply' do
-        inbox_member
+        agent_team_member
         original_assignee = conversation.assignee
         create(:message, message_type: :outgoing, private: true, account: account,
                          inbox: conversation.inbox, conversation: conversation, sender: agent)

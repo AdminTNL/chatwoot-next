@@ -12,7 +12,8 @@ RSpec.describe '/api/v1/accounts/{account.id}/contacts/:id/conversations enterpr
       let(:custom_role) { create(:custom_role, account: account) }
 
       before do
-        create(:inbox_member, user: agent_with_custom_role, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent_with_custom_role, team: access_team)
       end
 
       context 'with conversation_participating_manage permission' do
@@ -65,8 +66,10 @@ RSpec.describe '/api/v1/accounts/{account.id}/contacts/:id/conversations enterpr
           # Create the conversations
           unassigned_conversation
           assigned_conversation
+          other_agent = create(:user, account: account, role: :agent)
+          create(:team_member, user: other_agent, team: inbox.team)
           create(:conversation, account: account, inbox: inbox, contact: contact,
-                                contact_inbox: contact_inbox, assignee: create(:user, account: account, role: :agent))
+                                contact_inbox: contact_inbox, assignee: other_agent)
 
           # Set up permissions
           custom_role.update!(permissions: %w[conversation_unassigned_manage])

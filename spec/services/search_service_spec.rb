@@ -6,7 +6,8 @@ describe SearchService do
   let(:search_type) { 'all' }
   let!(:account) { create(:account) }
   let!(:user) { create(:user, account: account) }
-  let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+  let!(:inbox_team) { create(:team, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: inbox_team) }
   let!(:harry) { create(:contact, name: 'Harry Potter', email: 'test@test.com', account_id: account.id) }
   let!(:conversation) { create(:conversation, contact: harry, inbox: inbox, account: account) }
   let!(:message) { create(:message, account: account, inbox: inbox, content: 'Harry Potter is a wizard') }
@@ -17,7 +18,7 @@ describe SearchService do
   end
 
   before do
-    create(:inbox_member, user: user, inbox: inbox)
+    create(:team_member, user: user, team: inbox_team)
     Current.account = account
   end
 
@@ -157,7 +158,7 @@ describe SearchService do
 
         before do
           account.enable_features!('advanced_search')
-          create(:inbox_member, inbox: inbox2, user: user)
+          inbox2.update!(team: inbox_team)
         end
 
         it 'filters messages by time range with LIKE search' do
@@ -418,8 +419,7 @@ describe SearchService do
       context 'when user has access to all inboxes' do
         before do
           # Create additional inbox and assign user to all inboxes
-          other_inbox = create(:inbox, account: account)
-          create(:inbox_member, user: user, inbox: other_inbox)
+          create(:inbox, account: account, team: inbox_team)
         end
 
         it 'skips inbox filtering as optimization' do
@@ -721,7 +721,7 @@ describe SearchService do
       let!(:inbox2) { create(:inbox, account: account) }
 
       before do
-        create(:inbox_member, user: user, inbox: inbox2)
+        inbox2.update!(team: inbox_team)
       end
 
       it 'filters messages from specific inbox' do
@@ -757,8 +757,7 @@ describe SearchService do
     context 'when combining multiple filters' do
       it 'applies all filters together' do
         test_contact = create(:contact, account: account)
-        test_inbox = create(:inbox, account: account)
-        create(:inbox_member, user: user, inbox: test_inbox)
+        test_inbox = create(:inbox, account: account, team: inbox_team)
 
         since_timestamp = 3.days.ago.to_i
         params = { q: 'test', from: "contact:#{test_contact.id}", inbox_id: test_inbox.id, since: since_timestamp }

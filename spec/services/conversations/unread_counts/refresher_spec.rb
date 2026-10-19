@@ -5,8 +5,8 @@ RSpec.describe Conversations::UnreadCounts::Refresher do
   let(:inbox) { create(:inbox, account: account) }
   let(:label) { create(:label, account: account, title: 'urgent', show_on_sidebar: true) }
   let(:new_label) { create(:label, account: account, title: 'billing', show_on_sidebar: true) }
-  let(:team) { create(:team, account: account, allow_auto_assign: false) }
-  let(:new_team) { create(:team, account: account, allow_auto_assign: false) }
+  let(:team) { create(:team, account: account) }
+  let(:new_team) { create(:team, account: account) }
   let(:assignee) { create(:user, account: account, role: :agent) }
   let(:other_assignee) { create(:user, account: account, role: :agent) }
   let(:store) { Conversations::UnreadCounts::Store }

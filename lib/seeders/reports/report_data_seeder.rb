@@ -205,9 +205,10 @@ class Seeders::Reports::ReportDataSeeder
                          @agents.sample(rand(min_agents..max_agents))
                        end
 
-    agents_to_assign.each do |agent|
-      InboxMember.create!(inbox: inbox, user: agent)
-    end
+    # Inbox access is granted through a dedicated team
+    team = @account.teams.create!(name: "Inbox #{inbox.id} access #{SecureRandom.hex(3)}")
+    team.add_members(agents_to_assign.map(&:id))
+    inbox.update!(team: team)
   end
 
   def create_contacts

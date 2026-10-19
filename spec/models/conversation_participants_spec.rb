@@ -38,7 +38,9 @@ RSpec.describe ConversationParticipant do
 
     before do
       account.enable_features!(:unread_count_for_filters)
-      create(:inbox_member, inbox: conversation.inbox, user: user)
+      access_team = conversation.inbox.team ||
+                    create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+      create(:team_member, user: user, team: access_team)
     end
 
     it 'invalidates the participant built-in filter version when a participant is added' do
