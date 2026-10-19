@@ -10,7 +10,8 @@ RSpec.describe ConversationPolicy, type: :policy do
   let(:context) { { user: agent, account: account, account_user: agent_account_user } }
 
   before do
-    create(:inbox_member, user: agent, inbox: inbox)
+    access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
   end
 
   permissions :show? do
@@ -29,6 +30,7 @@ RSpec.describe ConversationPolicy, type: :policy do
 
       it 'denies access to conversations assigned to someone else' do
         other_agent = create(:user, account: account, role: :agent)
+        create(:team_member, user: other_agent, team: inbox.team)
         conversation = create(:conversation, account: account, inbox: inbox, assignee: other_agent)
 
         expect(subject).not_to permit(context, conversation)

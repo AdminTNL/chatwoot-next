@@ -49,7 +49,8 @@ RSpec.describe 'Conversations API', type: :request do
     context 'when agent has team access' do
       let(:agent) { create(:user, account: account, role: :agent) }
       let(:team) { create(:team, account: account) }
-      let(:conversation) { create(:conversation, account: account, team: team) }
+      let(:inbox) { create(:inbox, account: account, team: team) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox) }
 
       before do
         create(:team_member, team: team, user: agent)
@@ -68,7 +69,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:conversation) { create(:conversation, account: account) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns unauthorized for unassigned conversation without permission' do
@@ -223,7 +226,9 @@ RSpec.describe 'Conversations API', type: :request do
       it 'returns reporting events when agent is assigned to the conversation' do
         conversation.update!(assignee: limited_agent)
         # Also create inbox member for the agent
-        create(:inbox_member, user: limited_agent, inbox: conversation.inbox)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: limited_agent, team: access_team)
 
         get "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/reporting_events",
             headers: limited_agent.create_new_auth_token,
@@ -243,7 +248,8 @@ RSpec.describe 'Conversations API', type: :request do
 
       before do
         create(:team_member, team: team, user: team_agent)
-        conversation.update!(team: team)
+        conversation.inbox.update!(team: team)
+        conversation.save!
       end
 
       it 'allows accessing conversation reporting events via team membership' do

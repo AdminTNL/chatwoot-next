@@ -52,8 +52,6 @@ pt_BR:
       failed: Registro falhou
     voice:
       call_already_accepted: '%{agent_name} já está atendendo a chamada.'
-    assignment_policy:
-      not_found: Política de atribuição não encontrada
     attachments:
       invalid: Anexo inválido
     upload:
@@ -501,9 +499,6 @@ pt_BR:
     seconds:
       one: '%{count} segundo'
       other: '%{count} segundos'
-  auto_assignment:
-    default_policy_name: 'Política Padrão'
-    policy_actor: 'Sistema de Automação via %{policy_name}'
   automation:
     system_name: 'Sistema de Automação'
   crm:
@@ -526,8 +521,6 @@ pt_BR:
 
       Transcrição:
       %{format_messages}
-  agent_capacity_policy:
-    inbox_already_assigned: 'A caixa de entrada já foi atribuída a esta política'
   portals:
     articles:
       captain_not_available: 'A tradução requer que o Capitão esteja ativado para esta conta'

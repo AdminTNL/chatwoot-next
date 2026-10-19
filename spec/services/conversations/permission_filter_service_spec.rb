@@ -6,10 +6,11 @@ RSpec.describe Conversations::PermissionFilterService do
   let!(:another_conversation) { create(:conversation, account: account, inbox: inbox) }
   let(:admin) { create(:user, account: account, role: :administrator) }
   let(:agent) { create(:user, account: account, role: :agent) }
-  let!(:inbox) { create(:inbox, account: account) }
+  let(:agent_team) { create(:team, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: agent_team) }
 
-  # This inbox_member is used to establish the agent's access to the inbox
-  before { create(:inbox_member, user: agent, inbox: inbox) }
+  # This team membership is used to establish the agent's access to the inbox
+  before { create(:team_member, user: agent, team: agent_team) }
 
   describe '#perform' do
     context 'when user is an administrator' do
@@ -28,7 +29,7 @@ RSpec.describe Conversations::PermissionFilterService do
 
     context 'when user is an agent' do
       it 'returns all conversations with no further filtering' do
-        inbox_ids = agent.inboxes.where(account_id: account.id).pluck(:id)
+        inbox_ids = agent.accessible_inboxes(account).pluck(:id)
 
         # The base implementation returns all conversations
         # expecting the caller to filter by assigned inboxes

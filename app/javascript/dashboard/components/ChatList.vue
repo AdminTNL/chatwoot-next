@@ -593,6 +593,11 @@ function loadMoreConversations() {
   }
 }
 
+function refreshConversationStats() {
+  if (hasAppliedFiltersOrActiveFolders.value) return;
+  store.dispatch('conversationStats/get');
+}
+
 function updateReadStatusTab(selectedTab) {
   if (activeReadStatusTab.value !== selectedTab) {
     resetBulkActions();
@@ -600,6 +605,8 @@ function updateReadStatusTab(selectedTab) {
     activeReadStatusTab.value = selectedTab;
     if (!currentPage.value) {
       fetchConversations();
+    } else {
+      refreshConversationStats();
     }
   }
 }
@@ -769,10 +776,7 @@ function toggleSelectAll(check) {
   selectAllConversations(check, conversationList);
 }
 
-useEmitter('fetch_conversation_stats', () => {
-  if (hasAppliedFiltersOrActiveFolders.value) return;
-  store.dispatch('conversationStats/get', conversationFilters.value);
-});
+useEmitter('fetch_conversation_stats', refreshConversationStats);
 
 onMounted(() => {
   store.dispatch('setChatListFilters', conversationFilters.value);

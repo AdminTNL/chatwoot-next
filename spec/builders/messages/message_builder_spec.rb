@@ -6,7 +6,6 @@ describe Messages::MessageBuilder do
   let(:account) { create(:account) }
   let(:user) { create(:user, account: account) }
   let(:inbox) { create(:inbox, account: account) }
-  let(:inbox_member) { create(:inbox_member, inbox: inbox, account: account) }
   let(:conversation) { create(:conversation, inbox: inbox, account: account) }
   let(:message_for_reply) { create(:message, conversation: conversation) }
   let(:params) do
@@ -180,7 +179,6 @@ describe Messages::MessageBuilder do
 
     context 'when email channel messages' do
       let!(:channel_email) { create(:channel_email, account: account) }
-      let(:inbox_member) { create(:inbox_member, inbox: channel_email.inbox) }
       let(:conversation) { create(:conversation, inbox: channel_email.inbox, account: account) }
       let(:params) do
         ActionController::Parameters.new({ cc_emails: 'test_cc_mail@test.com', bcc_emails: 'test_bcc_mail@test.com' })

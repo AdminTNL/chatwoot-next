@@ -7,7 +7,6 @@ RSpec.describe Reports::AccessScope do
 
   let(:inbox_a) { create(:inbox, account: account, team: team_a) }
   let(:inbox_b) { create(:inbox, account: account, team: team_b) }
-  let(:direct_inbox) { create(:inbox, account: account) }
 
   # Legacy label without team (global): team is mandatory now, so the row is made team-less directly.
   let(:label_global) do
@@ -45,15 +44,14 @@ RSpec.describe Reports::AccessScope do
       inbox_a
       inbox_b
       team_a.add_members([agent.id])
-      create(:inbox_member, inbox: direct_inbox, user: agent)
     end
 
     it 'is nil for an unrestricted user' do
       expect(scope_for(administrator).inbox_ids).to be_nil
     end
 
-    it 'combines team inboxes and direct inbox membership for a restricted agent' do
-      expect(scope_for(agent).inbox_ids).to contain_exactly(inbox_a.id, direct_inbox.id)
+    it 'returns the team inboxes for a restricted agent' do
+      expect(scope_for(agent).inbox_ids).to contain_exactly(inbox_a.id)
     end
 
     it 'excludes inboxes of teams the agent does not belong to' do
@@ -99,14 +97,11 @@ RSpec.describe Reports::AccessScope do
 
   describe '#agent_ids' do
     let(:teammate) { create(:user, account: account, role: :agent) }
-    let(:inbox_colleague) { create(:user, account: account, role: :agent) }
     let(:stranger) { create(:user, account: account, role: :agent) }
 
     before do
       stranger
       team_a.add_members([agent.id, teammate.id])
-      create(:inbox_member, inbox: direct_inbox, user: agent)
-      create(:inbox_member, inbox: direct_inbox, user: inbox_colleague)
     end
 
     it 'is nil for an unrestricted user' do
@@ -119,10 +114,6 @@ RSpec.describe Reports::AccessScope do
 
     it 'includes agents who share a team' do
       expect(scope_for(agent).agent_ids).to include(teammate.id)
-    end
-
-    it 'includes agents who share an accessible inbox' do
-      expect(scope_for(agent).agent_ids).to include(inbox_colleague.id)
     end
 
     it 'excludes agents who share neither an inbox nor a team' do

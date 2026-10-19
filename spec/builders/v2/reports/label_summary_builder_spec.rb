@@ -88,7 +88,8 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
         travel_to(Time.zone.today) do
           user = create(:user, account: account)
           inbox = create(:inbox, account: account)
-          create(:inbox_member, user: user, inbox: inbox)
+          access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+          create(:team_member, user: user, team: access_team)
 
           stub_avatar_requests
 
@@ -225,7 +226,8 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
         travel_to(Time.zone.today) do
           user = create(:user, account: account)
           inbox = create(:inbox, account: account)
-          create(:inbox_member, user: user, inbox: inbox)
+          access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+          create(:team_member, user: user, team: access_team)
 
           stub_avatar_requests
 
@@ -282,7 +284,8 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
         travel_to(Time.zone.today) do
           user = create(:user, account: account)
           inbox = create(:inbox, account: account)
-          create(:inbox_member, user: user, inbox: inbox)
+          access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+          create(:team_member, user: user, team: access_team)
 
           stub_avatar_requests
 
@@ -338,7 +341,8 @@ RSpec.describe V2::Reports::LabelSummaryBuilder do
         travel_to(test_date) do
           user = create(:user, account: account2)
           inbox = create(:inbox, account: account2)
-          create(:inbox_member, user: user, inbox: inbox)
+          access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+          create(:team_member, user: user, team: access_team)
 
           stub_avatar_requests
 

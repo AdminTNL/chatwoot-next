@@ -3,6 +3,7 @@ import actions, {
   hasMessageFailedWithExternalError,
 } from '../../conversations/actions';
 import types from '../../../mutation-types';
+import { emitter } from 'shared/helpers/mitt';
 const dataToSend = {
   payload: [
     {
@@ -19,6 +20,7 @@ const commit = vi.fn();
 const dispatch = vi.fn();
 global.axios = axios;
 vi.mock('axios');
+vi.mock('shared/helpers/mitt', () => ({ emitter: { emit: vi.fn() } }));
 
 describe('#hasMessageFailedWithExternalError', () => {
   it('returns false if message is sent', () => {
@@ -295,6 +297,10 @@ describe('#actions', () => {
       vi.useFakeTimers();
     });
 
+    afterEach(() => {
+      vi.clearAllTimers();
+    });
+
     it('sends correct mutations if api is successful', async () => {
       const lastSeen = new Date().getTime() / 1000;
       axios.post.mockResolvedValue({
@@ -311,6 +317,36 @@ describe('#actions', () => {
       axios.post.mockRejectedValue({ message: 'Incorrect header' });
       await actions.markMessagesRead({ commit }, { id: 1 });
       expect(commit.mock.calls).toEqual([]);
+      expect(emitter.emit).not.toHaveBeenCalled();
+    });
+    it('emite fetch_conversation_stats quando a conversa tinha não lidas', async () => {
+      axios.post.mockResolvedValue({ data: { id: 1, agent_last_seen_at: 1 } });
+      await actions.markMessagesRead(
+        { commit, state: { allConversations: [{ id: 1, unread_count: 2 }] } },
+        { id: 1 }
+      );
+      expect(emitter.emit).toHaveBeenCalledWith('fetch_conversation_stats');
+    });
+    it('não emite quando a conversa não tinha não lidas', async () => {
+      axios.post.mockResolvedValue({ data: { id: 1, agent_last_seen_at: 1 } });
+      await actions.markMessagesRead(
+        { commit, state: { allConversations: [{ id: 1, unread_count: 0 }] } },
+        { id: 1 }
+      );
+      expect(emitter.emit).not.toHaveBeenCalled();
+    });
+    it('não emite nem quebra sem state', async () => {
+      axios.post.mockResolvedValue({ data: { id: 1, agent_last_seen_at: 1 } });
+      await actions.markMessagesRead({ commit }, { id: 1 });
+      expect(emitter.emit).not.toHaveBeenCalled();
+    });
+    it('não emite se a API falhar', async () => {
+      axios.post.mockRejectedValue({ message: 'Incorrect header' });
+      await actions.markMessagesRead(
+        { commit, state: { allConversations: [{ id: 1, unread_count: 2 }] } },
+        { id: 1 }
+      );
+      expect(emitter.emit).not.toHaveBeenCalled();
     });
   });
 
@@ -329,12 +365,14 @@ describe('#actions', () => {
           { id: 1, lastSeen, unreadCount: 1 },
         ],
       ]);
+      expect(emitter.emit).toHaveBeenCalledWith('fetch_conversation_stats');
     });
     it('sends correct mutations if API is unsuccessful', async () => {
       axios.post.mockRejectedValue({ message: 'Incorrect header' });
       await expect(
         actions.markMessagesUnread({ commit }, { id: 1 })
       ).rejects.toThrow(Error);
+      expect(emitter.emit).not.toHaveBeenCalled();
     });
   });
 
@@ -505,6 +543,50 @@ describe('#actions', () => {
         { root: true }
       );
     });
+
+    it('descarta a resposta atrasada da primeira listagem', async () => {
+      let resolveFirst;
+      const secondData = {
+        ...dataReceived,
+        payload: [{ id: 2, messages: [] }],
+      };
+      axios.get
+        .mockReturnValueOnce(
+          new Promise(resolve => {
+            resolveFirst = resolve;
+          })
+        )
+        .mockResolvedValueOnce({ data: { data: secondData } });
+      const localCommit = vi.fn();
+      const localDispatch = vi.fn();
+      const state = { conversationFilters: { readStatus: 'all', page: 1 } };
+
+      const first = actions.fetchAllConversations({
+        commit: localCommit,
+        state,
+        dispatch: localDispatch,
+      });
+      const second = actions.fetchAllConversations({
+        commit: localCommit,
+        state,
+        dispatch: localDispatch,
+      });
+      await second;
+      resolveFirst({ data: { data: dataReceived } });
+      await first;
+
+      const setAllCalls = localCommit.mock.calls.filter(
+        ([type]) => type === 'SET_ALL_CONVERSATION'
+      );
+      expect(setAllCalls).toEqual([
+        ['SET_ALL_CONVERSATION', secondData.payload],
+      ]);
+      const statsCalls = localDispatch.mock.calls.filter(
+        ([name]) => name === 'conversationStats/set'
+      );
+      expect(statsCalls).toHaveLength(1);
+      expect(statsCalls[0][1]).toEqual(secondData.meta);
+    });
   });
 
   describe('#fetchFilteredConversations', () => {
@@ -518,6 +600,43 @@ describe('#actions', () => {
         ['SET_LIST_LOADING_STATUS'],
         ['SET_ALL_CONVERSATION', dataReceived.payload],
       ]);
+    });
+
+    it('descarta a resposta atrasada quando intercalada com fetchAllConversations', async () => {
+      let resolveFirst;
+      axios.post.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveFirst = resolve;
+        })
+      );
+      axios.get.mockResolvedValueOnce({ data: { data: dataReceived } });
+      const localCommit = vi.fn();
+      const localDispatch = vi.fn();
+
+      const first = actions.fetchFilteredConversations(
+        { commit: localCommit, dispatch: localDispatch },
+        dataToSend
+      );
+      const second = actions.fetchAllConversations({
+        commit: localCommit,
+        state: { conversationFilters: { readStatus: 'all', page: 1 } },
+        dispatch: localDispatch,
+      });
+      await second;
+      resolveFirst({ data: { payload: [{ id: 999 }], meta: {} } });
+      await first;
+
+      const setAllCalls = localCommit.mock.calls.filter(
+        ([type]) => type === 'SET_ALL_CONVERSATION'
+      );
+      expect(setAllCalls).toEqual([
+        ['SET_ALL_CONVERSATION', dataReceived.payload],
+      ]);
+      expect(
+        localDispatch.mock.calls.filter(
+          ([name]) => name === 'conversationStats/set'
+        )
+      ).toHaveLength(1);
     });
   });
 
@@ -602,7 +721,7 @@ describe('#deleteMessage', () => {
       await actions.deleteConversation({ commit, dispatch }, 1);
       expect(commit.mock.calls).toEqual([[types.DELETE_CONVERSATION, 1]]);
       expect(dispatch.mock.calls).toEqual([
-        ['conversationStats/get', {}, { root: true }],
+        ['conversationStats/get', undefined, { root: true }],
       ]);
     });
 

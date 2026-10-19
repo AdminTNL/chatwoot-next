@@ -63,7 +63,6 @@ patch:
               greeting_enabled: true
               greeting_message: Hello, how can I help you?
               enable_email_collect: true
-              enable_auto_assignment: true
               working_hours_enabled: true
               timezone: America/New_York
               allow_messages_after_resolved: true
@@ -86,7 +85,6 @@ patch:
               name: API Inbox
               greeting_enabled: true
               greeting_message: Hello, how can I help you?
-              enable_auto_assignment: true
               working_hours_enabled: true
               timezone: America/New_York
               channel:
@@ -100,7 +98,6 @@ patch:
               name: Email Inbox
               greeting_enabled: true
               greeting_message: Hello, how can I help you?
-              enable_auto_assignment: true
               working_hours_enabled: true
               timezone: America/New_York
               channel:
@@ -113,7 +110,6 @@ patch:
               name: LINE Inbox
               greeting_enabled: true
               greeting_message: Hello, how can I help you?
-              enable_auto_assignment: true
               working_hours_enabled: true
               timezone: America/New_York
               channel:
@@ -126,7 +122,6 @@ patch:
               name: Telegram Inbox
               greeting_enabled: true
               greeting_message: Hello, how can I help you?
-              enable_auto_assignment: true
               working_hours_enabled: true
               timezone: America/New_York
               channel:
@@ -137,7 +132,6 @@ patch:
               name: WhatsApp Inbox
               greeting_enabled: true
               greeting_message: Hello, how can I help you?
-              enable_auto_assignment: true
               working_hours_enabled: true
               timezone: America/New_York
               channel:
@@ -153,7 +147,6 @@ patch:
               name: SMS Inbox
               greeting_enabled: true
               greeting_message: Hello, how can I help you?
-              enable_auto_assignment: true
               working_hours_enabled: true
               timezone: America/New_York
               channel:

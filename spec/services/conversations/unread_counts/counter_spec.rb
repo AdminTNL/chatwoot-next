@@ -5,14 +5,13 @@ RSpec.describe Conversations::UnreadCounts::Counter do
   let(:agent) { create(:user, account: account, role: :agent) }
   let(:admin) { create(:user, account: account, role: :administrator) }
   let(:visible_inbox) { create(:inbox, account: account, team: visible_team) }
-  let(:hidden_inbox) { create(:inbox, account: account, team: create(:team, account: account, allow_auto_assign: false)) }
+  let(:hidden_inbox) { create(:inbox, account: account, team: create(:team, account: account)) }
   let(:label) { create(:label, account: account, title: 'billing', show_on_sidebar: true) }
   let(:hidden_label) { create(:label, account: account, title: 'internal', show_on_sidebar: false) }
-  let(:visible_team) { create(:team, account: account, allow_auto_assign: false) }
+  let(:visible_team) { create(:team, account: account) }
   let(:store) { Conversations::UnreadCounts::Store }
 
   before do
-    create(:inbox_member, user: agent, inbox: visible_inbox)
     create(:team_member, user: agent, team: visible_team)
   end
 

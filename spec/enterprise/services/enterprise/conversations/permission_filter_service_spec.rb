@@ -12,8 +12,11 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
   let!(:inbox2) { create(:inbox, account: account) }
   let!(:another_inbox_conversation) { create(:conversation, account: account, inbox: inbox2) }
 
-  # This inbox_member is used to establish the agent's access to the inbox
-  before { create(:inbox_member, user: agent, inbox: inbox) }
+  # This team membership is used to establish the agent's access to the inbox
+  before do
+    access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+    create(:team_member, user: agent, team: access_team)
+  end
 
   describe '#perform' do
     context 'when user is an administrator' do
@@ -56,7 +59,8 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
         test_inbox2 = create(:inbox, account: test_account)
         # Create test agent
         test_agent = create(:user, account: test_account, role: :agent)
-        create(:inbox_member, user: test_agent, inbox: test_inbox)
+        access_team = test_inbox.team || create(:team, account: test_inbox.account).tap { |new_team| test_inbox.update!(team: new_team) }
+        create(:team_member, user: test_agent, team: access_team)
 
         # Create custom role with conversation_manage permission
         test_custom_role = create(:custom_role, account: test_account, permissions: ['conversation_manage'])
@@ -66,7 +70,9 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
         # Create some conversations
         assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: test_agent)
         unassigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: nil)
-        other_assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: create(:user, account: test_account))
+        other_agent = create(:user, account: test_account)
+        create(:team_member, user: other_agent, team: test_inbox.team)
+        other_assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: other_agent)
         other_inbox_conversation = create(:conversation, account: test_account, inbox: test_inbox2, assignee: nil)
 
         # Run the test
@@ -94,7 +100,8 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
 
         # Create test agent
         test_agent = create(:user, account: test_account, role: :agent)
-        create(:inbox_member, user: test_agent, inbox: test_inbox)
+        access_team = test_inbox.team || create(:team, account: test_inbox.account).tap { |new_team| test_inbox.update!(team: new_team) }
+        create(:team_member, user: test_agent, team: access_team)
 
         # Create a custom role with only the conversation_participating_manage permission
         test_custom_role = create(:custom_role, account: test_account, permissions: %w[conversation_participating_manage])
@@ -105,7 +112,9 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
         # Create some conversations
         other_conversation = create(:conversation, account: test_account, inbox: test_inbox)
         assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: test_agent)
-        participating_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: create(:user, account: test_account))
+        other_agent = create(:user, account: test_account)
+        create(:team_member, user: other_agent, team: test_inbox.team)
+        participating_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: other_agent)
         other_inbox_conversation = create(:conversation, account: test_account, inbox: test_inbox2, assignee: nil)
         create(:conversation_participant, account: test_account, conversation: participating_conversation, user: test_agent)
 
@@ -134,7 +143,8 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
 
         # Create test agent
         test_agent = create(:user, account: test_account, role: :agent)
-        create(:inbox_member, user: test_agent, inbox: test_inbox)
+        access_team = test_inbox.team || create(:team, account: test_inbox.account).tap { |new_team| test_inbox.update!(team: new_team) }
+        create(:team_member, user: test_agent, team: access_team)
 
         # Create a custom role with only the conversation_unassigned_manage permission
         test_custom_role = create(:custom_role, account: test_account, permissions: %w[conversation_unassigned_manage])
@@ -145,7 +155,9 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
         # Create some conversations
         assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: test_agent)
         unassigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: nil)
-        other_assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: create(:user, account: test_account))
+        other_agent = create(:user, account: test_account)
+        create(:team_member, user: other_agent, team: test_inbox.team)
+        other_assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: other_agent)
         other_inbox_conversation = create(:conversation, account: test_account, inbox: test_inbox2, assignee: nil)
 
         # Run the test
@@ -175,7 +187,8 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
 
         # Create test agent
         test_agent = create(:user, account: test_account, role: :agent)
-        create(:inbox_member, user: test_agent, inbox: test_inbox)
+        access_team = test_inbox.team || create(:team, account: test_inbox.account).tap { |new_team| test_inbox.update!(team: new_team) }
+        create(:team_member, user: test_agent, team: access_team)
 
         # Create a custom role with both participating and unassigned permissions
         permissions = %w[conversation_participating_manage conversation_unassigned_manage]
@@ -187,7 +200,9 @@ RSpec.describe Enterprise::Conversations::PermissionFilterService do
         # Create some conversations
         assigned_to_agent = create(:conversation, account: test_account, inbox: test_inbox, assignee: test_agent)
         unassigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: nil)
-        other_assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: create(:user, account: test_account))
+        other_agent = create(:user, account: test_account)
+        create(:team_member, user: other_agent, team: test_inbox.team)
+        other_assigned_conversation = create(:conversation, account: test_account, inbox: test_inbox, assignee: other_agent)
         other_inbox_conversation = create(:conversation, account: test_account, inbox: test_inbox2, assignee: nil)
 
         # Run the test

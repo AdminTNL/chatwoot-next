@@ -256,5 +256,43 @@ RSpec.describe AutomationRules::ConditionsFilterService do
         expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
       end
     end
+
+    context 'when conditions based on filter_operator attribute_changed' do
+      let(:query_operator) { 'AND' }
+      let(:changed_attributes) { { company_name: %w[DC Marvel] } }
+
+      before do
+        conversation.update(status: :snoozed)
+        rule.conditions = [
+          { 'values': { from: ['DC'], to: ['Marvel'] }, 'attribute_key': 'company_name',
+            'query_operator': query_operator, 'filter_operator': 'attribute_changed' },
+          { 'values': ['snoozed'], 'attribute_key': 'status', 'query_operator': nil, 'filter_operator': 'equal_to' }
+        ]
+        rule.save
+      end
+
+      it 'returns true when the attribute changed as expected and the other condition matches' do
+        expect(described_class.new(rule, conversation, { changed_attributes: changed_attributes }).perform).to be(true)
+      end
+
+      it 'returns false when the attribute changed as expected but the other condition does not match' do
+        conversation.update(status: :open)
+        expect(described_class.new(rule, conversation, { changed_attributes: changed_attributes }).perform).to be(false)
+      end
+
+      it 'returns false when the attribute changed with different values' do
+        options = { changed_attributes: { company_name: %w[Marvel DC] } }
+        expect(described_class.new(rule, conversation, options).perform).to be(false)
+      end
+
+      context 'when query_operator is OR' do
+        let(:query_operator) { 'OR' }
+
+        it 'returns true when the attribute changed as expected even if the other condition does not match' do
+          conversation.update(status: :open)
+          expect(described_class.new(rule, conversation, { changed_attributes: changed_attributes }).perform).to be(true)
+        end
+      end
+    end
   end
 end

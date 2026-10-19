@@ -293,19 +293,6 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
-
-    it 'returns success for an agent with direct inbox_member access but no team' do
-      lone_agent = create(:user, account: account, role: :agent)
-      create(:inbox_member, inbox: inbox_a, user: lone_agent)
-
-      get "/api/v2/accounts/#{account.id}/reports",
-          params: {
-            metric: 'conversations_count', type: 'inbox', id: inbox_a.id, since: since_param, until: until_param, group_by: 'day'
-          },
-          headers: lone_agent.create_new_auth_token, as: :json
-
-      expect(response).to have_http_status(:success)
-    end
   end
 
   describe 'GET /api/v2/accounts/{account.id}/reports/inbox_label_matrix' do

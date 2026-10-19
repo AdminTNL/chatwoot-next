@@ -5,10 +5,6 @@ class Inbox::EventDataPresenter < SimpleDelegator
       allow_messages_after_resolved: allow_messages_after_resolved,
       lock_to_single_conversation: lock_to_single_conversation,
 
-      # Auto Assignment config
-      auto_assignment_config: auto_assignment_config,
-      enable_auto_assignment: enable_auto_assignment,
-
       # Feature flag for message events
       enable_email_collect: enable_email_collect,
       greeting_enabled: greeting_enabled,

@@ -6,9 +6,8 @@
 # A contact has no direct link to a team or an inbox: the only path is
 # indirect, through its conversations (`conversation.inbox_id`). This
 # service reuses `User#accessible_inboxes(account)` (spec 7) — which
-# already combines direct `inbox_members` and inboxes inherited via team
-# membership — to answer "does this agent have at least one conversation
-# with this contact in an inbox they can access".
+# returns the inboxes inherited via team membership — to answer "does this agent
+# have at least one conversation with this contact in an inbox they can access".
 #
 # `unrestricted?` is true for administrators: they keep seeing every
 # contact in the account, exactly like before this feature existed.

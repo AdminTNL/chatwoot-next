@@ -93,8 +93,6 @@ en:
       failed: Signup failed
     voice:
       call_already_accepted: '%{agent_name} is already handling the call.'
-    assignment_policy:
-      not_found: Assignment policy not found
     attachments:
       invalid: Invalid attachment
     upload:
@@ -560,9 +558,6 @@ en:
     seconds:
       one: '%{count} second'
       other: '%{count} seconds'
-  auto_assignment:
-    default_policy_name: 'Default Policy'
-    policy_actor: 'Automation System via %{policy_name}'
   automation:
     system_name: 'Automation System'
   crm:
@@ -585,8 +580,6 @@ en:
 
       Transcript:
       %{format_messages}
-  agent_capacity_policy:
-    inbox_already_assigned: 'Inbox has already been assigned to this policy'
   portals:
     articles:
       captain_not_available: 'Translation requires Captain to be enabled for this account'

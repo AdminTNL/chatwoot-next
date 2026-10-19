@@ -2,6 +2,10 @@ require 'rails_helper'
 
 RSpec.describe SlackUploadsController do
   describe 'GET #show' do
+    around do |example|
+      with_modified_env(FRONTEND_URL: 'http://test.host') { example.run }
+    end
+
     context 'when a valid blob key is provided' do
       file = Rack::Test::UploadedFile.new('spec/assets/avatar.png', 'image/png')
       blob = ActiveStorage::Blob.create_and_upload! io: file, filename: 'avatar.png'

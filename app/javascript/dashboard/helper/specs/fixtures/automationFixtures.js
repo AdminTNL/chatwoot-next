@@ -339,7 +339,6 @@ export const teams = [
     id: 1,
     name: 'sales team',
     description: 'This is our internal sales team',
-    allow_auto_assign: true,
     account_id: 1,
     is_member: true,
   },
@@ -347,7 +346,6 @@ export const teams = [
     id: 2,
     name: 'fayaz',
     description: 'Test',
-    allow_auto_assign: true,
     account_id: 1,
     is_member: false,
   },
@@ -396,7 +394,6 @@ export const inboxes = [
     enable_email_collect: true,
     csat_survey_enabled: true,
     sender_name_type: 0,
-    enable_auto_assignment: true,
     out_of_office_message:
       'We are unavailable at the moment. Leave a message we will respond once we are back.',
     working_hours: [
@@ -522,7 +519,6 @@ export const inboxes = [
     working_hours_enabled: false,
     enable_email_collect: true,
     csat_survey_enabled: false,
-    enable_auto_assignment: true,
     out_of_office_message: null,
     working_hours: [
       {

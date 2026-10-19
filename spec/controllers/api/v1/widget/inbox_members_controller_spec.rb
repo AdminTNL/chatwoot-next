@@ -6,9 +6,12 @@ RSpec.describe '/api/v1/widget/inbox_members', type: :request do
   let(:agent_1) { create(:user, account: account) }
   let(:agent_2) { create(:user, account: account) }
 
+  let(:team) { create(:team, account: account) }
+
   before do
-    create(:inbox_member, user: agent_1, inbox: web_widget.inbox)
-    create(:inbox_member, user: agent_2, inbox: web_widget.inbox)
+    web_widget.inbox.update!(team: team)
+    create(:team_member, team: team, user: agent_1)
+    create(:team_member, team: team, user: agent_2)
   end
 
   describe 'GET /api/v1/widget/inbox_members' do
@@ -24,17 +27,14 @@ RSpec.describe '/api/v1/widget/inbox_members', type: :request do
       end
     end
 
-    context 'when agents are members only via the inbox team' do
-      let(:team) { create(:team, account: account) }
+    context 'when the inbox team has another agent' do
       let(:team_agent) { create(:user, account: account) }
 
       before do
-        web_widget.inbox.update!(team: team)
         create(:team_member, team: team, user: team_agent)
-        create(:team_member, team: team, user: agent_1)
       end
 
-      it 'lists team and direct members once, with the same payload keys' do
+      it 'lists team members once, with the same payload keys' do
         get '/api/v1/widget/inbox_members', params: params
 
         payload = response.parsed_body['payload']

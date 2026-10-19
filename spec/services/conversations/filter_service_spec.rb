@@ -8,7 +8,13 @@ describe Conversations::FilterService do
   let!(:user_2) { create(:user, account: account) }
   let!(:campaign_1) { create(:campaign, title: 'Test Campaign', account: account) }
   let!(:campaign_2) { create(:campaign, title: 'Campaign', account: account) }
-  let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+  let!(:inbox_team) do
+    create(:team, account: account).tap do |team|
+      create(:team_member, user: user_1, team: team)
+      create(:team_member, user: user_2, team: team)
+    end
+  end
+  let!(:inbox) { create(:inbox, account: account, team: inbox_team) }
 
   let!(:user_2_assigned_conversation) { create(:conversation, account: account, inbox: inbox, assignee: user_2) }
   let!(:en_conversation_1) do
@@ -21,9 +27,6 @@ describe Conversations::FilterService do
   end
 
   before do
-    create(:inbox_member, user: user_1, inbox: inbox)
-    create(:inbox_member, user: user_2, inbox: inbox)
-
     en_conversation_1.update!(custom_attributes: { conversation_additional_information: 'test custom data' })
     en_conversation_2.update!(custom_attributes: { conversation_additional_information: 'test custom data', conversation_type: 'platinum' })
     user_2_assigned_conversation.update!(custom_attributes: { conversation_type: 'platinum', conversation_created: '2022-01-19' })
@@ -650,7 +653,7 @@ describe Conversations::FilterService do
     let!(:account) { create(:account) }
     let!(:user_1) { create(:user, account: account, role: :agent) }
     let!(:admin) { create(:user, account: account, role: :administrator) }
-    let!(:inbox_1) { create(:inbox, account: account) }
+    let!(:inbox_1) { create(:inbox, account: account, team: create(:team, account: account)) }
     let!(:inbox_2) { create(:inbox, account: account) }
     let!(:params) { { payload: [], page: 1 } }
 
@@ -658,7 +661,7 @@ describe Conversations::FilterService do
       account.conversations.destroy_all
 
       # Make user_1 a regular agent with access to inbox_1 only
-      create(:inbox_member, user: user_1, inbox: inbox_1)
+      create(:team_member, user: user_1, team: inbox_1.team)
 
       # Create conversations in both inboxes
       create(:conversation, account: account, inbox: inbox_1)

@@ -7,7 +7,7 @@ RSpec.describe Contacts::AccessScope do
 
   let(:inbox_a) { create(:inbox, account: account, team: team_a) }
   let(:inbox_b) { create(:inbox, account: account, team: team_b) }
-  let(:direct_inbox) { create(:inbox, account: account) }
+  let(:second_team_a_inbox) { create(:inbox, account: account, team: team_a) }
 
   let(:administrator) { create(:user, :administrator, account: account) }
   let(:agent) { create(:user, account: account, role: :agent) }
@@ -32,15 +32,14 @@ RSpec.describe Contacts::AccessScope do
       inbox_a
       inbox_b
       team_a.add_members([agent.id])
-      create(:inbox_member, inbox: direct_inbox, user: agent)
     end
 
     it 'is nil for an unrestricted user' do
       expect(scope_for(administrator).inbox_ids).to be_nil
     end
 
-    it 'combines team inboxes and direct inbox membership for a restricted agent' do
-      expect(scope_for(agent).inbox_ids).to contain_exactly(inbox_a.id, direct_inbox.id)
+    it 'returns the team inboxes for a restricted agent' do
+      expect(scope_for(agent).inbox_ids).to contain_exactly(inbox_a.id)
     end
 
     it 'excludes inboxes of teams the agent does not belong to' do
@@ -85,10 +84,9 @@ RSpec.describe Contacts::AccessScope do
 
     it 'does not duplicate a contact with conversations in two accessible inboxes' do
       team_a.add_members([agent.id])
-      create(:inbox_member, inbox: direct_inbox, user: agent)
       contact = create(:contact, account: account)
       create(:conversation, account: account, inbox: inbox_a, contact: contact)
-      create(:conversation, account: account, inbox: direct_inbox, contact: contact)
+      create(:conversation, account: account, inbox: second_team_a_inbox, contact: contact)
 
       restricted = scope_for(agent).restrict(account.contacts)
 

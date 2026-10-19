@@ -2,13 +2,15 @@ require 'rails_helper'
 
 RSpec.describe Macros::ExecutionService, type: :service do
   let(:account) { create(:account) }
-  let(:conversation) { create(:conversation, account: account) }
+  let(:inbox_team) { create(:team, account: account) }
+  let(:inbox) { create(:inbox, account: account, team: inbox_team) }
+  let(:conversation) { create(:conversation, account: account, inbox: inbox) }
   let(:user) { create(:user, account: account) }
   let(:macro) { create(:macro, account: account) }
   let(:service) { described_class.new(macro, conversation, user) }
 
   before do
-    create(:inbox_member, user: user, inbox: conversation.inbox)
+    create(:team_member, user: user, team: inbox_team)
   end
 
   describe '#perform' do
@@ -49,18 +51,6 @@ RSpec.describe Macros::ExecutionService, type: :service do
     end
   end
 
-  describe '#assign_team' do
-    let(:team) { create(:team, account: account, allow_auto_assign: false) }
-
-    context 'when team_id is nil' do
-      it 'unassigns the team from the conversation' do
-        conversation.update!(team_id: team.id)
-        service.send(:assign_team, ['nil'])
-        expect(conversation.reload.team).to be_nil
-      end
-    end
-  end
-
   describe '#assign_agent' do
     context 'when agent_ids contains self' do
       it 'updates the conversation assignee to the current user' do
@@ -73,7 +63,7 @@ RSpec.describe Macros::ExecutionService, type: :service do
       let(:other_user) { create(:user, account: account) }
 
       before do
-        create(:inbox_member, user: other_user, inbox: conversation.inbox)
+        create(:team_member, user: other_user, team: inbox_team)
       end
 
       it 'calls the super method' do

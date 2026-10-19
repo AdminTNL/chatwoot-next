@@ -48,7 +48,10 @@ describe Whatsapp::IncomingCallService do
     let(:sdp_offer) { "v=0\r\n...sdp..." }
     let!(:agent) { create(:user, account: account) }
 
-    before { create(:inbox_member, inbox: inbox, user: agent) }
+    before do
+      access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
+    end
 
     it 'creates the Call + Conversation + voice_call message and broadcasts voice_call.incoming' do
       allow(ActionCable.server).to receive(:broadcast)

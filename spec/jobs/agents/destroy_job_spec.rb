@@ -11,7 +11,6 @@ RSpec.describe Agents::DestroyJob do
 
   before do
     create(:team_member, team: team1, user: user)
-    create(:inbox_member, inbox: inbox, user: user)
     create(:conversation, account: account, assignee: user, inbox: inbox)
   end
 
@@ -22,12 +21,11 @@ RSpec.describe Agents::DestroyJob do
   end
 
   describe '#perform' do
-    it 'remove inboxes, teams, and conversations when removed from account' do
+    it 'remove teams and conversations when removed from account' do
       described_class.perform_now(account, user)
 
       user.reload
       expect(user.teams.length).to eq 0
-      expect(user.inboxes.length).to eq 0
       expect(user.notification_settings.length).to eq 0
       expect(user.assigned_conversations.where(account: account).length).to eq 0
     end

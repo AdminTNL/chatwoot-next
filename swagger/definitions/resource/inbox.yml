@@ -21,9 +21,6 @@ properties:
   website_token:
     type: string
     description: Website Token
-  enable_auto_assignment:
-    type: boolean
-    description: The flag which shows whether Auto Assignment is enabled or not
   web_widget_script:
     type: string
     description: Script used to load the website widget
@@ -57,9 +54,6 @@ properties:
   csat_survey_enabled:
     type: boolean
     description: The flag to enable CSAT survey
-  auto_assignment_config:
-    type: object
-    description: Configuration settings for auto assignment
   out_of_office_message:
     type:
       - string

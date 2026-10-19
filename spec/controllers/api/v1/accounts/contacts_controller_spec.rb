@@ -525,7 +525,9 @@ RSpec.describe 'Contacts API', type: :request do
       let!(:twilio_whatsapp_inbox) { create(:inbox, channel: twilio_whatsapp, account: account) }
 
       it 'shows the contactable inboxes which the user has access to' do
-        create(:inbox_member, user: agent, inbox: twilio_whatsapp_inbox)
+        access_team = twilio_whatsapp_inbox.team ||
+                      create(:team, account: twilio_whatsapp_inbox.account).tap { |new_team| twilio_whatsapp_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         # spec 12: the contact itself must be in the agent's scope (a conversation in an
         # accessible inbox), or fetch_contact 404s before contactable_inboxes ever runs.
         create(:conversation, account: account, inbox: twilio_whatsapp_inbox, contact: contact)
@@ -811,7 +813,8 @@ RSpec.describe 'Contacts API', type: :request do
         create(:contact, account: account)
         # spec 12: give the agent access to the contact (a conversation in an accessible
         # inbox), or fetch_contact 404s before the avatar is ever purged.
-        create(:inbox_member, user: agent, inbox: inbox)
+        access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         create(:conversation, account: account, inbox: inbox, contact: contact)
         contact.avatar.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
       end
@@ -841,7 +844,9 @@ RSpec.describe 'Contacts API', type: :request do
     let!(:contact_inbox_only) { create(:contact, :with_email, account: account) }
 
     before do
-      create(:inbox_member, user: agent, inbox: accessible_inbox)
+      access_team = accessible_inbox.team ||
+                    create(:team, account: accessible_inbox.account).tap { |new_team| accessible_inbox.update!(team: new_team) }
+      create(:team_member, user: agent, team: access_team)
       create(:conversation, account: account, inbox: accessible_inbox, contact: contact_in_scope)
       create(:conversation, account: account, inbox: inaccessible_inbox, contact: contact_out_of_scope)
       # linked via contact_inbox only (e.g. widget/import identity), no conversation:

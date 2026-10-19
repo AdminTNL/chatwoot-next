@@ -3,12 +3,12 @@ describe ActionCableListener do
   let(:listener) { described_class.instance }
   let!(:account) { create(:account) }
   let!(:admin) { create(:user, account: account, role: :administrator) }
-  let!(:inbox) { create(:inbox, account: account) }
-  let!(:agent) { create(:user, account: account, role: :agent) }
+  let!(:team) { create(:team, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: team) }
+  let!(:agent) { create(:user, account: account, role: :agent).tap { |user| create(:team_member, team: team, user: user) } }
   let!(:conversation) { create(:conversation, account: account, inbox: inbox, assignee: agent) }
 
   before do
-    create(:inbox_member, inbox: inbox, user: agent)
     Current.user = nil
     Current.account = nil
   end
@@ -46,9 +46,6 @@ describe ActionCableListener do
     let!(:event) { Events::Base.new(event_name, Time.zone.now, message: message) }
 
     it 'sends message to account admins, inbox agents and the contact' do
-      # HACK: to reload conversation inbox members
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
-
       expect(ActionCableBroadcastJob).to receive(:perform_later).with(
         a_collection_containing_exactly(
           agent.pubsub_token, admin.pubsub_token, conversation.contact_inbox.pubsub_token
@@ -60,8 +57,6 @@ describe ActionCableListener do
     end
 
     it 'sends message to all hmac verified contact inboxes' do
-      # HACK: to reload conversation inbox members
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
       conversation.contact_inbox.update(hmac_verified: true)
       # creating a non verified contact inbox to ensure the events are not sent to it
       create(:contact_inbox, contact: conversation.contact, inbox: inbox)
@@ -78,8 +73,6 @@ describe ActionCableListener do
     end
 
     it 'sends message to agents with access via team, even without direct inbox membership' do
-      team = create(:team, account: account)
-      inbox.update(team: team)
       team_agent = create(:user, account: account, role: :agent)
       create(:team_member, team: team, user: team_agent)
 
@@ -99,8 +92,6 @@ describe ActionCableListener do
     let!(:event) { Events::Base.new(event_name, Time.zone.now, conversation: conversation, user: agent, is_private: false) }
 
     it 'sends message to account admins, inbox agents and the contact' do
-      # HACK: to reload conversation inbox members
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
       expect(ActionCableBroadcastJob).to receive(:perform_later).with(
         a_collection_containing_exactly(
           admin.pubsub_token, conversation.contact_inbox.pubsub_token
@@ -119,8 +110,6 @@ describe ActionCableListener do
     let!(:event) { Events::Base.new(event_name, Time.zone.now, conversation: conversation, user: conversation.contact, is_private: false) }
 
     it 'sends message to account admins, inbox agents and the contact' do
-      # HACK: to reload conversation inbox members
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
       expect(ActionCableBroadcastJob).to receive(:perform_later).with(
         a_collection_containing_exactly(
           admin.pubsub_token, agent.pubsub_token
@@ -140,7 +129,6 @@ describe ActionCableListener do
     let!(:event) { Events::Base.new(event_name, Time.zone.now, conversation: conversation, user: agent_bot, is_private: false) }
 
     it 'sends message to account admins, inbox agents and the contact' do
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
       expect(ActionCableBroadcastJob).to receive(:perform_later).with(
         a_collection_containing_exactly(
           admin.pubsub_token, agent.pubsub_token, conversation.contact_inbox.pubsub_token
@@ -159,8 +147,6 @@ describe ActionCableListener do
     let!(:event) { Events::Base.new(event_name, Time.zone.now, conversation: conversation, user: agent, is_private: false) }
 
     it 'sends message to account admins, inbox agents and the contact' do
-      # HACK: to reload conversation inbox members
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
       expect(ActionCableBroadcastJob).to receive(:perform_later).with(
         a_collection_containing_exactly(
           admin.pubsub_token, conversation.contact_inbox.pubsub_token
@@ -250,8 +236,6 @@ describe ActionCableListener do
     end
 
     it 'sends update to inbox members' do
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
-
       expect(ActionCableBroadcastJob).to receive(:perform_later).with(
         [agent.pubsub_token, admin.pubsub_token, conversation.contact_inbox.pubsub_token],
         'conversation.updated',
@@ -282,8 +266,6 @@ describe ActionCableListener do
     end
 
     it 'sends a lightweight refresh event to inbox agents and admins' do
-      expect(conversation.inbox.reload.inbox_members.count).to eq(1)
-
       expect(ActionCableBroadcastJob).to receive(:perform_later).with(
         a_collection_containing_exactly(agent.pubsub_token, admin.pubsub_token),
         'conversation.unread_count_changed',

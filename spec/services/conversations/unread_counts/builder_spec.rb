@@ -5,7 +5,7 @@ RSpec.describe Conversations::UnreadCounts::Builder do
   let(:inbox) { create(:inbox, account: account, team: team) }
   let(:label) { create(:label, account: account, title: 'urgent', show_on_sidebar: true) }
   let(:assignee) { create(:user, account: account, role: :agent) }
-  let(:team) { create(:team, account: account, allow_auto_assign: false) }
+  let(:team) { create(:team, account: account) }
   let(:store) { Conversations::UnreadCounts::Store }
 
   after do

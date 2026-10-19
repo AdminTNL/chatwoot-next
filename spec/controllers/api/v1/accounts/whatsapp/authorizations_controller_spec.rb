@@ -453,7 +453,8 @@ RSpec.describe 'WhatsApp Authorization API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, inbox: whatsapp_inbox, user: agent)
+        access_team = whatsapp_inbox.team || create(:team, account: whatsapp_inbox.account).tap { |new_team| whatsapp_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns unauthorized error' do

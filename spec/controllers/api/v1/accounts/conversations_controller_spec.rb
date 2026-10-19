@@ -2,6 +2,10 @@ require 'rails_helper'
 
 RSpec.describe 'Conversations API', type: :request do
   let(:account) { create(:account) }
+  let(:tab_count_keys) do
+    %i[unread_conversations_count in_progress_conversations_count snoozed_conversations_count
+       resolved_conversations_count all_conversations_count]
+  end
 
   describe 'GET /api/v1/accounts/{account.id}/conversations' do
     context 'when it is an unauthenticated user' do
@@ -17,7 +21,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:conversation) { create(:conversation, account: account) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns all conversations with messages' do
@@ -29,8 +35,9 @@ RSpec.describe 'Conversations API', type: :request do
         expect(response).to have_http_status(:success)
         expect(response).to conform_schema(200)
         body = JSON.parse(response.body, symbolize_names: true)
-        expect(body[:data][:meta][:all_count]).to eq(1)
-        expect(body[:data][:meta].keys).to include(:all_count, :mine_count, :assigned_count, :unassigned_count)
+        expect(body[:data][:meta][:all_conversations_count]).to eq(1)
+        expect(body[:data][:meta].keys).to include(*tab_count_keys)
+        expect(body[:data][:meta].keys).not_to include(:mine_count, :assigned_count, :unassigned_count, :all_count)
         expect(body[:data][:payload].first[:uuid]).to eq(conversation.uuid)
         expect(body[:data][:payload].first[:messages].first[:id]).to eq(message.id)
       end
@@ -42,7 +49,7 @@ RSpec.describe 'Conversations API', type: :request do
 
         expect(response).to have_http_status(:success)
         body = JSON.parse(response.body, symbolize_names: true)
-        expect(body[:data][:meta][:all_count]).to eq(1)
+        expect(body[:data][:meta][:all_conversations_count]).to eq(1)
         expect(body[:data][:payload].first[:messages]).to eq([])
       end
 
@@ -80,9 +87,15 @@ RSpec.describe 'Conversations API', type: :request do
         unattended_conversation_waiting_since = create(:conversation, account: account, first_reply_created_at: Time.now.utc)
 
         agent_1 = create(:user, account: account, role: :agent)
-        create(:inbox_member, user: agent_1, inbox: attended_conversation.inbox)
-        create(:inbox_member, user: agent_1, inbox: unattended_conversation_no_first_reply.inbox)
-        create(:inbox_member, user: agent_1, inbox: unattended_conversation_waiting_since.inbox)
+        access_team = create(:team, account: attended_conversation.inbox.account)
+        attended_conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent_1, team: access_team)
+        access_team = create(:team, account: unattended_conversation_no_first_reply.inbox.account)
+        unattended_conversation_no_first_reply.inbox.update!(team: access_team)
+        create(:team_member, user: agent_1, team: access_team)
+        access_team = create(:team, account: unattended_conversation_waiting_since.inbox.account)
+        unattended_conversation_waiting_since.inbox.update!(team: access_team)
+        create(:team_member, user: agent_1, team: access_team)
 
         get "/api/v1/accounts/#{account.id}/conversations",
             headers: agent_1.create_new_auth_token,
@@ -91,7 +104,7 @@ RSpec.describe 'Conversations API', type: :request do
 
         expect(response).to have_http_status(:success)
         body = JSON.parse(response.body, symbolize_names: true)
-        expect(body[:data][:meta][:all_count]).to eq(2)
+        expect(body[:data][:meta][:all_conversations_count]).to eq(2)
         expect(body[:data][:payload].count).to eq(2)
       end
     end
@@ -111,7 +124,9 @@ RSpec.describe 'Conversations API', type: :request do
 
       before do
         conversation = create(:conversation, account: account)
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns all conversations counts' do
@@ -121,8 +136,9 @@ RSpec.describe 'Conversations API', type: :request do
 
         expect(response).to have_http_status(:success)
         body = JSON.parse(response.body, symbolize_names: true)
-        expect(body[:meta].keys).to include(:all_count, :mine_count, :assigned_count, :unassigned_count)
-        expect(body[:meta][:all_count]).to eq(1)
+        expect(body[:meta].keys).to include(*tab_count_keys)
+        expect(body[:meta].keys).not_to include(:mine_count, :assigned_count, :unassigned_count, :all_count)
+        expect(body[:meta][:all_conversations_count]).to eq(1)
       end
     end
   end
@@ -141,10 +157,11 @@ RSpec.describe 'Conversations API', type: :request do
       let(:visible_inbox) { create(:inbox, account: account) }
       let(:hidden_inbox) { create(:inbox, account: account) }
       let(:label) { create(:label, account: account, title: 'billing', show_on_sidebar: true) }
-      let(:team) { create(:team, account: account, allow_auto_assign: false) }
+      let(:team) { create(:team, account: account) }
 
       before do
-        create(:inbox_member, user: agent, inbox: visible_inbox)
+        access_team = visible_inbox.team || create(:team, account: visible_inbox.account).tap { |new_team| visible_inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
         create(:team_member, user: agent, team: team)
       end
 
@@ -170,13 +187,13 @@ RSpec.describe 'Conversations API', type: :request do
             'all_count' => 1,
             'inboxes' => { visible_inbox.id.to_s => 1 },
             'labels' => { label.id.to_s => 1 },
-            'teams' => {}
+            'teams' => { visible_inbox.team_id.to_s => 1 }
           )
         end
 
         it 'returns unread team conversation counts scoped to the signed-in user' do
           visible_inbox.update!(team: team)
-          hidden_inbox.update!(team: create(:team, account: account, allow_auto_assign: false))
+          hidden_inbox.update!(team: create(:team, account: account))
           create_unread_conversation(account: account, inbox: visible_inbox, team: team)
           create_unread_conversation(account: account, inbox: hidden_inbox, team: hidden_inbox.team)
 
@@ -238,7 +255,9 @@ RSpec.describe 'Conversations API', type: :request do
         conversation = create(:conversation, account: account)
         create(:message, conversation: conversation, account: account, content: 'test1')
         create(:message, conversation: conversation, account: account, content: 'test2')
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns all conversations with messages containing the search query' do
@@ -249,7 +268,7 @@ RSpec.describe 'Conversations API', type: :request do
 
         expect(response).to have_http_status(:success)
         response_data = JSON.parse(response.body, symbolize_names: true)
-        expect(response_data[:meta][:all_count]).to eq(1)
+        expect(response_data[:payload].size).to eq(1)
         expect(response_data[:payload].first[:messages].first[:content]).to eq 'test1'
       end
     end
@@ -271,7 +290,9 @@ RSpec.describe 'Conversations API', type: :request do
         conversation = create(:conversation, account: account)
         create(:message, conversation: conversation, account: account, content: 'test1')
         create(:message, conversation: conversation, account: account, content: 'test2')
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns all conversations matching the query' do
@@ -362,7 +383,9 @@ RSpec.describe 'Conversations API', type: :request do
       end
 
       it 'shows the conversation if you are an agent with access to inbox' do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
         get "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}",
             headers: agent.create_new_auth_token,
             as: :json
@@ -411,7 +434,9 @@ RSpec.describe 'Conversations API', type: :request do
       end
 
       it 'updates the conversation if you are an agent with access to inbox' do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
         patch "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}",
               params: params,
               headers: agent.create_new_auth_token,
@@ -454,7 +479,8 @@ RSpec.describe 'Conversations API', type: :request do
 
       context 'when it is an authenticated user who has access to the inbox' do
         before do
-          create(:inbox_member, user: agent, inbox: inbox)
+          access_team = inbox.team || create(:team, account: inbox.account).tap { |new_team| inbox.update!(team: new_team) }
+          create(:team_member, user: agent, team: access_team)
           create(:team_member, user: agent, team: team)
         end
 
@@ -556,7 +582,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:administrator) { create(:user, account: account, role: :administrator) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'toggles the conversation status if status is empty' do
@@ -687,7 +715,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:administrator) { create(:user, account: account, role: :administrator) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'toggles the conversation priority to nil if no value is passed' do
@@ -749,7 +779,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'toggles the conversation status' do
@@ -824,7 +856,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'updates last seen' do
@@ -1025,7 +1059,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
         create(:message, conversation: conversation, account: account, inbox: conversation.inbox, content: 'Hello', message_type: 'incoming')
       end
 
@@ -1123,7 +1159,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'mutes conversation' do
@@ -1153,7 +1191,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:agent) { create(:user, account: account, role: :agent) }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'unmutes conversation' do
@@ -1183,7 +1223,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:params) { { email: 'test@test.com' } }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'mutes conversation' do
@@ -1226,7 +1268,9 @@ RSpec.describe 'Conversations API', type: :request do
       let(:valid_params) { { custom_attributes: custom_attributes } }
 
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'updates custom attributes' do
@@ -1330,7 +1374,9 @@ RSpec.describe 'Conversations API', type: :request do
 
     context 'when it is an authenticated agent' do
       before do
-        create(:inbox_member, user: agent, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'returns unauthorized' do
@@ -1346,7 +1392,9 @@ RSpec.describe 'Conversations API', type: :request do
 
     context 'when it is an authenticated administrator' do
       before do
-        create(:inbox_member, user: administrator, inbox: conversation.inbox)
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: administrator, team: access_team)
       end
 
       it 'successfully deletes the conversation' do
@@ -1406,7 +1454,11 @@ RSpec.describe 'Conversations API', type: :request do
     end
 
     context 'when the user has access' do
-      before { create(:inbox_member, user: agent, inbox: conversation.inbox) }
+      before do
+        access_team = create(:team, account: conversation.inbox.account)
+        conversation.inbox.update!(team: access_team)
+        create(:team_member, user: agent, team: access_team)
+      end
 
       it 'calls the gateway with the conversation data and passes the response through' do
         expect(gateway).to receive(:delete_context).with(

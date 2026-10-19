@@ -3,8 +3,6 @@ import ConversationApi from '../../api/inbox/conversation';
 import { debounce } from '@chatwoot/utils';
 
 const state = {
-  mineCount: 0,
-  unAssignedCount: 0,
   allCount: 0,
   unreadCount: 0,
   inProgressCount: 0,
@@ -17,13 +15,21 @@ export const getters = {
   getStats: $state => $state,
 };
 
-// Create a debounced version of the actual API call function
-const fetchMetaData = async (commit, params) => {
+// Incremented by every meta request and every listing (`set`); a response only
+// is committed if no newer request/listing started after it.
+let statsVersion = 0;
+
+// Filters are read through `getFilters` when the debounce fires, so the request
+// always uses the current filters instead of the ones from the last call.
+const fetchMetaData = async (commit, getFilters) => {
+  statsVersion += 1;
+  const requestVersion = statsVersion;
   try {
-    const response = await ConversationApi.meta(params);
+    const response = await ConversationApi.meta(getFilters());
     const {
       data: { meta },
     } = response;
+    if (requestVersion !== statsVersion) return;
     commit(types.SET_CONV_TAB_META, meta);
   } catch (error) {
     // ignore
@@ -45,19 +51,26 @@ const metaDebouncers = {
   superLong: superLongDebouncedFetchMetaData,
 };
 
-// allCount is 0 until a meta request succeeds; under load it stays 0, so treat
-// the unknown case as a large account and poll slowest instead of fastest.
-export const getMetaDebounceKey = allCount => {
-  if (allCount > 2000 || allCount === 0) return 'superLong';
-  if (allCount > 100) return 'long';
+// allConversationsCount (total of the "Todas" tab) is stable across tabs. It is
+// 0 until a request succeeds; under load it stays 0, so treat the unknown case
+// as a large account and poll slowest instead of fastest.
+export const getMetaDebounceKey = allConversationsCount => {
+  if (allConversationsCount > 2000 || allConversationsCount === 0)
+    return 'superLong';
+  if (allConversationsCount > 100) return 'long';
   return 'default';
 };
 
 export const actions = {
-  get: ({ commit, state: $state }, params) => {
-    metaDebouncers[getMetaDebounceKey($state.allCount)](commit, params);
+  get: ({ commit, state: $state, rootState }) => {
+    const getFilters = () => rootState.conversations.conversationFilters;
+    metaDebouncers[getMetaDebounceKey($state.allConversationsCount)](
+      commit,
+      getFilters
+    );
   },
   set({ commit }, meta) {
+    statsVersion += 1;
     commit(types.SET_CONV_TAB_META, meta);
   },
 };
@@ -66,8 +79,6 @@ export const mutations = {
   [types.SET_CONV_TAB_META](
     $state,
     {
-      mine_count: mineCount,
-      unassigned_count: unAssignedCount,
       all_count: allCount,
       unread_conversations_count: unreadCount,
       in_progress_conversations_count: inProgressCount,
@@ -76,9 +87,7 @@ export const mutations = {
       all_conversations_count: allConversationsCount,
     } = {}
   ) {
-    $state.mineCount = mineCount;
     $state.allCount = allCount;
-    $state.unAssignedCount = unAssignedCount;
     $state.unreadCount = unreadCount;
     $state.inProgressCount = inProgressCount;
     $state.snoozedCount = snoozedCount;

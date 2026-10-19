@@ -9,7 +9,6 @@ RSpec.describe DataImports::Intercom::PlaceholderInboxBuilder do
 
       expect(inbox.name).to eq('Intercom Import - Email')
       expect(inbox.channel).to be_a(Channel::Api)
-      expect(inbox.enable_auto_assignment).to be(false)
       expect(inbox.allow_messages_after_resolved).to be(false)
       expect(inbox.channel.additional_attributes).to include(
         'source_provider' => 'intercom',

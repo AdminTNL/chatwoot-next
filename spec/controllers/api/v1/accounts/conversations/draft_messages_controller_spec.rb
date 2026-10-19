@@ -20,7 +20,9 @@ RSpec.describe 'Conversation Draft Messages API', type: :request do
       let(:message) { Faker::Lorem.paragraph }
 
       before do
-        create(:inbox_member, inbox: conversation.inbox, user: agent)
+        access_team = conversation.inbox.team ||
+                      create(:team, account: conversation.inbox.account).tap { |new_team| conversation.inbox.update!(team: new_team) }
+        create(:team_member, user: agent, team: access_team)
       end
 
       it 'saves the draft message for the conversation' do

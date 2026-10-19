@@ -40,7 +40,6 @@ responses:
               avatar_url: "https://example.com/avatar.png"
               widget_color: "#1F93FF"
               website_token: "4cWzuf9i9jxN9tbnv8K9STKU"
-              enable_auto_assignment: true
               web_widget_script: "<script>...</script>"
               welcome_title: "Hi there ! 🙌🏼"
               welcome_tagline: "We make it simple to connect with us."

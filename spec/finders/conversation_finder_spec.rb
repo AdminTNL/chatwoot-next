@@ -7,13 +7,14 @@ describe ConversationFinder do
   let!(:user_1) { create(:user, account: account) }
   let!(:user_2) { create(:user, account: account) }
   let!(:admin) { create(:user, account: account, role: :administrator) }
-  let!(:inbox) { create(:inbox, account: account, enable_auto_assignment: false) }
+  let!(:inbox_team) { create(:team, account: account) }
+  let!(:inbox) { create(:inbox, account: account, team: inbox_team) }
   let!(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: 'testing_source_id') }
   let!(:restricted_inbox) { create(:inbox, account: account) }
 
   before do
-    create(:inbox_member, user: user_1, inbox: inbox)
-    create(:inbox_member, user: user_2, inbox: inbox)
+    create(:team_member, user: user_1, team: inbox_team)
+    create(:team_member, user: user_2, team: inbox_team)
     create(:conversation, account: account, inbox: inbox, assignee: user_1)
     create(:conversation, account: account, inbox: inbox, assignee: user_1)
     create(:conversation, account: account, inbox: inbox, assignee: user_1, status: 'resolved')
@@ -45,7 +46,9 @@ describe ConversationFinder do
 
       it 'returns conversation from inbox if agent is its member' do
         params = { inbox_id: restricted_inbox.id }
-        create(:inbox_member, user: user_1, inbox: restricted_inbox)
+        restricted_team = create(:team, account: account)
+        create(:team_member, user: user_1, team: restricted_team)
+        restricted_inbox.update!(team: restricted_team)
         result = described_class.new(user_1, params).perform
 
         expect(result[:conversations].map(&:id)).to include(restricted_conversation.id)
@@ -168,10 +171,6 @@ describe ConversationFinder do
       it 'returns the correct meta' do
         result = conversation_finder.perform
         expect(result[:count]).to eq({
-                                       mine_count: 2,
-                                       assigned_count: 3,
-                                       unassigned_count: 1,
-                                       all_count: 4,
                                        unread_conversations_count: 0,
                                        in_progress_conversations_count: 4,
                                        snoozed_conversations_count: 0,
@@ -186,7 +185,9 @@ describe ConversationFinder do
       let(:params) { { team_id: team.id } }
 
       it 'filter conversations by team' do
-        create(:conversation, account: account, inbox: inbox, team: team)
+        create(:team_member, user: user_1, team: team)
+        restricted_inbox.update!(team: team)
+        create(:conversation, account: account, inbox: restricted_inbox)
         result = conversation_finder.perform
         expect(result[:conversations].length).to be 1
       end
@@ -196,7 +197,7 @@ describe ConversationFinder do
       let(:team_agent) { create(:user, account: account, role: :agent) }
       let(:team) { create(:team, account: account) }
 
-      it "includes the team's inbox conversations for an agent who is not a direct inbox_member" do
+      it "includes the team's inbox conversations for an agent who is not a direct inbox member" do
         create(:team_member, user: team_agent, team: team)
         restricted_inbox.update!(team: team)
         team_owned_conversation = create(:conversation, account: account, inbox: restricted_inbox)
@@ -294,10 +295,6 @@ describe ConversationFinder do
       it 'returns the correct counts' do
         result = conversation_finder.perform_meta_only
         expect(result[:count]).to eq({
-                                       mine_count: 2,
-                                       assigned_count: 3,
-                                       unassigned_count: 1,
-                                       all_count: 4,
                                        unread_conversations_count: 0,
                                        in_progress_conversations_count: 4,
                                        snoozed_conversations_count: 0,
@@ -355,6 +352,53 @@ describe ConversationFinder do
 
         unread_result = described_class.new(user_1, { read_status: 'unread' }).perform
         expect(unread_result[:conversations].map(&:id)).not_to include(conversation.id)
+      end
+
+      it 'classifies as in_progress a conversation with no agent_last_seen_at and only an outgoing message' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: nil)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :outgoing, created_at: 1.minute.ago)
+
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        expect(in_progress_ids).to include(conversation.id)
+        expect(unread_ids).not_to include(conversation.id)
+      end
+
+      it 'does not count an incoming message created exactly at agent_last_seen_at as unread' do
+        seen_at = 1.hour.ago.change(usec: 0)
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: seen_at)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: seen_at)
+
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        expect(in_progress_ids).to include(conversation.id)
+        expect(unread_ids).not_to include(conversation.id)
+      end
+
+      it 'does not count an activity message after agent_last_seen_at as unread' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.hour.ago)
+        create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :activity, created_at: 1.minute.ago)
+
+        in_progress_ids = described_class.new(user_1, { read_status: 'in_progress' }).perform[:conversations].map(&:id)
+        unread_ids = described_class.new(user_1, { read_status: 'unread' }).perform[:conversations].map(&:id)
+        expect(in_progress_ids).to include(conversation.id)
+        expect(unread_ids).not_to include(conversation.id)
+      end
+
+      it 'lists a conversation with several unread incoming messages once and counts it once' do
+        conversation = create(:conversation, account: account, inbox: inbox, status: 'open', agent_last_seen_at: 1.hour.ago)
+        3.times do |i|
+          create(:message, account: account, inbox: inbox, conversation: conversation, message_type: :incoming, created_at: (i + 1).minutes.ago)
+        end
+
+        baseline = described_class.new(user_1, { read_status: 'unread' }).perform
+        unread_ids = baseline[:conversations].map(&:id)
+        expect(unread_ids.count(conversation.id)).to eq(1)
+        expect(baseline[:count][:unread_conversations_count]).to eq(unread_ids.size)
+
+        conversation.update!(agent_last_seen_at: 1.minute.from_now)
+        after = described_class.new(user_1, { read_status: 'unread' }).perform
+        expect(baseline[:count][:unread_conversations_count] - after[:count][:unread_conversations_count]).to eq(1)
       end
 
       it 'classifies a pending conversation with an unread message as unread, not a category of its own' do
@@ -445,10 +489,19 @@ describe ConversationFinder do
         result = described_class.new(user_1, { assignee_type: 'me' }).perform
 
         expect(result[:conversations].length).to be 2
-        expect(result[:count][:mine_count]).to eq(2)
-        expect(result[:count][:assigned_count]).to eq(3)
-        expect(result[:count][:unassigned_count]).to eq(1)
-        expect(result[:count][:all_count]).to eq(4)
+        expect(result[:count].keys).not_to include(:mine_count, :assigned_count, :unassigned_count, :all_count)
+      end
+
+      it 'returns the 5 tab counts when searching with q (legacy count path)' do
+        create(:message, conversation: account.conversations.first, account: account, inbox: inbox,
+                         content: 'needle-in-haystack', message_type: :incoming)
+
+        result = described_class.new(user_1, { q: 'needle-in-haystack' }).perform
+
+        expect(result[:count].keys).to contain_exactly(
+          :unread_conversations_count, :in_progress_conversations_count, :snoozed_conversations_count,
+          :resolved_conversations_count, :all_conversations_count
+        )
       end
 
       it 'returns the same 5 new counts from perform_meta_only as from perform, even without read_status in the request' do
@@ -471,9 +524,9 @@ describe ConversationFinder do
 
         result = described_class.new(user_1, {}).perform_meta_only
 
-        # one query for the read-status counts computed pre-status-filter (set_read_status_counts),
-        # one for the legacy mine/unassigned/all counts computed post-status-filter - never one per conversation.
-        expect(count_queries.size).to eq(2)
+        # a single query for the read-status counts computed pre-status-filter (set_read_status_counts)
+        # - never one per conversation.
+        expect(count_queries.size).to eq(1)
         expect(result[:count][:in_progress_conversations_count]).to be >= 60
       ensure
         ActiveSupport::Notifications.unsubscribe(subscriber) if subscriber

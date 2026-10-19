@@ -20,13 +20,14 @@ describe Messages::NewMessageNotificationService do
     let(:assignee) { create(:user, account: account) }
     let(:participating_agent_1) { create(:user, account: account) }
     let(:participating_agent_2) { create(:user, account: account) }
-    let(:inbox) { create(:inbox, account: account) }
+    let(:team) { create(:team, account: account) }
+    let(:inbox) { create(:inbox, account: account, team: team) }
     let(:conversation) { create(:conversation, account: account, inbox: inbox, assignee: assignee) }
 
     before do
-      create(:inbox_member, inbox: inbox, user: participating_agent_1)
-      create(:inbox_member, inbox: inbox, user: participating_agent_2)
-      create(:inbox_member, inbox: inbox, user: assignee)
+      create(:team_member, team: team, user: participating_agent_1)
+      create(:team_member, team: team, user: participating_agent_2)
+      create(:team_member, team: team, user: assignee)
       create(:conversation_participant, conversation: conversation, user: participating_agent_1)
       create(:conversation_participant, conversation: conversation, user: participating_agent_2)
       create(:conversation_participant, conversation: conversation, user: assignee)

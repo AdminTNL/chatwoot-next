@@ -648,9 +648,9 @@ RSpec.describe ConversationReplyMailer do
     end
 
     context 'when custom domain and email is not enabled' do
-      let(:inbox) { create(:inbox, account: account) }
-      let(:inbox_member) { create(:inbox_member, user: agent, inbox: inbox) }
-      let(:conversation) { create(:conversation, assignee: agent, inbox: inbox_member.inbox, account: account) }
+      let(:inbox_team) { create(:team, account: account).tap { |team| create(:team_member, user: agent, team: team) } }
+      let(:inbox) { create(:inbox, account: account, team: inbox_team) }
+      let(:conversation) { create(:conversation, assignee: agent, inbox: inbox, account: account) }
       let!(:message) { create(:message, conversation: conversation, account: account) }
       let(:mail) { described_class.reply_with_summary(message.conversation, message.id).deliver_now }
       let(:domain) { account.inbound_email_domain }
@@ -722,9 +722,9 @@ RSpec.describe ConversationReplyMailer do
     context 'when inbound email domain is not enabled' do
       let(:new_account) { create(:account, domain: nil) }
       let!(:email_channel) { create(:channel_email, account: new_account) }
-      let!(:inbox) { create(:inbox, channel: email_channel, account: new_account) }
-      let(:inbox_member) { create(:inbox_member, user: agent, inbox: inbox) }
-      let(:conversation) { create(:conversation, assignee: agent, inbox: inbox_member.inbox, account: new_account) }
+      let(:inbox_team) { create(:team, account: new_account).tap { |team| create(:team_member, user: agent, team: team) } }
+      let!(:inbox) { create(:inbox, channel: email_channel, account: new_account, team: inbox_team) }
+      let(:conversation) { create(:conversation, assignee: agent, inbox: inbox, account: new_account) }
       let!(:message) { create(:message, conversation: conversation, account: new_account) }
       let(:mail) { described_class.reply_with_summary(message.conversation, message.id).deliver_now }
       let(:domain) { inbox.channel.email.split('@').last }
