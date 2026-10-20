@@ -23,9 +23,6 @@
 #
 
 class AccountUser < ApplicationRecord
-  # colunas removidas do código; drop em migration posterior
-  self.ignored_columns += %w[agent_capacity_policy_id]
-
   include AvailabilityStatusable
 
   belongs_to :account
