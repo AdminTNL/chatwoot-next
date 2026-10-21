@@ -720,4 +720,53 @@ RSpec.describe Api::V2::Accounts::ReportsController, type: :request do
       end
     end
   end
+
+  describe 'CSV exports keep special characters' do
+    let!(:special_agent) { create(:user, account: account, role: :agent, name: "Maria D'Avila & Cia") }
+    let!(:formula_agent) { create(:user, account: account, role: :agent, name: '=HYPERLINK("x")') }
+    let!(:special_inbox) { create(:inbox, account: account, name: 'Caixa O\'Neil, "Central"') }
+
+    let(:since_param) { 1.week.ago.to_i.to_s }
+    let(:until_param) { Time.current.to_i.to_s }
+
+    before do
+      create(:conversation, account: account, inbox: special_inbox, assignee: special_agent)
+      create(:conversation, account: account, inbox: special_inbox, assignee: formula_agent)
+    end
+
+    def get_report(type)
+      get "/api/v2/accounts/#{account.id}/reports/#{type}",
+          params: { since: since_param, until: until_param },
+          headers: admin.create_new_auth_token, as: :json
+    end
+
+    it 'does not HTML-escape apostrophes and ampersands in the agents CSV' do
+      get_report(:agents)
+
+      expect(response.body).to include("Maria D'Avila & Cia")
+      expect(response.body).not_to include('&#39;')
+      expect(response.body).not_to include('&amp;')
+    end
+
+    it 'keeps commas and quotes correctly delimited in the inboxes CSV' do
+      get_report(:inboxes)
+
+      row = CSV.parse(response.body).find { |r| r.first == 'Caixa O\'Neil, "Central"' }
+      expect(row).to be_present
+    end
+
+    it 'keeps the formula injection protection in the agents CSV' do
+      get_report(:agents)
+
+      row = CSV.parse(response.body).find { |r| r.first&.include?('HYPERLINK') }
+      expect(row.first).to eq('\'=HYPERLINK("x")')
+    end
+
+    it 'still responds as a CSV download' do
+      get_report(:agents)
+
+      expect(response.headers['Content-Type']).to include('text/csv')
+      expect(response.headers['Content-Disposition']).to start_with('attachment')
+    end
+  end
 end
