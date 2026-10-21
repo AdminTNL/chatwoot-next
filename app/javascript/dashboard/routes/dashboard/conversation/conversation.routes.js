@@ -241,50 +241,47 @@ export default {
         conversationType: 'mention',
       }),
     },
+    // Participantes e Não atendidas saíram da sidebar; links antigos caem em "Todas".
     {
       path: frontendURL('accounts/:accountId/unattended/conversations'),
       name: 'conversation_unattended',
-      meta: {
-        permissions: CONVERSATION_PERMISSIONS,
-      },
-      component: ConversationView,
-      props: () => ({ conversationType: 'unattended' }),
+      redirect: to => ({
+        name: 'home',
+        params: { accountId: to.params.accountId },
+      }),
     },
     {
       path: frontendURL(
         'accounts/:accountId/unattended/conversations/:conversationId'
       ),
       name: 'conversation_through_unattended',
-      meta: {
-        permissions: CONVERSATION_PERMISSIONS,
-      },
-      component: ConversationView,
-      props: route => ({
-        conversationId: route.params.conversationId,
-        conversationType: 'unattended',
+      redirect: to => ({
+        name: 'inbox_conversation',
+        params: {
+          accountId: to.params.accountId,
+          conversation_id: to.params.conversationId,
+        },
       }),
     },
     {
       path: frontendURL('accounts/:accountId/participating/conversations'),
       name: 'conversation_participating',
-      meta: {
-        permissions: CONVERSATION_PERMISSIONS,
-      },
-      component: ConversationView,
-      props: () => ({ conversationType: 'participating' }),
+      redirect: to => ({
+        name: 'home',
+        params: { accountId: to.params.accountId },
+      }),
     },
     {
       path: frontendURL(
         'accounts/:accountId/participating/conversations/:conversationId'
       ),
       name: 'conversation_through_participating',
-      meta: {
-        permissions: CONVERSATION_PERMISSIONS,
-      },
-      component: ConversationView,
-      props: route => ({
-        conversationId: route.params.conversationId,
-        conversationType: 'participating',
+      redirect: to => ({
+        name: 'inbox_conversation',
+        params: {
+          accountId: to.params.accountId,
+          conversation_id: to.params.conversationId,
+        },
       }),
     },
   ],
