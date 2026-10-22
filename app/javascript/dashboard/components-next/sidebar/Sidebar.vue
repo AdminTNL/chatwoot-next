@@ -215,12 +215,6 @@ const getTeamUnreadCount = useMapGetter(
 const mentionsUnreadCount = useMapGetter(
   'conversationUnreadCounts/getMentionsUnreadCount'
 );
-const participatingUnreadCount = useMapGetter(
-  'conversationUnreadCounts/getParticipatingUnreadCount'
-);
-const unattendedUnreadCount = useMapGetter(
-  'conversationUnreadCounts/getUnattendedUnreadCount'
-);
 const getFolderUnreadCount = useMapGetter(
   'conversationUnreadCounts/getFolderUnreadCount'
 );
@@ -467,26 +461,6 @@ const menuItems = computed(() => {
             : 0,
           activeOn: ['conversation_through_mentions'],
           to: accountScopedRoute('conversation_mentions'),
-        },
-        {
-          name: 'Participating',
-          label: t('SIDEBAR.PARTICIPATING_CONVERSATIONS'),
-          icon: 'i-lucide-user-round-check',
-          badgeCount: hasFilteredUnreadCounts.value
-            ? participatingUnreadCount.value
-            : 0,
-          activeOn: ['conversation_through_participating'],
-          to: accountScopedRoute('conversation_participating'),
-        },
-        {
-          name: 'Unattended',
-          activeOn: ['conversation_through_unattended'],
-          label: t('SIDEBAR.UNATTENDED_CONVERSATIONS'),
-          icon: 'i-lucide-clock-alert',
-          badgeCount: hasFilteredUnreadCounts.value
-            ? unattendedUnreadCount.value
-            : 0,
-          to: accountScopedRoute('conversation_unattended'),
         },
         {
           name: 'Folders',

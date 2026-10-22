@@ -167,8 +167,6 @@ const buildStore = (
       'conversationUnreadCounts/getLabelUnreadCount': () => () => 0,
       'conversationUnreadCounts/getTeamUnreadCount': () => () => 0,
       'conversationUnreadCounts/getMentionsUnreadCount': () => 0,
-      'conversationUnreadCounts/getParticipatingUnreadCount': () => 0,
-      'conversationUnreadCounts/getUnattendedUnreadCount': () => 0,
       'conversationUnreadCounts/getFolderUnreadCount': () => () => 0,
     },
     actions: {
@@ -596,8 +594,6 @@ describe('Sidebar - Channels section filtered by active team route', () => {
               'conversationUnreadCounts/getLabelUnreadCount': () => () => 0,
               'conversationUnreadCounts/getTeamUnreadCount': () => () => 0,
               'conversationUnreadCounts/getMentionsUnreadCount': () => 0,
-              'conversationUnreadCounts/getParticipatingUnreadCount': () => 0,
-              'conversationUnreadCounts/getUnattendedUnreadCount': () => 0,
               'conversationUnreadCounts/getFolderUnreadCount': () => () => 0,
             },
             actions: {
@@ -805,8 +801,6 @@ describe('Sidebar - team context (spec 032)', () => {
 
     const neutralRoutes = [
       'conversation_mentions',
-      'conversation_unattended',
-      'conversation_participating',
       'folder_conversations',
       'settings_inbox_list',
       'team_reports_index',
@@ -1118,5 +1112,16 @@ describe('Sidebar - team context (spec 032)', () => {
     );
 
     expect(findChannelLabels(wrapper)).toEqual([]);
+  });
+});
+
+describe('Sidebar - Conversation items', () => {
+  it('does not show Participating and Unattended items', () => {
+    const wrapper = mountSidebar(ADMIN_USER);
+
+    expect(findSidebarLeaf(wrapper, 'All Conversations')).toBeDefined();
+    expect(findSidebarLeaf(wrapper, 'Mentions')).toBeDefined();
+    expect(findSidebarLeaf(wrapper, 'Participating')).toBeUndefined();
+    expect(findSidebarLeaf(wrapper, 'Unattended')).toBeUndefined();
   });
 });

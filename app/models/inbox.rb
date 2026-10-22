@@ -41,9 +41,6 @@
 #
 
 class Inbox < ApplicationRecord
-  # colunas removidas do código; drop em migration posterior
-  self.ignored_columns += %w[enable_auto_assignment auto_assignment_config]
-
   include Reportable
   include Avatarable
   include OutOfOffisable
