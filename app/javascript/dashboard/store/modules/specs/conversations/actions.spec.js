@@ -292,6 +292,18 @@ describe('#actions', () => {
     });
   });
 
+  describe('#updateMessage', () => {
+    it('commits UPDATE_MESSAGE instead of ADD_MESSAGE', () => {
+      const message = {
+        id: 1,
+        message_type: 1,
+        conversation_id: 1,
+      };
+      actions.updateMessage({ commit }, message);
+      expect(commit.mock.calls).toEqual([[types.UPDATE_MESSAGE, message]]);
+    });
+  });
+
   describe('#markMessagesRead', () => {
     beforeEach(() => {
       vi.useFakeTimers();
@@ -700,7 +712,7 @@ describe('#deleteMessage', () => {
     });
     await actions.deleteMessage({ commit }, { conversationId, messageId });
     expect(commit.mock.calls).toEqual([
-      [types.ADD_MESSAGE, { id: 1, content: 'deleted' }],
+      [types.UPDATE_MESSAGE, { id: 1, content: 'deleted' }],
       [types.DELETE_CONVERSATION_ATTACHMENTS, { id: 1, content: 'deleted' }],
     ]);
   });

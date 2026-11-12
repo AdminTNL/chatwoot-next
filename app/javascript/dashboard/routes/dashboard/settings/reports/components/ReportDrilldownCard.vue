@@ -240,7 +240,6 @@ const openRecord = () => {
           :is-auto-refresh-enabled="false"
           :conversation-id="conversation.id"
           :last-activity-timestamp="conversation.last_activity_at"
-          :created-at-timestamp="conversation.created_at"
           class="font-440 !text-xs !text-n-slate-10"
         />
         <span

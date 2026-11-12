@@ -46,6 +46,8 @@ vi.mock('shared/helpers/timeHelper', () => ({
     return timestamps[time] || 'now';
   },
   dateFormat: timestamp => `date-${timestamp}`,
+  conversationActivityTime: () => 'activity-label',
+  conversationActivityDateTime: () => 'activity-datetime',
 }));
 
 describe('ReportDrilldownCard.vue', () => {
@@ -169,7 +171,7 @@ describe('ReportDrilldownCard.vue', () => {
     });
 
     expect(wrapper.text()).toContain('Latest reply');
-    expect(wrapper.text()).toContain('4d • 4d');
+    expect(wrapper.text()).toContain('activity-label');
   });
 
   it('renders event time alongside TimeAgo for event-backed conversation rows', () => {
@@ -188,7 +190,7 @@ describe('ReportDrilldownCard.vue', () => {
       .find(label => label.includes('Event occurred at'));
 
     expect(wrapper.text()).toContain('Latest reply');
-    expect(wrapper.text()).toContain('4d • 4d');
+    expect(wrapper.text()).toContain('activity-label');
     expect(wrapper.text()).toContain('2m');
     expect(eventOccurredLabel).toContain('Event occurred at');
   });

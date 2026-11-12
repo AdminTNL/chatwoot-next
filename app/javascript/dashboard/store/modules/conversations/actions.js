@@ -343,7 +343,7 @@ const actions = {
   },
 
   updateMessage({ commit, rootGetters }, message) {
-    commit(types.ADD_MESSAGE, message);
+    commit(types.UPDATE_MESSAGE, message);
     handleVoiceCallUpdated(
       commit,
       message,
@@ -358,7 +358,7 @@ const actions = {
   ) {
     try {
       const { data } = await MessageApi.delete(conversationId, messageId);
-      commit(types.ADD_MESSAGE, data);
+      commit(types.UPDATE_MESSAGE, data);
       commit(types.DELETE_CONVERSATION_ATTACHMENTS, data);
     } catch (error) {
       throw new Error(error);
