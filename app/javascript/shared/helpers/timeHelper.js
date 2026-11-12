@@ -4,7 +4,10 @@ import {
   fromUnixTime,
   formatDistanceToNow,
   differenceInDays,
+  isSameDay,
+  subDays,
 } from 'date-fns';
+import { generateRelativeTime } from 'shared/helpers/DateHelper';
 
 /**
  * Formats a Unix timestamp into a human-readable time format.
@@ -137,4 +140,52 @@ export const getDayDifferenceFromNow = (now, timestampInSeconds) => {
 export const hasOneDayPassed = timestamp => {
   if (!timestamp) return true; // Defensive check
   return getDayDifferenceFromNow(new Date(), timestamp) >= 1;
+};
+
+/**
+ * Formats a conversation activity timestamp like WhatsApp does:
+ * time for today, "Yesterday" (localized) for yesterday, date otherwise.
+ * @param {number} time - Unix timestamp (seconds).
+ * @param {string} [locale='en'] - UI locale (accepts `pt_BR` or `pt-BR`).
+ * @param {Date} [now=new Date()] - Reference date, injectable for tests.
+ * @returns {string} Formatted label, or '' when there is no timestamp.
+ */
+export const conversationActivityTime = (
+  time,
+  locale = 'en',
+  now = new Date()
+) => {
+  if (!time) return '';
+
+  const date = fromUnixTime(time);
+  const code = locale.replace(/_/g, '-');
+
+  if (isSameDay(date, subDays(now, 1))) {
+    const label = generateRelativeTime(-1, 'day', locale);
+    return label.charAt(0).toLocaleUpperCase(code) + label.slice(1);
+  }
+
+  const options = isSameDay(date, now)
+    ? { hour: '2-digit', minute: '2-digit' }
+    : { day: '2-digit', month: '2-digit', year: 'numeric' };
+  return new Intl.DateTimeFormat(code, options).format(date);
+};
+
+/**
+ * Formats a conversation activity timestamp as a localized date and time
+ * (e.g. "11/11/2026, 14:32" in pt-BR). Used by the TimeAgo tooltip.
+ * @param {number} time - Unix timestamp (seconds).
+ * @param {string} [locale='en'] - UI locale (accepts `pt_BR` or `pt-BR`).
+ * @returns {string} Formatted date and time, or '' when there is no timestamp.
+ */
+export const conversationActivityDateTime = (time, locale = 'en') => {
+  if (!time) return '';
+
+  return new Intl.DateTimeFormat(locale.replace(/_/g, '-'), {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(fromUnixTime(time));
 };
