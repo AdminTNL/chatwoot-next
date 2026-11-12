@@ -229,6 +229,21 @@ export const mutations = {
     }
   },
 
+  [types.UPDATE_MESSAGE]({ allConversations }, message) {
+    const [chat] = getSelectedChatConversation({
+      allConversations,
+      selectedChatId: message.conversation_id,
+    });
+    if (!chat) return;
+
+    const index = chat.messages.findIndex(m => m.id === message.id);
+    // Not loaded (e.g. an older message in the list): its update must not
+    // look like new activity. message.created always adds new messages.
+    if (index === -1) return;
+
+    chat.messages[index] = message;
+  },
+
   [types.REMOVE_MESSAGE](_state, { conversationId, messageId }) {
     const chat = _state.allConversations.find(c => c.id === conversationId);
     if (!chat || !Array.isArray(chat.messages)) return;

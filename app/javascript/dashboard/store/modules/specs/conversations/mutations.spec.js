@@ -274,6 +274,75 @@ describe('#mutations', () => {
     });
   });
 
+  describe('#UPDATE_MESSAGE', () => {
+    it('does nothing if the conversation does not exist', () => {
+      const state = { allConversations: [] };
+      mutations[types.UPDATE_MESSAGE](state, { id: 1, conversation_id: 1 });
+      expect(state.allConversations).toEqual([]);
+    });
+
+    it('replaces the message in place without touching the conversation timestamp', () => {
+      const state = {
+        allConversations: [
+          {
+            id: 1,
+            timestamp: 1700000000,
+            unread_count: 2,
+            messages: [
+              {
+                id: 10,
+                conversation_id: 1,
+                content: 'old',
+                created_at: 1600000000,
+              },
+            ],
+          },
+        ],
+        selectedChatId: 1,
+      };
+      const updated = {
+        id: 10,
+        conversation_id: 1,
+        content: 'new',
+        created_at: 1600000000,
+        status: 'read',
+        conversation: { unread_count: 0 },
+      };
+      mutations[types.UPDATE_MESSAGE](state, updated);
+      const [chat] = state.allConversations;
+      expect(chat.messages).toEqual([updated]);
+      expect(chat.timestamp).toBe(1700000000);
+      expect(chat.unread_count).toBe(2);
+      expect(emitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('ignores updates of messages that are not loaded', () => {
+      const state = {
+        allConversations: [
+          {
+            id: 1,
+            timestamp: 1700000000,
+            unread_count: 0,
+            messages: [{ id: 20, conversation_id: 1, created_at: 1700000000 }],
+          },
+        ],
+        selectedChatId: 1,
+      };
+      mutations[types.UPDATE_MESSAGE](state, {
+        id: 10,
+        conversation_id: 1,
+        created_at: 1600000000,
+        status: 'read',
+      });
+      const [chat] = state.allConversations;
+      expect(chat.messages).toEqual([
+        { id: 20, conversation_id: 1, created_at: 1700000000 },
+      ]);
+      expect(chat.timestamp).toBe(1700000000);
+      expect(emitter.emit).not.toHaveBeenCalled();
+    });
+  });
+
   describe('#CHANGE_CONVERSATION_STATUS', () => {
     it('updates the conversation status correctly', () => {
       const state = {
