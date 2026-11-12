@@ -6,6 +6,8 @@ import {
   shortTimestamp,
   getDayDifferenceFromNow,
   hasOneDayPassed,
+  conversationActivityTime,
+  conversationActivityDateTime,
 } from 'shared/helpers/timeHelper';
 
 beforeEach(() => {
@@ -236,5 +238,64 @@ describe('#hasOneDayPassed', () => {
     const crossYearTimestamp = 1672401600;
 
     expect(hasOneDayPassed(crossYearTimestamp)).toBe(true);
+  });
+});
+
+describe('#conversationActivityTime', () => {
+  const now = new Date(Date.UTC(2023, 4, 5, 15, 0));
+  const unix = (...args) => Date.UTC(...args) / 1000;
+
+  it('returns an empty string without timestamp', () => {
+    expect(conversationActivityTime('', 'pt_BR', now)).toEqual('');
+  });
+
+  it('returns the time when the activity is today', () => {
+    expect(
+      conversationActivityTime(unix(2023, 4, 5, 10, 30), 'pt_BR', now)
+    ).toEqual('10:30');
+    expect(
+      conversationActivityTime(unix(2023, 4, 5, 0, 0), 'pt_BR', now)
+    ).toEqual('00:00');
+  });
+
+  it('returns the localized "yesterday" when the activity is yesterday', () => {
+    expect(
+      conversationActivityTime(unix(2023, 4, 4, 23, 59), 'pt_BR', now)
+    ).toEqual('Ontem');
+    expect(conversationActivityTime(unix(2023, 4, 4, 0, 0), 'en', now)).toEqual(
+      'Yesterday'
+    );
+  });
+
+  it('returns the date when the activity is older than yesterday', () => {
+    expect(
+      conversationActivityTime(unix(2023, 4, 3, 12, 0), 'pt_BR', now)
+    ).toEqual('03/05/2023');
+    expect(
+      conversationActivityTime(unix(2023, 4, 3, 12, 0), 'en', now)
+    ).toEqual('05/03/2023');
+  });
+
+  it('accepts locales with hyphen', () => {
+    expect(
+      conversationActivityTime(unix(2023, 4, 3, 12, 0), 'pt-BR', now)
+    ).toEqual('03/05/2023');
+  });
+});
+
+describe('#conversationActivityDateTime', () => {
+  const unix = (...args) => Date.UTC(...args) / 1000;
+
+  it('returns an empty string without timestamp', () => {
+    expect(conversationActivityDateTime('', 'pt_BR')).toEqual('');
+  });
+
+  it('returns the localized date and time', () => {
+    const ptBR = conversationActivityDateTime(unix(2023, 4, 3, 12, 0), 'pt_BR');
+    expect(ptBR).toContain('03/05/2023');
+    expect(ptBR).toContain('12:00');
+    expect(
+      conversationActivityDateTime(unix(2023, 4, 3, 12, 0), 'en')
+    ).toContain('05/03/2023');
   });
 });
