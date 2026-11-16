@@ -30,7 +30,9 @@ class Rede::Project < ApplicationRecord
 
   belongs_to :account
   belongs_to :team, inverse_of: :rede_project
-  # Antes de :fronts: as atuações referenciam frentes, então saem primeiro ao destruir o projeto.
+  # Antes de :fronts: avaliações e atuações referenciam frentes, então saem primeiro ao destruir o projeto.
+  has_many :evaluations, class_name: 'Rede::Evaluation', dependent: :destroy, inverse_of: :project
+  has_many :interactions, class_name: 'Rede::Interaction', dependent: :destroy, inverse_of: :project
   has_many :participations, class_name: 'Rede::Participation', dependent: :destroy, inverse_of: :project
   has_many :fronts, class_name: 'Rede::Front', dependent: :destroy, inverse_of: :project
 

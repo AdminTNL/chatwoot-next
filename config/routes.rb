@@ -319,6 +319,8 @@ Rails.application.routes.draw do
               end
             end
             resources :roles, only: [:index]
+            resources :evaluations, only: [:index, :create]
+            resources :interactions, only: [:index, :create, :update]
             resources :participations, only: [:create, :update] do
               resources :assignments, only: [:create, :update] do
                 member do

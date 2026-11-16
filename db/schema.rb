@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_16_130000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_16_150000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1267,6 +1267,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_130000) do
     t.index ["superior_contact_id"], name: "index_rede_assignments_on_superior_contact_id"
   end
 
+  create_table "rede_evaluations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "contact_id", null: false
+    t.bigint "project_id", null: false
+    t.bigint "front_id"
+    t.integer "author_user_id"
+    t.string "dimension", default: "temperatura", null: false
+    t.integer "level"
+    t.text "note"
+    t.datetime "evaluated_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rede_evaluations_on_account_id"
+    t.index ["author_user_id"], name: "index_rede_evaluations_on_author_user_id"
+    t.index ["contact_id", "project_id", "front_id", "evaluated_at"], name: "index_rede_evaluations_on_context_and_evaluated_at"
+    t.index ["front_id"], name: "index_rede_evaluations_on_front_id"
+    t.index ["project_id"], name: "index_rede_evaluations_on_project_id"
+  end
+
   create_table "rede_fronts", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "project_id", null: false
@@ -1281,6 +1300,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_130000) do
     t.index ["account_id"], name: "index_rede_fronts_on_account_id"
     t.index ["project_id"], name: "index_rede_fronts_on_project_id"
     t.index ["public_id"], name: "index_rede_fronts_on_public_id", unique: true
+  end
+
+  create_table "rede_interactions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "contact_id", null: false
+    t.bigint "project_id", null: false
+    t.bigint "front_id"
+    t.integer "author_user_id"
+    t.integer "kind", null: false
+    t.boolean "answered"
+    t.text "summary", null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rede_interactions_on_account_id"
+    t.index ["author_user_id"], name: "index_rede_interactions_on_author_user_id"
+    t.index ["contact_id", "project_id", "occurred_at"], name: "index_rede_interactions_on_contact_project_occurred_at"
+    t.index ["front_id"], name: "index_rede_interactions_on_front_id"
   end
 
   create_table "rede_participations", force: :cascade do |t|
@@ -1557,8 +1594,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_130000) do
   add_foreign_key "rede_assignments", "rede_fronts", column: "front_id"
   add_foreign_key "rede_assignments", "rede_participations", column: "participation_id"
   add_foreign_key "rede_assignments", "rede_roles", column: "role_id"
+  add_foreign_key "rede_evaluations", "accounts"
+  add_foreign_key "rede_evaluations", "contacts"
+  add_foreign_key "rede_evaluations", "rede_fronts", column: "front_id"
+  add_foreign_key "rede_evaluations", "rede_projects", column: "project_id"
+  add_foreign_key "rede_evaluations", "users", column: "author_user_id", on_delete: :nullify
   add_foreign_key "rede_fronts", "accounts"
   add_foreign_key "rede_fronts", "rede_projects", column: "project_id"
+  add_foreign_key "rede_interactions", "accounts"
+  add_foreign_key "rede_interactions", "contacts"
+  add_foreign_key "rede_interactions", "rede_fronts", column: "front_id"
+  add_foreign_key "rede_interactions", "rede_projects", column: "project_id"
+  add_foreign_key "rede_interactions", "users", column: "author_user_id", on_delete: :nullify
   add_foreign_key "rede_participations", "accounts"
   add_foreign_key "rede_participations", "contacts"
   add_foreign_key "rede_participations", "contacts", column: "referred_by_contact_id", on_delete: :nullify
