@@ -332,6 +332,16 @@ class Message < ApplicationRecord
     send_reply
     execute_message_template_hooks
     update_contact_activity
+    touch_rede_last_contact
+  end
+
+  # Último contato por projeto (spec 006): uma query UPDATE; erro é logado e nunca quebra a mensagem.
+  def touch_rede_last_contact
+    return unless incoming? && !private? && sender_type == 'Contact' && conversation.team_id.present?
+
+    Rede::LastContact::Touch.new(contact_id: conversation.contact_id, team_id: conversation.team_id, at: created_at).perform
+  rescue StandardError => e
+    Rails.logger.error("Message ##{id}: falha ao atualizar o último contato do CRM: #{e.class}: #{e.message}")
   end
 
   def update_contact_activity

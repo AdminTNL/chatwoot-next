@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_16_150000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_16_160000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1333,8 +1333,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_150000) do
     t.datetime "joined_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "last_contact_at"
     t.index ["account_id"], name: "index_rede_participations_on_account_id"
     t.index ["contact_id", "project_id"], name: "index_rede_participations_on_contact_id_and_project_id", unique: true
+    t.index ["project_id", "last_contact_at"], name: "index_rede_participations_on_project_id_and_last_contact_at"
     t.index ["project_id", "status"], name: "index_rede_participations_on_project_id_and_status"
     t.index ["referred_by_contact_id"], name: "index_rede_participations_on_referred_by_contact_id"
     t.index ["responsible_user_id"], name: "index_rede_participations_on_responsible_user_id"

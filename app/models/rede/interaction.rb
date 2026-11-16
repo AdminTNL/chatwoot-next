@@ -53,9 +53,41 @@ class Rede::Interaction < ApplicationRecord
   before_validation { self.occurred_at ||= Time.current }
   before_validation { self.answered = nil if note? }
 
-  after_create_commit { Rede::LastContact::Touch.new(interaction: self).perform }
+  # Num after_commit, uma exceção viraria 500 com o registro já gravado: erro vai para o log.
+  after_commit :refresh_last_contact, on: [:create, :update]
 
   private
+
+  def counts_as_contact?(kind_value, answered_value)
+    kind_value.to_s == 'call' && answered_value == true
+  end
+
+  # Decisão 4 da spec 006: criar/editar para atendida só aumenta (Touch); sair de atendida,
+  # ou mudar a data de uma atendida, pode diminuir (Recompute).
+  def refresh_last_contact
+    was_counting = !previously_new_record? && counts_as_contact?(kind_before_last_save, answered_before_last_save)
+
+    if !was_counting
+      touch_last_contact if counts_as_contact?(kind, answered)
+    elsif recompute_needed?
+      recompute_last_contact
+    end
+  rescue StandardError => e
+    Rails.logger.error("Rede::Interaction ##{id}: falha ao atualizar o último contato: #{e.class}: #{e.message}")
+  end
+
+  # Só chamado quando a ligação já contava: deixou de contar ou mudou de data.
+  def recompute_needed?
+    !counts_as_contact?(kind, answered) || saved_change_to_occurred_at?
+  end
+
+  def recompute_last_contact
+    Rede::LastContact::Recompute.new(Rede::Participation.where(contact_id: contact_id, project_id: project_id)).perform
+  end
+
+  def touch_last_contact
+    Rede::LastContact::Touch.new(contact_id: contact_id, project_id: project_id, at: occurred_at).perform
+  end
 
   def records_belong_to_account
     errors.add(:contact, :invalid) if contact && contact.account_id != account_id

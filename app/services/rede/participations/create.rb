@@ -22,12 +22,19 @@ class Rede::Participations::Create
       raise AlreadyParticipating, existing if existing
 
       participation = create_participation(contact)
+      initialize_last_contact(participation)
       create_assignment(participation)
       participation
     end
   end
 
   private
+
+  # Quem já conversava com o time nasce com o último contato certo (spec 006).
+  def initialize_last_contact(participation)
+    Rede::LastContact::Recompute.new([participation]).perform
+    participation.reload
+  end
 
   # Dois POSTs simultâneos para o mesmo contato passam pelo find_by; o índice único pega o segundo.
   def create_participation(contact)

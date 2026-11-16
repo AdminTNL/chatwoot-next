@@ -95,13 +95,86 @@ RSpec.describe Rede::Interaction do
     expect(build_interaction(project: other_project)).not_to be_valid
   end
 
-  it 'calls the last contact hook on create' do
-    touch = instance_double(Rede::LastContact::Touch, perform: nil)
-    allow(Rede::LastContact::Touch).to receive(:new).and_return(touch)
+  describe 'last contact hook' do
+    let(:touch_service) { instance_double(Rede::LastContact::Touch, perform: nil) }
+    let(:recompute) { instance_double(Rede::LastContact::Recompute, perform: nil) }
 
-    build_interaction.save!
+    def stub_hooks
+      allow(Rede::LastContact::Touch).to receive(:new).and_return(touch_service)
+      allow(Rede::LastContact::Recompute).to receive(:new).and_return(recompute)
+    end
 
-    expect(touch).to have_received(:perform)
+    it 'touches the project with occurred_at when an answered call is created' do
+      stub_hooks
+      interaction = build_interaction(occurred_at: 3.hours.ago)
+      interaction.save!
+
+      expect(Rede::LastContact::Touch).to have_received(:new)
+        .with(contact_id: contact.id, project_id: project.id, at: interaction.occurred_at)
+      expect(touch_service).to have_received(:perform)
+    end
+
+    it 'does nothing when an unanswered call or a note is created' do
+      stub_hooks
+      build_interaction(answered: false).save!
+      build_interaction(kind: :note, answered: nil).save!
+
+      expect(Rede::LastContact::Touch).not_to have_received(:new)
+      expect(Rede::LastContact::Recompute).not_to have_received(:new)
+    end
+
+    it 'touches when an unanswered call is edited to answered' do
+      interaction = build_interaction(answered: false).tap(&:save!)
+      stub_hooks
+
+      interaction.update!(answered: true)
+
+      expect(Rede::LastContact::Touch).to have_received(:new)
+        .with(contact_id: contact.id, project_id: project.id, at: interaction.occurred_at)
+      expect(Rede::LastContact::Recompute).not_to have_received(:new)
+    end
+
+    it 'recomputes the participation when an answered call is edited to unanswered' do
+      interaction = build_interaction.tap(&:save!)
+      stub_hooks
+
+      interaction.update!(answered: false)
+
+      expect(Rede::LastContact::Recompute).to have_received(:new) do |relation|
+        expect(relation.to_a).to eq([participation])
+      end
+      expect(recompute).to have_received(:perform)
+    end
+
+    it 'recomputes when the date of an answered call changes' do
+      interaction = build_interaction.tap(&:save!)
+      stub_hooks
+
+      interaction.update!(occurred_at: 5.hours.ago)
+
+      expect(Rede::LastContact::Recompute).to have_received(:new)
+    end
+
+    it 'does nothing when only the summary is edited' do
+      interaction = build_interaction.tap(&:save!)
+      stub_hooks
+
+      interaction.update!(summary: 'Outro resumo')
+
+      expect(Rede::LastContact::Touch).not_to have_received(:new)
+      expect(Rede::LastContact::Recompute).not_to have_received(:new)
+    end
+
+    it 'saves the record and logs when the hook raises' do
+      allow(Rede::LastContact::Touch).to receive(:new).and_raise(StandardError, 'boom')
+      allow(Rails.logger).to receive(:error)
+
+      interaction = build_interaction
+      expect { interaction.save! }.not_to raise_error
+
+      expect(interaction).to be_persisted
+      expect(Rails.logger).to have_received(:error).with(/boom/)
+    end
   end
 
   describe 'editing' do

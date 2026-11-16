@@ -12,6 +12,7 @@ json.next_step resource.next_step
 json.origin resource.origin
 json.status resource.status
 json.joined_at resource.joined_at
+json.last_contact_at resource.last_contact_at
 json.assignments resource.assignments.sort_by(&:id) do |assignment|
   json.partial! 'api/v1/models/rede/assignment', formats: [:json], resource: assignment
 end

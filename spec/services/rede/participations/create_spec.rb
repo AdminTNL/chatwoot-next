@@ -21,6 +21,23 @@ RSpec.describe Rede::Participations::Create do
     expect(participation).to be_active
   end
 
+  it 'starts with the last contact computed from the history' do
+    contact = create(:contact, account: account)
+    inbox = create(:inbox, account: account, team_id: project.team_id)
+    conversation = create(:conversation, account: account, inbox: inbox, contact: contact,
+                                         contact_inbox: create(:contact_inbox, contact: contact, inbox: inbox))
+    message = create(:message, account: account, conversation: conversation, inbox: inbox,
+                               message_type: :incoming, sender: contact, created_at: 2.days.ago)
+
+    participation = perform(contact_id: contact.id)
+
+    expect(participation.last_contact_at).to be_within(1.second).of(message.created_at)
+  end
+
+  it 'starts with a null last contact when there is no history' do
+    expect(perform(contact_id: create(:contact, account: account).id).last_contact_at).to be_nil
+  end
+
   it 'creates a new contact from name and phone' do
     expect { perform(contact: { name: 'Ana', phone_number: '(81) 9 8888-7777' }) }.to change(Contact, :count).by(1)
 
