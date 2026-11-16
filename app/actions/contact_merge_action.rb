@@ -13,6 +13,7 @@ class ContactMergeAction
       merge_messages
       merge_contact_inboxes
       merge_contact_notes
+      merge_rede_data
       merge_and_remove_mergee_contact
     end
     @base_contact
@@ -36,6 +37,10 @@ class ContactMergeAction
 
   def merge_contact_notes
     Note.where(contact_id: @mergee_contact.id, account_id: @mergee_contact.account_id).update(contact_id: @base_contact.id)
+  end
+
+  def merge_rede_data
+    Rede::Contacts::MergeRedeData.new(base_contact: @base_contact, mergee_contact: @mergee_contact).perform
   end
 
   def merge_messages

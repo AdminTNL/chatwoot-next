@@ -54,6 +54,14 @@ RSpec.describe Rede::Project do
   end
 
   describe 'account destroy' do
+    it 'removes projects with quality resolutions together with the account' do
+      Rede::QualityResolution.create!(account: account, project: project, kind: :dismissed, contact_a_id: 1, contact_b_id: 2)
+      account.reload
+
+      expect { account.destroy! }.not_to raise_error
+      expect(Rede::QualityResolution.where(project_id: project.id)).to be_empty
+    end
+
     it 'removes the projects together with the account' do
       project
 

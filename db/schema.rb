@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_16_160000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_16_170000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1357,6 +1357,20 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_160000) do
     t.index ["team_id"], name: "index_rede_projects_on_team_id", unique: true
   end
 
+  create_table "rede_quality_resolutions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.integer "kind", null: false
+    t.integer "contact_a_id", null: false
+    t.integer "contact_b_id", null: false
+    t.integer "resolved_by_user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rede_quality_resolutions_on_account_id"
+    t.index ["project_id", "contact_a_id", "contact_b_id"], name: "index_rede_quality_resolutions_dismissed_pair", unique: true, where: "(kind = 1)"
+    t.index ["project_id", "created_at"], name: "index_rede_quality_resolutions_on_project_and_created_at"
+  end
+
   create_table "rede_roles", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.string "key", null: false
@@ -1615,6 +1629,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_160000) do
   add_foreign_key "rede_participations", "users", column: "responsible_user_id", on_delete: :nullify
   add_foreign_key "rede_projects", "accounts"
   add_foreign_key "rede_projects", "teams"
+  add_foreign_key "rede_quality_resolutions", "accounts"
+  add_foreign_key "rede_quality_resolutions", "rede_projects", column: "project_id"
   add_foreign_key "rede_roles", "accounts"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).

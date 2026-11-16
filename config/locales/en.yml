@@ -96,6 +96,9 @@ en:
         front_closed: The front is closed
         front_without_temperature: The front does not accept temperature
         assignment_required: The person needs an active assignment in the front
+      quality:
+        same_contact: The two contacts must be different
+        not_participating: Both people must participate in the project
     validations:
       presence: must not be blank
     webhook:

@@ -30,6 +30,7 @@ class Rede::Project < ApplicationRecord
 
   belongs_to :account
   belongs_to :team, inverse_of: :rede_project
+  has_many :quality_resolutions, class_name: 'Rede::QualityResolution', dependent: :delete_all, inverse_of: :project
   # Antes de :fronts: avaliações e atuações referenciam frentes, então saem primeiro ao destruir o projeto.
   has_many :evaluations, class_name: 'Rede::Evaluation', dependent: :destroy, inverse_of: :project
   has_many :interactions, class_name: 'Rede::Interaction', dependent: :destroy, inverse_of: :project
