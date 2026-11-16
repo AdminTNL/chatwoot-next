@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_16_100100) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_16_110000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1232,6 +1232,22 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_100100) do
     t.index ["user_id"], name: "index_portals_members_on_user_id"
   end
 
+  create_table "rede_fronts", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.string "name", null: false
+    t.uuid "public_id", default: -> { "gen_random_uuid()" }, null: false
+    t.boolean "has_temperature", default: true, null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "project_id, lower((name)::text)", name: "index_rede_fronts_on_project_id_and_lower_name", unique: true
+    t.index ["account_id"], name: "index_rede_fronts_on_account_id"
+    t.index ["project_id"], name: "index_rede_fronts_on_project_id"
+    t.index ["public_id"], name: "index_rede_fronts_on_public_id", unique: true
+  end
+
   create_table "rede_projects", force: :cascade do |t|
     t.bigint "account_id", null: false
     t.bigint "team_id", null: false
@@ -1469,6 +1485,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_100100) do
   add_foreign_key "label_groups", "teams"
   add_foreign_key "labels", "label_groups"
   add_foreign_key "labels", "teams"
+  add_foreign_key "rede_fronts", "accounts"
+  add_foreign_key "rede_fronts", "rede_projects", column: "project_id"
   add_foreign_key "rede_projects", "accounts"
   add_foreign_key "rede_projects", "teams"
   add_foreign_key "user_sessions", "users"

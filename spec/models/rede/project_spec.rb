@@ -115,4 +115,25 @@ RSpec.describe Rede::Project do
       expect(project.reload.name).to eq('Novo Nome Do Time')
     end
   end
+
+  describe 'fronts' do
+    it 'has no fronts by default' do
+      expect(project.has_fronts?).to be(false)
+      expect(project.active_fronts).to be_empty
+    end
+
+    it 'considers only active fronts' do
+      active = create(:rede_front, account: account, project: project, name: 'PE Digital')
+      create(:rede_front, account: account, project: project, name: 'PE Campo', status: :closed, closed_at: Time.current)
+
+      expect(project.has_fronts?).to be(true)
+      expect(project.active_fronts).to eq([active])
+    end
+
+    it 'has no active fronts when all are closed' do
+      create(:rede_front, account: account, project: project, status: :closed, closed_at: Time.current)
+
+      expect(project.has_fronts?).to be(false)
+    end
+  end
 end

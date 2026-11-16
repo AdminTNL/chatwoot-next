@@ -30,6 +30,7 @@ class Rede::Project < ApplicationRecord
 
   belongs_to :account
   belongs_to :team, inverse_of: :rede_project
+  has_many :fronts, class_name: 'Rede::Front', dependent: :destroy, inverse_of: :project
 
   enum status: { active: 0, closed: 1 }
 
@@ -46,6 +47,19 @@ class Rede::Project < ApplicationRecord
 
   before_validation { self.name = name.strip if name }
   after_update :sync_team_name, if: :saved_change_to_name?
+
+  def has_fronts? # rubocop:disable Naming/PredicateName
+    active_fronts.exists?
+  end
+
+  def active_fronts
+    fronts.active
+  end
+
+  # Ativas por nome, depois as encerradas. Ordena em memória para aproveitar o includes(:fronts).
+  def ordered_fronts
+    fronts.sort_by { |front| [front.closed? ? 1 : 0, front.name.downcase] }
+  end
 
   def close!
     return if closed?

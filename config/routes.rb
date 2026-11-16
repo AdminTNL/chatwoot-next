@@ -311,6 +311,12 @@ Rails.application.routes.draw do
                 post :close
                 post :reopen
               end
+              resources :fronts, only: [:index, :create, :update] do
+                member do
+                  post :close
+                  post :reopen
+                end
+              end
             end
           end
 

@@ -95,6 +95,25 @@ RSpec.describe 'Rede Projects API', type: :request do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    it 'includes the fronts, active ones by name and then closed ones' do
+      create(:rede_front, account: account, project: member_project, name: 'Zeta', status: :closed, closed_at: Time.current)
+      create(:rede_front, account: account, project: member_project, name: 'PE Digital')
+      create(:rede_front, account: account, project: member_project, name: 'PE Campo', has_temperature: false)
+
+      get "#{base_url}/#{member_project.id}", headers: member_agent.create_new_auth_token, as: :json
+
+      fronts = response.parsed_body['fronts']
+      expect(fronts.pluck('name')).to eq(['PE Campo', 'PE Digital', 'Zeta'])
+      expect(fronts.first.keys).to contain_exactly('id', 'public_id', 'name', 'has_temperature', 'status', 'closed_at')
+      expect(fronts.pluck('status')).to eq(%w[active active closed])
+    end
+
+    it 'returns an empty fronts list for a project without fronts' do
+      get "#{base_url}/#{member_project.id}", headers: member_agent.create_new_auth_token, as: :json
+
+      expect(response.parsed_body['fronts']).to eq([])
+    end
   end
 
   describe 'POST /rede/projects' do

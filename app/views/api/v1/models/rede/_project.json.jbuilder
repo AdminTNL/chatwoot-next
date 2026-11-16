@@ -11,3 +11,6 @@ json.inboxes_count resource.team.inboxes.size
 json.members_count resource.team.team_members.size
 json.created_at resource.created_at
 json.updated_at resource.updated_at
+json.fronts resource.ordered_fronts do |front|
+  json.partial! 'api/v1/models/rede/front', formats: [:json], resource: front
+end

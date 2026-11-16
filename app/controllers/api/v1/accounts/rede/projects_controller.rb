@@ -4,7 +4,7 @@ class Api::V1::Accounts::Rede::ProjectsController < Api::V1::Accounts::BaseContr
   before_action :load_member_team_ids
 
   def index
-    @projects = policy_scope(Current.account.rede_projects).includes(team: [:inboxes, :team_members]).order(:name)
+    @projects = policy_scope(Current.account.rede_projects).includes(:fronts, team: [:inboxes, :team_members]).order(:name)
   end
 
   def show; end
