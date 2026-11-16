@@ -6,6 +6,31 @@ RSpec.describe Team do
     it { is_expected.to have_many(:conversations) }
     it { is_expected.to have_many(:team_members) }
     it { is_expected.to have_many(:inboxes) }
+    it { is_expected.to have_one(:rede_project).class_name('Rede::Project') }
+  end
+
+  describe 'rede project' do
+    let(:account) { create(:account) }
+
+    it 'creates a project when the team is created' do
+      team = create(:team, account: account, name: 'mobiliza pará')
+
+      expect(team.rede_project).to be_persisted
+      expect(team.rede_project).to have_attributes(name: 'Mobiliza Pará', slug: 'mobiliza-para', status: 'active', account_id: account.id)
+    end
+
+    it 'does not create the team when the project creation fails' do
+      allow(Rede::Projects::Builder).to receive(:for_team).and_raise(ActiveRecord::RecordInvalid.new(Rede::Project.new))
+
+      expect { create(:team, account: account) }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(described_class.count).to eq(0)
+    end
+
+    it 'destroys the project together with the team' do
+      team = create(:team, account: account)
+
+      expect { team.destroy! }.to change(Rede::Project, :count).by(-1)
+    end
   end
 
   describe '#inboxes' do

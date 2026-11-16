@@ -80,6 +80,9 @@ en:
         invalid: is not a valid timezone
       support_email:
         invalid: is not a valid email address
+    rede:
+      project:
+        not_deletable: Projects cannot be deleted; close the project instead
     validations:
       presence: must not be blank
     webhook:

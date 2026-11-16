@@ -305,6 +305,15 @@ Rails.application.routes.draw do
           end
           resource :notification_settings, only: [:show, :update]
 
+          namespace :rede do
+            resources :projects, only: [:index, :show, :create, :update] do
+              member do
+                post :close
+                post :reopen
+              end
+            end
+          end
+
           resources :teams do
             resources :team_members, only: [:index, :create] do
               collection do

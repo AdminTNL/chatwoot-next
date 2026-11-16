@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_19_110000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_16_100100) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1232,6 +1232,21 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_19_110000) do
     t.index ["user_id"], name: "index_portals_members_on_user_id"
   end
 
+  create_table "rede_projects", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "team_id", null: false
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.string "color", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "slug"], name: "index_rede_projects_on_account_id_and_slug", unique: true
+    t.index ["account_id"], name: "index_rede_projects_on_account_id"
+    t.index ["team_id"], name: "index_rede_projects_on_team_id", unique: true
+  end
+
   create_table "related_categories", force: :cascade do |t|
     t.bigint "category_id"
     t.bigint "related_category_id"
@@ -1454,6 +1469,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_19_110000) do
   add_foreign_key "label_groups", "teams"
   add_foreign_key "labels", "label_groups"
   add_foreign_key "labels", "teams"
+  add_foreign_key "rede_projects", "accounts"
+  add_foreign_key "rede_projects", "teams"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").

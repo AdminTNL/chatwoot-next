@@ -1,0 +1,13 @@
+json.id resource.id
+json.slug resource.slug
+json.name resource.name
+json.color resource.color
+json.status resource.status
+json.closed_at resource.closed_at
+json.team_id resource.team_id
+json.team_name resource.team.name
+json.is_member @member_team_ids.include?(resource.team_id)
+json.inboxes_count resource.team.inboxes.size
+json.members_count resource.team.team_members.size
+json.created_at resource.created_at
+json.updated_at resource.updated_at

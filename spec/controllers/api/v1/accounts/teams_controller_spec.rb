@@ -151,13 +151,14 @@ RSpec.describe 'Teams API', type: :request do
         expect(response).to have_http_status(:unauthorized)
       end
 
-      it 'destroys the team when its administrator' do
+      it 'refuses to destroy the team, even for an administrator' do
         delete "/api/v1/accounts/#{account.id}/teams/#{team.id}",
                headers: administrator.create_new_auth_token,
                as: :json
 
-        expect(response).to have_http_status(:success)
-        expect(Team.count).to eq(0)
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to eq(I18n.t('errors.rede.project.not_deletable'))
+        expect(Team.count).to eq(1)
       end
     end
   end
