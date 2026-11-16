@@ -1,15 +1,17 @@
 class Rede::Projects::Builder
-  def self.for_team(team)
-    new(team).perform
+  def self.for_team(team, ensure_roles: true)
+    new(team, ensure_roles: ensure_roles).perform
   end
 
-  def initialize(team)
+  def initialize(team, ensure_roles: true)
     @team = team
     @account = team.account
+    @ensure_roles = ensure_roles
   end
 
   def perform
     name = @team.name.titleize
+    Rede::Roles::EnsureDefaults.new(@account).perform if @ensure_roles
     Rede::Project.create!(account: @account, team: @team, name: name, slug: unique_slug(name), color: color)
   end
 

@@ -3,7 +3,7 @@ class BackfillRedeProjects < ActiveRecord::Migration[7.1]
   def up
     Rede::Project.reset_column_information
     Team.where.missing(:rede_project).find_each do |team|
-      Rede::Projects::Builder.for_team(team)
+      Rede::Projects::Builder.for_team(team, ensure_roles: false) # rede_roles ainda não existe nesta altura; a migração 120300 cria os papéis
     end
   end
 

@@ -83,6 +83,8 @@ en:
     rede:
       project:
         not_deletable: Projects cannot be deleted; close the project instead
+      participation:
+        already_exists: This person already participates in the project
     validations:
       presence: must not be blank
     webhook:

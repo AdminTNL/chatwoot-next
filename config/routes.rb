@@ -318,6 +318,19 @@ Rails.application.routes.draw do
                 end
               end
             end
+            resources :roles, only: [:index]
+            resources :participations, only: [:create, :update] do
+              resources :assignments, only: [:create, :update] do
+                member do
+                  post :close
+                end
+              end
+            end
+            resources :api_tokens, only: [:index, :create] do
+              member do
+                post :revoke
+              end
+            end
           end
 
           resources :teams do
@@ -530,6 +543,13 @@ Rails.application.routes.draw do
             end
           end
         end
+      end
+    end
+
+    # Leitura externa do CRM (Rede), fora de /api/v1/accounts e autenticada por token próprio.
+    namespace :rede do
+      namespace :v1 do
+        resources :projects, only: :index
       end
     end
   end

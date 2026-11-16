@@ -1,9 +1,7 @@
 class Rede::ProjectPolicy < ApplicationPolicy
   class Scope < ApplicationPolicy::Scope
     def resolve
-      return scope if @account_user.administrator?
-
-      scope.where(team_id: user.teams.select(:id))
+      Rede::AccessScope.new(account: account, user: user, account_user: account_user).restrict_projects(scope)
     end
   end
 

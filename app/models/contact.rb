@@ -41,7 +41,7 @@
 
 # rubocop:enable Layout/LineLength
 
-class Contact < ApplicationRecord
+class Contact < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include Avatarable
   include AvailabilityStatusable
   include Labelable
@@ -62,6 +62,7 @@ class Contact < ApplicationRecord
   has_many :inboxes, through: :contact_inboxes
   has_many :messages, as: :sender, dependent: :destroy_async
   has_many :notes, dependent: :destroy_async
+  has_many :rede_participations, class_name: 'Rede::Participation', dependent: :destroy
   before_validation :prepare_contact_attributes
   after_create_commit :dispatch_create_event, :ip_lookup
   after_update_commit :dispatch_update_event
