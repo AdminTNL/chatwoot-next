@@ -29,6 +29,10 @@ components:
       in: header
       name: api_access_token
       description: This token should be provided by system admin or obtained via rails console. This token can be used to build bot integrations and can only access limited apis.
+    redeApiToken:
+      type: http
+      scheme: bearer
+      description: Read-only token created by an account administrator (shown only once on creation). Sent as `Authorization Bearer <token>`.
     platformAppApiKey:
       type: apiKey
       in: header
@@ -83,6 +87,8 @@ tags:
     description: Workflow automation rules
   - name: Help Center
     description: Knowledge base management
+  - name: Rede Projects
+    description: Read-only access to the CRM projects for external tools
   - name: Contacts API
     description: Public contact APIs
   - name: Conversations API
@@ -122,6 +128,7 @@ x-tagGroups:
       - Webhooks
       - Automation Rule
       - Help Center
+      - Rede Projects
   - name: Client
     tags:
       - Contacts API

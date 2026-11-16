@@ -7291,6 +7291,96 @@
             "description": "List of reporting events"
           }
         }
+      },
+      "rede_project": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The public id of the project (its slug). It never changes."
+          },
+          "name": {
+            "type": "string",
+            "description": "The display name of the project"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "closed"
+            ],
+            "description": "Whether the project is active or closed"
+          },
+          "color": {
+            "type": "string",
+            "description": "The project color as a hex code"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the project was last updated"
+          },
+          "fronts": {
+            "type": "array",
+            "description": "The fronts of the project (empty when it has none)",
+            "items": {
+              "$ref": "#/components/schemas/rede_front"
+            }
+          }
+        }
+      },
+      "rede_front": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The public id of the front. It never changes."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the front"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "closed"
+            ],
+            "description": "Whether the front is active or closed"
+          },
+          "has_temperature": {
+            "type": "boolean",
+            "description": "Whether people in this front have a temperature"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the front was last updated"
+          }
+        }
+      },
+      "rede_invalid_token_error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "invalid_token"
+            ]
+          }
+        }
+      },
+      "rede_forbidden_error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "forbidden"
+            ]
+          }
+        }
       }
     },
     "parameters": {
@@ -7505,6 +7595,11 @@
         "name": "api_access_token",
         "description": "This token should be provided by system admin or obtained via rails console. This token can be used to build bot integrations and can only access limited apis."
       },
+      "redeApiToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Read-only token created by an account administrator (shown only once on creation). Sent as `Authorization Bearer <token>`."
+      },
       "platformAppApiKey": {
         "type": "apiKey",
         "in": "header",
@@ -7565,7 +7660,8 @@
         "Teams",
         "Webhooks",
         "Automation Rule",
-        "Help Center"
+        "Help Center",
+        "Rede Projects"
       ]
     },
     {
