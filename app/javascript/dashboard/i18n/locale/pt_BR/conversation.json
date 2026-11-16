@@ -157,7 +157,7 @@
     },
     "MENTION": {
       "AGENTS": "Agentes",
-      "TEAMS": "Times"
+      "TEAMS": "Projetos"
     },
     "CUSTOM_SNOOZE": {
       "TITLE": "Adiar até",
@@ -201,7 +201,7 @@
       "ASSIGN_AGENT": "Atribuir Agente",
       "ASSIGN_LABEL": "Atribuir etiqueta",
       "AGENTS_LOADING": "Carregando agentes...",
-      "ASSIGN_TEAM": "Atribuir time",
+      "ASSIGN_TEAM": "Atribuir projeto",
       "DELETE": "Excluir conversa",
       "OPEN_IN_NEW_TAB": "Abrir em nova aba",
       "COPY_LINK": "Copiar link da conversa",
@@ -220,8 +220,8 @@
           "FAILED": "Não foi possível remover a etiqueta. Por favor, tente novamente."
         },
         "TEAM_ASSIGNMENT": {
-          "SUCCESFUL": "Time {team} atribuído para o id de conversa {conversationId}",
-          "FAILED": "Não foi possível atribuir time. Por favor, tente novamente."
+          "SUCCESFUL": "Projeto {team} atribuído para o id de conversa {conversationId}",
+          "FAILED": "Não foi possível atribuir projeto. Por favor, tente novamente."
         }
       }
     },
@@ -294,7 +294,7 @@
     "CHANGE_AGENT_FAILED": "Falha ao atribuir outro agente",
     "ASSIGN_LABEL_SUCCESFUL": "Etiqueta atribuída com sucesso",
     "ASSIGN_LABEL_FAILED": "Falha ao atribuir etiqueta",
-    "CHANGE_TEAM": "Status da conversa mudou",
+    "CHANGE_TEAM": "Projeto da conversa mudou",
     "SUCCESS_DELETE_CONVERSATION": "Conversa excluída com sucesso",
     "FAIL_DELETE_CONVERSATION": "Não foi possível excluir a conversa! Tente novamente",
     "FILE_SIZE_LIMIT": "O arquivo excede os {MAXIMUM_SUPPORTED_FILE_UPLOAD_SIZE} MB do limite para anexos",
@@ -390,7 +390,7 @@
   "CONVERSATION_SIDEBAR": {
     "ASSIGNEE_LABEL": "Agente atribuído",
     "SELF_ASSIGN": "Atribuir a mim",
-    "TEAM_LABEL": "Time atribuído",
+    "TEAM_LABEL": "Projeto atribuído",
     "SELECT": {
       "PLACEHOLDER": "Nenhuma"
     },

@@ -9,7 +9,7 @@
     "CANCEL": "Cancel",
     "SEARCH_INPUT_PLACEHOLDER": "Search",
     "ASSIGN_AGENT_TOOLTIP": "Assign agent",
-    "ASSIGN_TEAM_TOOLTIP": "Assign team",
+    "ASSIGN_TEAM_TOOLTIP": "Assign project",
     "ASSIGN_SUCCESFUL": "Conversations assigned successfully.",
     "ASSIGN_FAILED": "Failed to assign conversations. Please try again.",
     "RESOLVE_SUCCESFUL": "Conversations resolved successfully.",
@@ -39,8 +39,8 @@
       "NONE": "None",
       "ASSIGN_TEAM_CONFIRMATION_LABEL": "Are you sure you want to assign {n} conversation to {teamName}? | Are you sure you want to assign {n} conversations to {teamName}?",
       "UNASSIGN_TEAM_CONFIRMATION_LABEL": "Are you sure you want to unassign {n} conversation? | Are you sure you want to unassign {n} conversations?",
-      "ASSIGN_SUCCESFUL": "Teams assigned successfully.",
-      "ASSIGN_FAILED": "Failed to assign team. Please try again."
+      "ASSIGN_SUCCESFUL": "Projects assigned successfully.",
+      "ASSIGN_FAILED": "Failed to assign project. Please try again."
     }
   }
 }

@@ -866,6 +866,13 @@ const menuItems = computed(() => {
           ],
           to: accountScopedRoute('settings_teams_list'),
         },
+        {
+          name: 'Settings Rede Api Tokens',
+          label: t('SIDEBAR.REDE_API_TOKENS'),
+          icon: 'i-lucide-key-round',
+          activeOn: ['settings_rede_api_tokens'],
+          to: accountScopedRoute('settings_rede_api_tokens'),
+        },
         // Item "Atribuição de agentes" oculto: auto-atribuição desligada (spec 040).
         {
           name: 'Settings Inboxes',

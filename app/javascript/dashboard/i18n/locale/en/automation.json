@@ -97,7 +97,7 @@
     "ACTION": {
       "DELETE_MESSAGE": "You need to have atleast one action to save",
       "TEAM_MESSAGE_INPUT_PLACEHOLDER": "Enter your message here",
-      "TEAM_DROPDOWN_PLACEHOLDER": "Select teams",
+      "TEAM_DROPDOWN_PLACEHOLDER": "Select projects",
       "EMAIL_INPUT_PLACEHOLDER": "Enter email",
       "URL_INPUT_PLACEHOLDER": "Enter URL"
     },
@@ -140,12 +140,12 @@
     },
     "ACTIONS": {
       "ASSIGN_AGENT": "Assign to Agent",
-      "ASSIGN_TEAM": "Assign a Team",
+      "ASSIGN_TEAM": "Assign a Project",
       "REMOVE_ASSIGNED_AGENT": "Remove Assigned Agent",
-      "REMOVE_ASSIGNED_TEAM": "Remove Assigned Team",
+      "REMOVE_ASSIGNED_TEAM": "Remove Assigned Project",
       "ADD_LABEL": "Add a Label",
       "REMOVE_LABEL": "Remove a Label",
-      "SEND_EMAIL_TO_TEAM": "Send an Email to Team",
+      "SEND_EMAIL_TO_TEAM": "Send an Email to Project",
       "SEND_EMAIL_TRANSCRIPT": "Send an Email Transcript",
       "MUTE_CONVERSATION": "Mute Conversation",
       "SNOOZE_CONVERSATION": "Snooze Conversation",
@@ -185,7 +185,7 @@
       "COMPANY_NAME": "Company",
       "REFERER_LINK": "Referrer Link",
       "ASSIGNEE_NAME": "Assignee",
-      "TEAM_NAME": "Team",
+      "TEAM_NAME": "Project",
       "PRIORITY": "Priority",
       "LABELS": "Labels"
     }

@@ -1,0 +1,102 @@
+{
+  "REDE": {
+    "COPY": {
+      "BUTTON": "Copy",
+      "SUCCESS": "Copied to the clipboard.",
+      "ERROR": "Couldn't copy. Select the text and copy it manually."
+    },
+    "STATUS": {
+      "CLOSED": "Closed"
+    },
+    "ACTIONS": {
+      "CLOSE": "Close",
+      "REOPEN": "Reopen"
+    },
+    "PROJECT_FORM": {
+      "NAME": {
+        "REQUIRED": "Enter the project name."
+      },
+      "COLOR": {
+        "LABEL": "Color",
+        "HEX_LABEL": "Hex color",
+        "PLACEHOLDER": "#1F93FF",
+        "INVALID_HEX": "Use a hexadecimal color in the #RRGGBB format."
+      },
+      "SLUG": {
+        "LABEL": "Identifier",
+        "HELP": "Identifier used by external tools. It never changes."
+      }
+    },
+    "PROJECTS": {
+      "LOAD_ERROR": "Couldn't load the projects. Try again.",
+      "SHOW_CLOSED": "Show closed",
+      "MEMBERS_COUNT": "{n} member | {n} members",
+      "INBOXES_COUNT": "{n} inbox | {n} inboxes",
+      "CLOSE": {
+        "TITLE": "Close the project {name}?",
+        "MESSAGE": "The project leaves the default list but stays saved with its whole history. You can reopen it any time.",
+        "SUCCESS": "Project closed.",
+        "ERROR": "Couldn't close the project. Try again."
+      },
+      "REOPEN": {
+        "SUCCESS": "Project reopened.",
+        "ERROR": "Couldn't reopen the project. Try again."
+      }
+    },
+    "FRONTS": {
+      "TITLE": "Fronts",
+      "DESCRIPTION": "Work fronts of the project. A project without fronts is also valid.",
+      "NEW": "New front",
+      "EDIT": "Edit",
+      "EMPTY": "This project has no fronts yet.",
+      "HAS_TEMPERATURE": "Has temperature",
+      "WITH_TEMPERATURE": "With temperature",
+      "WITHOUT_TEMPERATURE": "Without temperature",
+      "PUBLIC_ID": "Public ID:",
+      "NAME_REQUIRED": "Enter the front name.",
+      "SAVE_SUCCESS": "Front saved.",
+      "SAVE_ERROR": "Couldn't save the front. Try again.",
+      "DIALOG": {
+        "NEW_TITLE": "New front",
+        "EDIT_TITLE": "Edit front",
+        "SAVE": "Save",
+        "NAME_LABEL": "Front name",
+        "NAME_PLACEHOLDER": "Example: Field, Digital"
+      }
+    },
+    "API_TOKENS": {
+      "HEADER": "CRM integrations",
+      "DESCRIPTION": "Read-only tokens for external tools to query the projects. They only read, never write.",
+      "LOADING": "Fetching tokens",
+      "EMPTY": "No tokens created yet.",
+      "LOAD_ERROR": "Couldn't load the tokens. Try again.",
+      "CREATE": "Create token",
+      "CREATE_ERROR": "Couldn't create the token. Try again.",
+      "NAME_REQUIRED": "Enter the token name.",
+      "PREFIX": "Prefix",
+      "CREATED_BY": "Created by",
+      "LAST_USED": "Last used",
+      "NEVER_USED": "Never used",
+      "STATUS": {
+        "ACTIVE": "Active",
+        "REVOKED": "Revoked"
+      },
+      "DIALOG": {
+        "TITLE": "Create token",
+        "DESCRIPTION": "Use a name that tells which tool will use this token.",
+        "CREATE": "Create",
+        "DONE": "Done",
+        "WARNING": "Save it now. It will not be shown again.",
+        "NAME_LABEL": "Name",
+        "NAME_PLACEHOLDER": "Example: Abib forms"
+      },
+      "REVOKE": {
+        "BUTTON": "Revoke",
+        "TITLE": "Revoke the token {name}?",
+        "MESSAGE": "Tools using this token lose access immediately. This can't be undone.",
+        "SUCCESS": "Token revoked.",
+        "ERROR": "Couldn't revoke the token. Try again."
+      }
+    }
+  }
+}

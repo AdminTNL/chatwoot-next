@@ -159,7 +159,7 @@
     },
     "MENTION": {
       "AGENTS": "Agents",
-      "TEAMS": "Teams"
+      "TEAMS": "Projects"
     },
     "CUSTOM_SNOOZE": {
       "TITLE": "Snooze until",
@@ -203,7 +203,7 @@
       "ASSIGN_AGENT": "Assign agent",
       "ASSIGN_LABEL": "Assign label",
       "AGENTS_LOADING": "Loading agents...",
-      "ASSIGN_TEAM": "Assign team",
+      "ASSIGN_TEAM": "Assign project",
       "DELETE": "Delete conversation",
       "OPEN_IN_NEW_TAB": "Open in new tab",
       "COPY_LINK": "Copy conversation link",
@@ -222,8 +222,8 @@
           "FAILED": "Couldn't remove label. Please try again."
         },
         "TEAM_ASSIGNMENT": {
-          "SUCCESFUL": "Assigned team \"{team}\" to conversation id {conversationId}",
-          "FAILED": "Couldn't assign team. Please try again."
+          "SUCCESFUL": "Assigned project \"{team}\" to conversation id {conversationId}",
+          "FAILED": "Couldn't assign project. Please try again."
         }
       }
     },
@@ -297,7 +297,7 @@
     "CHANGE_AGENT_FAILED": "Assignee change failed",
     "ASSIGN_LABEL_SUCCESFUL": "Label assigned successfully",
     "ASSIGN_LABEL_FAILED": "Label assignment failed",
-    "CHANGE_TEAM": "Conversation team changed",
+    "CHANGE_TEAM": "Conversation project changed",
     "SUCCESS_DELETE_CONVERSATION": "Conversation deleted successfully",
     "FAIL_DELETE_CONVERSATION": "Couldn't delete conversation! Try again",
     "FILE_SIZE_LIMIT": "File exceeds the {MAXIMUM_SUPPORTED_FILE_UPLOAD_SIZE} MB attachment limit",
@@ -412,7 +412,7 @@
   "CONVERSATION_SIDEBAR": {
     "ASSIGNEE_LABEL": "Assigned Agent",
     "SELF_ASSIGN": "Assign to me",
-    "TEAM_LABEL": "Assigned Team",
+    "TEAM_LABEL": "Assigned Project",
     "SELECT": {
       "PLACEHOLDER": "None"
     },

@@ -1,149 +1,172 @@
 <script setup>
+import { computed, onMounted, ref } from 'vue';
+import { picoSearch } from '@scmmishra/pico-search';
+import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
-import { useAdmin } from 'dashboard/composables/useAdmin';
+import { useMapGetter } from 'dashboard/composables/store';
+import { useRedeProjectsStore } from 'dashboard/stores/rede/projects';
+
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
-import { computed, ref } from 'vue';
-import { picoSearch } from '@scmmishra/pico-search';
-import { useMapGetter } from 'dashboard/composables/store.js';
-import { useStoreGetters, useStore } from 'dashboard/composables/store';
-import { useI18n } from 'vue-i18n';
-
-import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
-import EmojiIcon from 'dashboard/components-next/emoji-icon-picker/EmojiIcon.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 
-const store = useStore();
 const { t } = useI18n();
-const getters = useStoreGetters();
-const { isAdmin } = useAdmin();
+const projectsStore = useRedeProjectsStore();
 
-const loading = ref({});
 const searchQuery = ref('');
+const showClosed = ref(false);
+const loading = ref({});
+const selectedProject = ref({});
+const closeDialogRef = ref(null);
 
-const teamsList = useMapGetter('teams/getTeams');
+const teams = useMapGetter('teams/getTeams');
 
-const filteredTeamsList = computed(() => {
+// A descrição vive no time; o projeto não a devolve.
+const descriptionByTeamId = computed(() =>
+  Object.fromEntries(teams.value.map(team => [team.id, team.description]))
+);
+
+const projects = computed(() => projectsStore.getProjects);
+const visibleProjects = computed(() =>
+  showClosed.value
+    ? projects.value
+    : projects.value.filter(project => project.status !== 'closed')
+);
+
+const filteredProjects = computed(() => {
   const query = searchQuery.value.trim();
-  if (!query) return teamsList.value;
-  return picoSearch(teamsList.value, query, ['name', 'description']);
+  if (!query) return visibleProjects.value;
+  return picoSearch(visibleProjects.value, query, ['name', 'slug']);
 });
 
-const uiFlags = computed(() => getters['teams/getUIFlags'].value);
+const isLoading = computed(() => projectsStore.uiFlags.fetchingList);
 
-const deleteTeam = async ({ id }) => {
+onMounted(() => {
+  projectsStore.get().catch(() => {
+    useAlert(t('REDE.PROJECTS.LOAD_ERROR'));
+  });
+});
+
+const openClose = project => {
+  selectedProject.value = project;
+  closeDialogRef.value?.open();
+};
+
+const runWithLoading = async (project, action, successKey, errorKey) => {
+  loading.value[project.id] = true;
   try {
-    loading.value[id] = true;
-    await store.dispatch('teams/delete', id);
-    useAlert(t('TEAMS_SETTINGS.DELETE.API.SUCCESS_MESSAGE'));
+    await action(project.id);
+    useAlert(t(successKey));
   } catch (error) {
-    useAlert(t('TEAMS_SETTINGS.DELETE.API.ERROR_MESSAGE'));
+    useAlert(error?.message || t(errorKey));
   } finally {
-    loading.value[id] = false;
+    loading.value[project.id] = false;
   }
 };
 
-const showDeletePopup = ref(false);
-const selectedTeam = ref({});
-
-const openDelete = team => {
-  showDeletePopup.value = true;
-  selectedTeam.value = team;
+const confirmClose = async () => {
+  await runWithLoading(
+    selectedProject.value,
+    id => projectsStore.close(id),
+    'REDE.PROJECTS.CLOSE.SUCCESS',
+    'REDE.PROJECTS.CLOSE.ERROR'
+  );
+  closeDialogRef.value?.close();
 };
 
-const closeDelete = () => {
-  showDeletePopup.value = false;
-  selectedTeam.value = {};
-};
-
-const confirmDeletion = () => {
-  deleteTeam(selectedTeam.value);
-  closeDelete();
-};
-
-const deleteConfirmText = computed(
-  () => `${t('TEAMS_SETTINGS.DELETE.CONFIRM.YES')} ${selectedTeam.value.name}`
-);
-
-const deleteRejectText = computed(() => t('TEAMS_SETTINGS.DELETE.CONFIRM.NO'));
-
-const confirmDeleteTitle = computed(() =>
-  t('TEAMS_SETTINGS.DELETE.CONFIRM.TITLE', {
-    teamName: selectedTeam.value.name,
-  })
-);
-
-const confirmPlaceHolderText = computed(() =>
-  t('TEAMS_SETTINGS.DELETE.CONFIRM.PLACE_HOLDER', {
-    teamName: selectedTeam.value.name,
-  })
-);
+const reopen = project =>
+  runWithLoading(
+    project,
+    id => projectsStore.reopen(id),
+    'REDE.PROJECTS.REOPEN.SUCCESS',
+    'REDE.PROJECTS.REOPEN.ERROR'
+  );
 </script>
 
 <template>
   <SettingsLayout
-    :is-loading="uiFlags.isFetching"
-    :loading-message="$t('TEAMS_SETTINGS.LOADING')"
-    :no-records-found="!teamsList.length"
-    :no-records-message="$t('TEAMS_SETTINGS.LIST.404')"
+    :is-loading="isLoading"
+    :loading-message="t('TEAMS_SETTINGS.LOADING')"
+    :no-records-found="!visibleProjects.length && !searchQuery"
+    :no-records-message="t('TEAMS_SETTINGS.LIST.404')"
   >
     <template #header>
       <BaseSettingsHeader
         v-model:search-query="searchQuery"
-        :title="$t('TEAMS_SETTINGS.HEADER')"
-        :description="$t('TEAMS_SETTINGS.DESCRIPTION')"
-        :link-text="$t('TEAMS_SETTINGS.LEARN_MORE')"
-        :search-placeholder="$t('TEAMS_SETTINGS.SEARCH_PLACEHOLDER')"
+        :title="t('TEAMS_SETTINGS.HEADER')"
+        :description="t('TEAMS_SETTINGS.DESCRIPTION')"
+        :link-text="t('TEAMS_SETTINGS.LEARN_MORE')"
+        :search-placeholder="t('TEAMS_SETTINGS.SEARCH_PLACEHOLDER')"
         feature-name="team_management"
       >
-        <template v-if="teamsList?.length" #count>
+        <template v-if="visibleProjects.length" #count>
           <span class="text-body-main text-n-slate-11">
-            {{ $t('TEAMS_SETTINGS.COUNT', { n: teamsList.length }) }}
+            {{ t('TEAMS_SETTINGS.COUNT', { n: visibleProjects.length }) }}
           </span>
         </template>
         <template #actions>
-          <router-link v-if="isAdmin" :to="{ name: 'settings_teams_new' }">
-            <Button :label="$t('TEAMS_SETTINGS.NEW_TEAM')" size="sm" />
+          <label class="flex items-center gap-2 text-sm text-n-slate-12">
+            <Checkbox v-model="showClosed" />
+            {{ t('REDE.PROJECTS.SHOW_CLOSED') }}
+          </label>
+          <router-link :to="{ name: 'settings_teams_new' }">
+            <Button :label="t('TEAMS_SETTINGS.NEW_TEAM')" size="sm" />
           </router-link>
         </template>
       </BaseSettingsHeader>
     </template>
     <template #body>
       <span
-        v-if="!filteredTeamsList.length && searchQuery"
+        v-if="!filteredProjects.length && searchQuery"
         class="flex-1 flex items-center justify-center py-20 text-center text-body-main !text-base text-n-slate-11"
       >
-        {{ $t('TEAMS_SETTINGS.NO_RESULTS') }}
+        {{ t('TEAMS_SETTINGS.NO_RESULTS') }}
       </span>
 
       <div v-else class="divide-y divide-n-weak border-t border-n-weak">
         <div
-          v-for="team in filteredTeamsList"
-          :key="team.id"
+          v-for="project in filteredProjects"
+          :key="project.id"
           class="flex justify-between flex-row items-start gap-4 py-4"
         >
           <div class="flex items-start gap-4">
-            <div
-              class="flex items-center flex-shrink-0 size-10 justify-center rounded-xl outline outline-1 outline-n-weak -outline-offset-1 text-lg"
-            >
-              <EmojiIcon
-                v-if="team.icon"
-                :value="team.icon"
-                :color="team.icon_color"
-                class="size-5"
-              />
-              <Icon
-                v-else
-                icon="i-lucide-users-round"
-                class="size-4 text-n-slate-11"
-              />
-            </div>
+            <span
+              class="mt-1.5 flex-shrink-0 size-4 rounded-full"
+              :style="{ backgroundColor: project.color }"
+            />
             <div class="flex flex-col items-start gap-1">
-              <span class="block text-heading-3 text-n-slate-12 capitalize">
-                {{ team.name }}
-              </span>
+              <div class="flex items-center gap-2">
+                <span class="block text-heading-3 text-n-slate-12">
+                  {{ project.name }}
+                </span>
+                <span
+                  v-if="project.status === 'closed'"
+                  class="px-2 py-0.5 text-xs rounded-md bg-n-alpha-2 text-n-slate-11"
+                >
+                  {{ t('REDE.STATUS.CLOSED') }}
+                </span>
+              </div>
               <p class="mb-0 text-n-slate-11 text-body-main">
-                {{ team.description }}
+                {{ descriptionByTeamId[project.teamId] }}
+              </p>
+              <p class="mb-0 text-n-slate-11 text-xs">
+                {{
+                  t(
+                    'REDE.PROJECTS.MEMBERS_COUNT',
+                    { n: project.membersCount },
+                    project.membersCount
+                  )
+                }}
+                ·
+                {{
+                  t(
+                    'REDE.PROJECTS.INBOXES_COUNT',
+                    { n: project.inboxesCount },
+                    project.inboxesCount
+                  )
+                }}
               </p>
             </div>
           </div>
@@ -151,43 +174,45 @@ const confirmPlaceHolderText = computed(() =>
             <router-link
               :to="{
                 name: 'settings_teams_edit',
-                params: { teamId: team.id },
+                params: { teamId: project.teamId },
               }"
             >
               <Button
-                v-if="isAdmin"
-                v-tooltip.top="$t('TEAMS_SETTINGS.LIST.EDIT_TEAM')"
+                v-tooltip.top="t('TEAMS_SETTINGS.LIST.EDIT_TEAM')"
                 icon="i-woot-settings"
                 slate
                 sm
               />
             </router-link>
-
             <Button
-              v-if="isAdmin"
-              v-tooltip.top="$t('TEAMS_SETTINGS.DELETE.BUTTON_TEXT')"
-              icon="i-woot-bin"
-              slate
-              sm
-              class="hover:enabled:text-n-ruby-11 hover:enabled:bg-n-ruby-2"
-              :is-loading="loading[team.id]"
-              @click="openDelete(team)"
+              v-if="project.status === 'closed'"
+              :label="t('REDE.ACTIONS.REOPEN')"
+              variant="faded"
+              color="slate"
+              size="sm"
+              :is-loading="loading[project.id]"
+              @click="reopen(project)"
+            />
+            <Button
+              v-else
+              :label="t('REDE.ACTIONS.CLOSE')"
+              variant="faded"
+              color="slate"
+              size="sm"
+              :is-loading="loading[project.id]"
+              @click="openClose(project)"
             />
           </div>
         </div>
       </div>
     </template>
-    <woot-confirm-delete-modal
-      v-if="showDeletePopup"
-      v-model:show="showDeletePopup"
-      :title="confirmDeleteTitle"
-      :message="$t('TEAMS_SETTINGS.DELETE.CONFIRM.MESSAGE')"
-      :confirm-text="deleteConfirmText"
-      :reject-text="deleteRejectText"
-      :confirm-value="selectedTeam.name"
-      :confirm-place-holder-text="confirmPlaceHolderText"
-      @on-confirm="confirmDeletion"
-      @on-close="closeDelete"
+    <Dialog
+      ref="closeDialogRef"
+      type="alert"
+      :title="t('REDE.PROJECTS.CLOSE.TITLE', { name: selectedProject.name })"
+      :description="t('REDE.PROJECTS.CLOSE.MESSAGE')"
+      :confirm-button-label="t('REDE.ACTIONS.CLOSE')"
+      @confirm="confirmClose"
     />
   </SettingsLayout>
 </template>

@@ -27,8 +27,8 @@
         "BODY": "Está tudo pronto para começar!"
       },
       "TEAM": {
-        "TITLE": "Time responsável",
-        "BODY": "Escolha o time que atende esta caixa de entrada."
+        "TITLE": "Projeto responsável",
+        "BODY": "Escolha o projeto que atende esta caixa de entrada."
       }
     },
     "ADD": {
@@ -532,14 +532,14 @@
         "ERROR_MESSAGE": "Houve um erro ao conectar com o Google, por favor, tente novamente"
       },
       "TEAM": {
-        "TITLE": "Time responsável",
-        "DESC": "Escolha o time que atende esta caixa de entrada. Só os membros do time e os administradores terão acesso às conversas.",
-        "LABEL": "Time responsável",
-        "PLACEHOLDER": "Selecione um time",
-        "NONE": "Sem time — apenas administradores",
+        "TITLE": "Projeto responsável",
+        "DESC": "Escolha o projeto que atende esta caixa de entrada. Só os membros do projeto e os administradores terão acesso às conversas.",
+        "LABEL": "Projeto responsável",
+        "PLACEHOLDER": "Selecione um projeto",
+        "NONE": "Sem projeto — apenas administradores",
         "NO_TEAM_WARNING": "Somente os administradores verão as conversas desta caixa de entrada.",
         "BUTTON_TEXT": "Continuar",
-        "ERROR_MESSAGE": "Não foi possível salvar o time responsável. Tente novamente."
+        "ERROR_MESSAGE": "Não foi possível salvar o projeto responsável. Tente novamente."
       }
     },
     "DETAILS": {
@@ -779,17 +779,17 @@
       "LOCK_TO_SINGLE_CONVERSATION": "Roteamento de Conversa",
       "LOCK_TO_SINGLE_CONVERSATION_SUB_TEXT": "Configurar a criação de conversas para contatos existentes",
       "RESPONSIBLE_TEAM": {
-        "LABEL": "Time responsável",
-        "SUB_TEXT": "Escolha o time responsável por esta caixa de entrada",
-        "PLACEHOLDER": "Selecione um time",
-        "NONE": "Nenhum time",
+        "LABEL": "Projeto responsável",
+        "SUB_TEXT": "Escolha o projeto responsável por esta caixa de entrada",
+        "PLACEHOLDER": "Selecione um projeto",
+        "NONE": "Nenhum projeto",
         "CHANGE_CONFIRM": {
-          "TITLE": "Mover caixa de entrada para o time {teamName}?",
-          "TITLE_NO_TEAM": "Remover o time desta caixa de entrada?",
-          "MIGRATION": "Todas as conversas desta caixa de entrada serão migradas para o novo time. Dependendo do volume, isso pode levar alguns minutos.",
+          "TITLE": "Mover caixa de entrada para o projeto {teamName}?",
+          "TITLE_NO_TEAM": "Remover o projeto desta caixa de entrada?",
+          "MIGRATION": "Todas as conversas desta caixa de entrada serão migradas para o novo projeto. Dependendo do volume, isso pode levar alguns minutos.",
           "MIGRATION_NO_TEAM": "Todas as conversas desta caixa de entrada ficarão apenas com administradores. Dependendo do volume, isso pode levar alguns minutos.",
-          "LABELS": "As etiquetas do time anterior serão removidas dessas conversas.",
-          "ACCESS": "Os membros do time anterior perderão o acesso a essas conversas.",
+          "LABELS": "As etiquetas do projeto anterior serão removidas dessas conversas.",
+          "ACCESS": "Os membros do projeto anterior perderão o acesso a essas conversas.",
           "CONFIRM": "Confirmar troca"
         }
       },
