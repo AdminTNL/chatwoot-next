@@ -319,6 +319,11 @@ Rails.application.routes.draw do
               end
             end
             resources :roles, only: [:index]
+            resources :people, only: [:index] do
+              collection do
+                get :filters
+              end
+            end
             resources :evaluations, only: [:index, :create]
             resources :interactions, only: [:index, :create, :update]
             resources :participations, only: [:create, :update] do
@@ -333,6 +338,9 @@ Rails.application.routes.draw do
                 post :revoke
               end
             end
+            get 'quality', to: 'quality#index'
+            post 'quality/dismissals', to: 'quality#dismiss'
+            post 'quality/merges', to: 'quality#merge'
           end
 
           resources :teams do
