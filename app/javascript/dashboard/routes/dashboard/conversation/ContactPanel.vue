@@ -18,6 +18,7 @@ import ContactNotes from './contact/ContactNotes.vue';
 import ConversationInfo from './ConversationInfo.vue';
 import CustomAttributes from './customAttributes/CustomAttributes.vue';
 import SharedFiles from './SharedFiles.vue';
+import RedeConversationPanel from 'dashboard/routes/dashboard/rede/components/conversation/RedeConversationPanel.vue';
 import Draggable from 'vuedraggable';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from 'dashboard/components/widgets/conversation/ShopifyOrdersList.vue';
@@ -37,6 +38,7 @@ const props = defineProps({
 });
 
 const {
+  uiSettings,
   updateUISettings,
   isContactSidebarItemOpen,
   conversationSidebarItemsOrder,
@@ -88,6 +90,12 @@ const conversationAdditionalAttributes = computed(
 );
 
 const channelType = computed(() => currentChat.value.meta?.channel);
+
+// O CRM abre por padrão: só fecha quando o usuário o fechou.
+const isRedeCrmOpen = computed(
+  () => uiSettings.value.is_rede_crm_open !== false
+);
+const redeTeamId = computed(() => currentChat.value.meta?.team?.id ?? null);
 
 const contactGetter = useMapGetter('contacts/getContact');
 const contactId = computed(() => currentChat.value.meta?.sender?.id);
@@ -150,8 +158,22 @@ onMounted(() => {
         @end="onDragEnd"
       >
         <template #item="{ element }">
+          <div v-if="element.name === 'rede_crm'">
+            <AccordionItem
+              :title="$t('REDE.CONVERSATION.TITLE')"
+              :is-open="isRedeCrmOpen"
+              compact
+              @toggle="updateUISettings({ is_rede_crm_open: !isRedeCrmOpen })"
+            >
+              <RedeConversationPanel
+                :conversation-id="conversationId"
+                :contact-id="contactId"
+                :team-id="redeTeamId"
+              />
+            </AccordionItem>
+          </div>
           <div
-            v-if="element.name === 'conversation_actions'"
+            v-else-if="element.name === 'conversation_actions'"
             class="conversation--actions"
           >
             <AccordionItem

@@ -80,6 +80,25 @@ describe('useUISettings', () => {
     );
   });
 
+  it('puts rede_crm first in the default conversation sidebar order', () => {
+    expect(DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER[0]).toEqual({
+      name: 'rede_crm',
+    });
+  });
+
+  it('appends rede_crm to old saved orders', () => {
+    const original = getUISettingsMock.value.conversation_sidebar_items_order;
+    getUISettingsMock.value.conversation_sidebar_items_order = [
+      { name: 'macros' },
+      { name: 'conversation_actions' },
+    ];
+    const { conversationSidebarItemsOrder } = useUISettings();
+    const names = conversationSidebarItemsOrder.value.map(item => item.name);
+    expect(names.slice(0, 2)).toEqual(['macros', 'conversation_actions']);
+    expect(names.filter(name => name === 'rede_crm')).toHaveLength(1);
+    getUISettingsMock.value.conversation_sidebar_items_order = original;
+  });
+
   it('returns correct contact sidebar items order', () => {
     const { contactSidebarItemsOrder } = useUISettings();
     expect(contactSidebarItemsOrder.value).toEqual(

@@ -379,6 +379,15 @@
         "CANCEL": "Cancel"
       }
     },
+    "CONVERSATION": {
+      "TITLE": "CRM",
+      "NO_PROJECT": "This inbox does not belong to a project.",
+      "OUTSIDE": "Outside project {name}",
+      "ADD_TO_PROJECT": "Add to project",
+      "LOAD_ERROR": "Could not load the CRM",
+      "RETRY": "Try again",
+      "OPEN_PROFILE": "Open profile"
+    },
     "CRM": {
       "COMING_SOON": "The content of this page is coming soon.",
       "OVERVIEW": {

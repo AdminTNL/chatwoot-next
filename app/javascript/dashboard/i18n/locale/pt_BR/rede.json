@@ -379,6 +379,15 @@
         "CANCEL": "Cancelar"
       }
     },
+    "CONVERSATION": {
+      "TITLE": "CRM",
+      "NO_PROJECT": "Esta caixa não pertence a um projeto.",
+      "OUTSIDE": "Fora do projeto {name}",
+      "ADD_TO_PROJECT": "Adicionar ao projeto",
+      "LOAD_ERROR": "Não foi possível carregar o CRM",
+      "RETRY": "Tentar de novo",
+      "OPEN_PROFILE": "Abrir ficha"
+    },
     "CRM": {
       "COMING_SOON": "O conteúdo desta tela chega em breve.",
       "OVERVIEW": {

@@ -56,7 +56,7 @@ class Rede::People::Profile
   end
 
   def project_hash(project, has_fronts)
-    { id: project.id, slug: project.slug, name: project.name, color: project.color, status: project.status, has_fronts: has_fronts }
+    { id: project.id, slug: project.slug, name: project.name, color: project.color, status: project.status, has_fronts: has_fronts, team_id: project.team_id }
   end
 
   # Atuação sem frente em projeto com frentes ("frente a definir") não tem temperatura.

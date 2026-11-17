@@ -105,7 +105,7 @@ RSpec.describe 'Rede People API', type: :request do
       expect(body['contact']).to include('id' => ana.id, 'name' => 'Ana', 'phone_number' => '+5511988998899', 'city' => 'Recife')
       expect(body['participations'].map { |item| item['project']['id'] }).to contain_exactly(pe.id, pa.id)
       pe_item = body['participations'].find { |item| item['project']['id'] == pe.id }
-      expect(pe_item['project']).to include('slug' => pe.slug, 'has_fronts' => true)
+      expect(pe_item['project']).to include('slug' => pe.slug, 'has_fronts' => true, 'team_id' => pe.team_id)
       expect(pe_item['assignments'].size).to eq(2)
       expect(pe_item['assignments'].find { |item| item['front']['id'] == pe_campo.id }['temperature']).to eq('quente')
       expect(pe_item).to include('front_pending' => false, 'referred_by' => { 'contact' => nil, 'text' => nil })
