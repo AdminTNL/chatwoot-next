@@ -97,6 +97,44 @@
         "SUCCESS": "Token revoked.",
         "ERROR": "Couldn't revoke the token. Try again."
       }
+    },
+    "SIDEBAR": {
+      "CRM": "CRM",
+      "OVERVIEW": "Overview",
+      "PEOPLE": "People",
+      "QUALITY": "Data quality"
+    },
+    "TEMPERATURE": {
+      "VAPOR": "Steaming",
+      "QUENTE": "Hot",
+      "MORNO": "Warm",
+      "FRIO": "Cold",
+      "NONE": "No temperature"
+    },
+    "CRM": {
+      "COMING_SOON": "The content of this page is coming soon.",
+      "OVERVIEW": {
+        "TITLE": "CRM overview",
+        "DESCRIPTION": "Numbers of the people in your projects."
+      },
+      "PEOPLE": {
+        "TITLE": "People",
+        "DESCRIPTION": "People taking part in your projects."
+      },
+      "PERSON": {
+        "TITLE": "Person",
+        "DESCRIPTION": "Profile and history of the person."
+      },
+      "QUALITY": {
+        "TITLE": "Data quality",
+        "DESCRIPTION": "Duplicates and incomplete records to fix."
+      },
+      "NO_PROJECTS": {
+        "TITLE": "No projects yet",
+        "DESCRIPTION": "The CRM shows people by project. Create a project to get started.",
+        "CREATE": "Create project",
+        "ASK_ADMIN": "Ask an administrator to create a project."
+      }
     }
   }
 }

@@ -97,6 +97,44 @@
         "SUCCESS": "Token revogado.",
         "ERROR": "Não foi possível revogar o token. Tente novamente."
       }
+    },
+    "SIDEBAR": {
+      "CRM": "CRM",
+      "OVERVIEW": "Visão geral",
+      "PEOPLE": "Pessoas",
+      "QUALITY": "Qualidade dos dados"
+    },
+    "TEMPERATURE": {
+      "VAPOR": "Vapor",
+      "QUENTE": "Quente",
+      "MORNO": "Morno",
+      "FRIO": "Frio",
+      "NONE": "Sem temperatura"
+    },
+    "CRM": {
+      "COMING_SOON": "O conteúdo desta tela chega em breve.",
+      "OVERVIEW": {
+        "TITLE": "Visão geral do CRM",
+        "DESCRIPTION": "Os números das pessoas dos seus projetos."
+      },
+      "PEOPLE": {
+        "TITLE": "Pessoas",
+        "DESCRIPTION": "Pessoas que participam dos seus projetos."
+      },
+      "PERSON": {
+        "TITLE": "Pessoa",
+        "DESCRIPTION": "Ficha e histórico da pessoa."
+      },
+      "QUALITY": {
+        "TITLE": "Qualidade dos dados",
+        "DESCRIPTION": "Duplicados e cadastros incompletos para corrigir."
+      },
+      "NO_PROJECTS": {
+        "TITLE": "Nenhum projeto ainda",
+        "DESCRIPTION": "O CRM mostra as pessoas por projeto. Crie um projeto para começar.",
+        "CREATE": "Criar projeto",
+        "ASK_ADMIN": "Peça a um administrador para criar um projeto."
+      }
     }
   }
 }
