@@ -1,7 +1,7 @@
 # Lista de pessoas do CRM: uma linha por participação ativa x atuação ativa (participação sem atuação ativa gera uma linha só).
 # O escopo do usuário (Rede::AccessScope) é aplicado antes dos filtros e da contagem.
 # Tudo (linhas, temperatura, filtros, ordenação) sai de uma consulta composta; só avatares e a contagem usam consultas extras, em lote.
-class Rede::People::Query
+class Rede::People::Query # rubocop:disable Metrics/ClassLength
   DEFAULT_PER_PAGE = 25
   MAX_PER_PAGE = 100
   NONE = 'none'.freeze
@@ -65,6 +65,11 @@ class Rede::People::Query
     Result.new(build_rows(rows), total, page, per_page)
   end
 
+  # Relação já com escopo e filtros, sem paginação nem seleção: base das contagens da visão geral (Rede::Overview::Summary).
+  def filtered_relation
+    filtered(scoped_relation)
+  end
+
   def page
     @page ||= [[@params[:page].to_i, 1].max, 100_000].min
   end
@@ -93,13 +98,12 @@ class Rede::People::Query
     access_scope.restrict_participations(relation)
   end
 
-  def include_closed?
-    ActiveModel::Type::Boolean.new.cast(@params[:include_closed]) || false
-  end
+  def include_closed? = flag?(:include_closed)
 
   def filtered(relation)
     relation = filter_projects(relation)
     relation = filter_fronts(relation)
+    relation = filter_front_state(relation)
     relation = filter_temperatures(relation)
     relation = filter_responsibles(relation)
     relation = filter_city(relation)
@@ -120,6 +124,14 @@ class Rede::People::Query
   def filter_fronts(relation)
     with_none(relation, list(:front_ids), 'ra.front_id')
   end
+
+  # Cartões da visão geral: `has_front` só linhas com frente; `front_pending` só linhas "frente a definir".
+  def filter_front_state(relation)
+    relation = relation.where.not(ra: { front_id: nil }) if flag?(:has_front)
+    flag?(:front_pending) ? relation.where(FRONT_PENDING_SQL) : relation
+  end
+
+  def flag?(key) = ActiveModel::Type::Boolean.new.cast(@params[key]) || false
 
   def filter_responsibles(relation)
     with_none(relation, list(:responsible_ids), 'rede_participations.responsible_user_id')

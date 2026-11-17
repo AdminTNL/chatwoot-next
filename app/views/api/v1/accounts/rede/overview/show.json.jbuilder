@@ -1,0 +1,7 @@
+json.people_count @overview[:people_count]
+json.front_participations_count @overview[:front_participations_count]
+json.pending_front_count @overview[:pending_front_count]
+json.no_contact_7d_count @overview[:no_contact_7d_count]
+json.by_temperature @overview[:by_temperature]
+json.filters @overview[:filters]
+json.recent_changes @overview[:recent_changes]

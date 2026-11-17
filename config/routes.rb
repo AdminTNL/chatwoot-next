@@ -319,9 +319,12 @@ Rails.application.routes.draw do
               end
             end
             resources :roles, only: [:index]
-            resources :people, only: [:index] do
+            resources :people, only: [:index, :show] do
               collection do
                 get :filters
+              end
+              member do
+                get :timeline
               end
             end
             resources :evaluations, only: [:index, :create]
@@ -338,6 +341,7 @@ Rails.application.routes.draw do
                 post :revoke
               end
             end
+            resource :overview, only: [:show], controller: 'overview'
             get 'quality', to: 'quality#index'
             post 'quality/dismissals', to: 'quality#dismiss'
             post 'quality/merges', to: 'quality#merge'

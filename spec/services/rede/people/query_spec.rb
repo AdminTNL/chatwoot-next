@@ -306,5 +306,15 @@ RSpec.describe Rede::People::Query do
       expect(with_fifty).to eq(with_ten)
     end
   end
+
+  describe 'front state filters (overview cards)' do
+    it 'has_front keeps only rows with a front' do
+      expect(keys(run(has_front: true))).to contain_exactly("#{ana_pe.id}-#{ana_campo.id}", "#{ana_pe.id}-#{ana_digital.id}")
+    end
+
+    it 'front_pending keeps only rows waiting for a front, not rows of projects without fronts' do
+      expect(keys(run(front_pending: true))).to eq(["#{bruna_pe.id}-none"])
+    end
+  end
 end
 # rubocop:enable RSpec/MultipleMemoizedHelpers
