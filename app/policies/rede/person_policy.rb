@@ -7,4 +7,12 @@ class Rede::PersonPolicy < ApplicationPolicy
   def filters?
     true
   end
+
+  def show?
+    true
+  end
+
+  def timeline?
+    true
+  end
 end

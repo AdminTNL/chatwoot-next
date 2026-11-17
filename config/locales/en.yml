@@ -99,6 +99,10 @@ en:
       quality:
         same_contact: The two contacts must be different
         not_participating: Both people must participate in the project
+      timeline:
+        invalid_date: The date is invalid; use YYYY-MM-DD
+        invalid_range: The start date cannot be after the end date
+        invalid_cursor: The cursor is invalid
     validations:
       presence: must not be blank
     webhook:
