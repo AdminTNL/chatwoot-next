@@ -37,7 +37,13 @@ const toPositiveInt = value => {
   return number > 0 ? number : null;
 };
 
-const toIdList = value => splitList(value).map(toPositiveInt).filter(Boolean);
+// "Sem frente" e "Sem responsável" viajam como `none` junto dos ids.
+const NONE_KEYS = ['front_ids', 'responsible_ids'];
+
+const toIdList = (value, allowNone = false) =>
+  splitList(value)
+    .map(item => (allowNone && item === 'none' ? 'none' : toPositiveInt(item)))
+    .filter(Boolean);
 
 export const paramsToQuery = (params = {}) => {
   const query = {};
@@ -74,7 +80,7 @@ export const queryToParams = (query = {}) => {
   const params = {};
 
   ID_LIST_KEYS.forEach(key => {
-    const ids = toIdList(query[key] ?? []);
+    const ids = toIdList(query[key] ?? [], NONE_KEYS.includes(key));
     if (ids.length) params[key] = ids;
   });
 

@@ -78,6 +78,16 @@ describe('peopleQuery', () => {
     });
   });
 
+  it('keeps the none option of the front and responsible filters', () => {
+    const withNone = { front_ids: [4, 'none'], responsible_ids: ['none'] };
+    expect(paramsToQuery(withNone)).toEqual({
+      front_ids: '4,none',
+      responsible_ids: 'none',
+    });
+    expect(queryToParams(paramsToQuery(withNone))).toEqual(withNone);
+    expect(queryToParams({ project_ids: 'none' })).toEqual({});
+  });
+
   it('handles an empty query', () => {
     expect(queryToParams()).toEqual({});
     expect(queryToParams({})).toEqual({});
