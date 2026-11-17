@@ -265,6 +265,120 @@
         "PHONE_TAKEN_HINT": "If both people are in this project, merge them in the duplicates list."
       }
     },
+    "PERSON": {
+      "BACK": "Back to people",
+      "RETRY": "Try again",
+      "NONE": "None",
+      "GENERIC_ERROR": "Could not complete the action. Try again.",
+      "NOT_FOUND": {
+        "TITLE": "Person not found or you do not have access",
+        "BACK": "Back to the list"
+      },
+      "HEADER": {
+        "VIEW_CONTACT": "View contact",
+        "REGISTER_CALL": "Log call",
+        "ADD_NOTE": "Add note"
+      },
+      "PARTICIPATION": {
+        "CLOSED": "Closed",
+        "LAST_CONTACT": "Last contact",
+        "RESPONSIBLE": "Responsible",
+        "RESPONSIBLE_NONE": "No responsible",
+        "OUT_OF_PROJECT": "{name} (outside the project)",
+        "REFERRED_BY": "Referred by",
+        "REFERRED_PLACEHOLDER": "Search a contact or type a name",
+        "NEXT_STEP": "Next step"
+      },
+      "ASSIGNMENT": {
+        "NO_FRONT": "No front",
+        "ROLE": "Role",
+        "ROLE_NONE": "No role",
+        "SUPERIOR": "Superior",
+        "SUPERIOR_PLACEHOLDER": "Search a contact",
+        "CHANGE": "Change",
+        "CLOSE": "Close assignment",
+        "FRONT_PENDING": "Front to be defined",
+        "DEFINE_FRONT": "Define front",
+        "FRONT_PLACEHOLDER": "Choose a front",
+        "ADD": "Add assignment",
+        "ADD_CONFIRM": "Add",
+        "ERRORS": {
+          "FRONT_REQUIRED": "Choose a front."
+        }
+      },
+      "TEMPERATURE": {
+        "LABEL": "Temperature",
+        "NOTE_PLACEHOLDER": "Note (optional)",
+        "SAVE": "Save temperature"
+      },
+      "CONTACT_SEARCH": {
+        "NO_RESULTS": "No contacts found.",
+        "USE_TEXT": "Use \"{text}\" as typed"
+      },
+      "CALL": {
+        "TITLE": "Log call",
+        "CONFIRM": "Log call",
+        "PROJECT": "Project",
+        "PROJECT_PLACEHOLDER": "Choose a project",
+        "FRONT": "Front",
+        "FRONT_NONE": "No front",
+        "OCCURRED_AT": "Date and time",
+        "ANSWERED": "Answered?",
+        "ANSWERED_PLACEHOLDER": "Choose",
+        "YES": "Yes",
+        "NO": "No",
+        "SUMMARY": "Summary",
+        "AUTHOR": "Called by",
+        "ERRORS": {
+          "PROJECT_REQUIRED": "Choose a project.",
+          "ANSWERED_REQUIRED": "Say whether the call was answered.",
+          "DATE_REQUIRED": "Enter the date and time.",
+          "FUTURE_DATE": "The date cannot be in the future."
+        }
+      },
+      "NOTE": {
+        "TITLE": "Add note",
+        "CONFIRM": "Add note",
+        "SUMMARY": "Note",
+        "ERRORS": {
+          "SUMMARY_REQUIRED": "Write the note."
+        }
+      },
+      "TIMELINE": {
+        "TITLE": "History",
+        "EMPTY": "No events for these filters.",
+        "LOAD_MORE": "Load more"
+      },
+      "FILTERS": {
+        "PROJECT": "Project",
+        "ALL_PROJECTS": "All projects",
+        "FROM": "From",
+        "TO": "To",
+        "LAST_DAYS": "{days} days",
+        "INVALID_RANGE": "The start date must be before the end date.",
+        "CLEAR": "Clear filters"
+      },
+      "TYPES": {
+        "CONVERSATION": "Conversation",
+        "CALL": "Call",
+        "NOTE": "Note",
+        "TEMPERATURE_CHANGE": "Temperature",
+        "ASSIGNMENT_CHANGE": "Assignment"
+      },
+      "EVENTS": {
+        "CONVERSATION": "Conversation #{id} in {inbox}",
+        "CALL_ANSWERED": "Answered call",
+        "CALL_MISSED": "Unanswered call",
+        "NOTE": "Note",
+        "TEMPERATURE_CHANGED": "Temperature from {from} to {to}",
+        "TEMPERATURE_SET": "Temperature set to {to}",
+        "ASSIGNMENT_STARTED": "Assignment started",
+        "ASSIGNMENT_CLOSED": "Assignment closed",
+        "EDIT": "Edit",
+        "SAVE": "Save",
+        "CANCEL": "Cancel"
+      }
+    },
     "CRM": {
       "COMING_SOON": "The content of this page is coming soon.",
       "OVERVIEW": {

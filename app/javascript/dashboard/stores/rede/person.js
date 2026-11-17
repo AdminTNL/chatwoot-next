@@ -15,6 +15,18 @@ const ATTRIBUTE_PATHS = [
 const camelize = data =>
   camelcaseKeys(data || {}, { deep: true, stopPaths: ATTRIBUTE_PATHS });
 
+// Chave estável de um evento do histórico, para não duplicar entre páginas.
+// Atuação iniciada e encerrada compartilham o id da atuação, por isso entra a ação.
+export const timelineEventKey = event => {
+  const { data = {} } = event;
+  const id =
+    data.conversationId ??
+    data.interactionId ??
+    data.evaluationId ??
+    data.assignmentId;
+  return [event.type, data.action, id, event.occurredAt].join(':');
+};
+
 const compact = data =>
   Object.fromEntries(
     Object.entries(data).filter(([, value]) => value !== undefined)
@@ -29,6 +41,7 @@ export const useRedePersonStore = createStore({
     timeline: [],
     timelineMeta: {},
     timelineParams: {},
+    notFound: false,
   }),
 
   actions: () => ({
@@ -37,8 +50,15 @@ export const useRedePersonStore = createStore({
       try {
         const { data } = await PeopleAPI.show(id);
         this.person = camelize(data);
+        this.notFound = false;
         return this.person;
       } catch (error) {
+        // 404: pessoa inexistente ou fora do escopo. A tela mostra o aviso.
+        if (error?.response?.status === 404) {
+          this.person = {};
+          this.notFound = true;
+          return null;
+        }
         return throwErrorMessage(error);
       } finally {
         this.setUIFlag({ fetchingItem: false });
@@ -79,7 +99,11 @@ export const useRedePersonStore = createStore({
           ...params,
           before,
         });
-        this.timeline = [...this.timeline, ...events];
+        const seen = new Set(this.timeline.map(timelineEventKey));
+        const fresh = events.filter(
+          event => !seen.has(timelineEventKey(event))
+        );
+        this.timeline = [...this.timeline, ...fresh];
         this.timelineMeta = meta;
         return events;
       } catch (error) {
@@ -136,6 +160,11 @@ export const useRedePersonStore = createStore({
           occurred_at: occurredAt,
         })
       );
+    },
+
+    updateInteraction({ contactId, id, summary, answered }) {
+      const data = compact({ summary, answered });
+      return this.runAction(contactId, () => InteractionsAPI.update(id, data));
     },
 
     logCall(attrs) {
@@ -222,6 +251,7 @@ export const useRedePersonStore = createStore({
       this.timeline = [];
       this.timelineMeta = {};
       this.timelineParams = {};
+      this.notFound = false;
       this.uiFlags = {
         ...this.uiFlags,
         fetchingItem: false,

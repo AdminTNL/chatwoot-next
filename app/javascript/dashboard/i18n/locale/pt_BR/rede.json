@@ -265,6 +265,120 @@
         "PHONE_TAKEN_HINT": "Se as duas estiverem neste projeto, junte os cadastros na lista de duplicados."
       }
     },
+    "PERSON": {
+      "BACK": "Voltar para pessoas",
+      "RETRY": "Tentar novamente",
+      "NONE": "Nenhum",
+      "GENERIC_ERROR": "Não foi possível concluir a ação. Tente novamente.",
+      "NOT_FOUND": {
+        "TITLE": "Pessoa não encontrada ou sem acesso",
+        "BACK": "Voltar para a lista"
+      },
+      "HEADER": {
+        "VIEW_CONTACT": "Ver contato",
+        "REGISTER_CALL": "Registrar ligação",
+        "ADD_NOTE": "Adicionar nota"
+      },
+      "PARTICIPATION": {
+        "CLOSED": "Encerrada",
+        "LAST_CONTACT": "Último contato",
+        "RESPONSIBLE": "Responsável",
+        "RESPONSIBLE_NONE": "Sem responsável",
+        "OUT_OF_PROJECT": "{name} (fora do projeto)",
+        "REFERRED_BY": "Indicado por",
+        "REFERRED_PLACEHOLDER": "Busque um contato ou digite um nome",
+        "NEXT_STEP": "Próximo passo"
+      },
+      "ASSIGNMENT": {
+        "NO_FRONT": "Sem frente",
+        "ROLE": "Papel",
+        "ROLE_NONE": "Sem papel",
+        "SUPERIOR": "Superior",
+        "SUPERIOR_PLACEHOLDER": "Busque um contato",
+        "CHANGE": "Alterar",
+        "CLOSE": "Encerrar atuação",
+        "FRONT_PENDING": "Frente a definir",
+        "DEFINE_FRONT": "Definir frente",
+        "FRONT_PLACEHOLDER": "Escolha uma frente",
+        "ADD": "Adicionar atuação",
+        "ADD_CONFIRM": "Adicionar",
+        "ERRORS": {
+          "FRONT_REQUIRED": "Escolha uma frente."
+        }
+      },
+      "TEMPERATURE": {
+        "LABEL": "Temperatura",
+        "NOTE_PLACEHOLDER": "Nota (opcional)",
+        "SAVE": "Salvar temperatura"
+      },
+      "CONTACT_SEARCH": {
+        "NO_RESULTS": "Nenhum contato encontrado.",
+        "USE_TEXT": "Usar \"{text}\" como digitado"
+      },
+      "CALL": {
+        "TITLE": "Registrar ligação",
+        "CONFIRM": "Registrar ligação",
+        "PROJECT": "Projeto",
+        "PROJECT_PLACEHOLDER": "Escolha um projeto",
+        "FRONT": "Frente",
+        "FRONT_NONE": "Sem frente",
+        "OCCURRED_AT": "Data e hora",
+        "ANSWERED": "Atendeu?",
+        "ANSWERED_PLACEHOLDER": "Escolha",
+        "YES": "Sim",
+        "NO": "Não",
+        "SUMMARY": "Resumo",
+        "AUTHOR": "Quem ligou",
+        "ERRORS": {
+          "PROJECT_REQUIRED": "Escolha um projeto.",
+          "ANSWERED_REQUIRED": "Informe se a ligação foi atendida.",
+          "DATE_REQUIRED": "Informe a data e a hora.",
+          "FUTURE_DATE": "A data não pode estar no futuro."
+        }
+      },
+      "NOTE": {
+        "TITLE": "Adicionar nota",
+        "CONFIRM": "Adicionar nota",
+        "SUMMARY": "Nota",
+        "ERRORS": {
+          "SUMMARY_REQUIRED": "Escreva a nota."
+        }
+      },
+      "TIMELINE": {
+        "TITLE": "Histórico",
+        "EMPTY": "Nenhum evento para esses filtros.",
+        "LOAD_MORE": "Carregar mais"
+      },
+      "FILTERS": {
+        "PROJECT": "Projeto",
+        "ALL_PROJECTS": "Todos os projetos",
+        "FROM": "De",
+        "TO": "Até",
+        "LAST_DAYS": "{days} dias",
+        "INVALID_RANGE": "A data inicial deve ser anterior à final.",
+        "CLEAR": "Limpar filtros"
+      },
+      "TYPES": {
+        "CONVERSATION": "Conversa",
+        "CALL": "Ligação",
+        "NOTE": "Nota",
+        "TEMPERATURE_CHANGE": "Temperatura",
+        "ASSIGNMENT_CHANGE": "Atuação"
+      },
+      "EVENTS": {
+        "CONVERSATION": "Conversa #{id} em {inbox}",
+        "CALL_ANSWERED": "Ligação atendida",
+        "CALL_MISSED": "Ligação não atendida",
+        "NOTE": "Nota",
+        "TEMPERATURE_CHANGED": "Temperatura de {from} para {to}",
+        "TEMPERATURE_SET": "Temperatura definida como {to}",
+        "ASSIGNMENT_STARTED": "Atuação iniciada",
+        "ASSIGNMENT_CLOSED": "Atuação encerrada",
+        "EDIT": "Editar",
+        "SAVE": "Salvar",
+        "CANCEL": "Cancelar"
+      }
+    },
     "CRM": {
       "COMING_SOON": "O conteúdo desta tela chega em breve.",
       "OVERVIEW": {

@@ -13,7 +13,7 @@ vi.mock('dashboard/api/rede/evaluations', () => ({
   default: { create: vi.fn() },
 }));
 vi.mock('dashboard/api/rede/interactions', () => ({
-  default: { create: vi.fn() },
+  default: { create: vi.fn(), update: vi.fn() },
 }));
 vi.mock('dashboard/api/rede/assignments', () => ({
   default: { create: vi.fn(), update: vi.fn(), close: vi.fn() },
@@ -37,9 +37,15 @@ const apiProfile = {
   participations: [{ id: 7, project_id: 2, next_step: 'ligar' }],
 };
 
-const apiTimeline = (cursor = null) => ({
+const apiTimeline = (cursor = null, interactionId = 1) => ({
   data: {
-    payload: [{ type: 'note', occurred_at: '2026-11-01T10:00:00Z', data: {} }],
+    payload: [
+      {
+        type: 'note',
+        occurred_at: '2026-11-01T10:00:00Z',
+        data: { interaction_id: interactionId },
+      },
+    ],
     meta: { limit: 20, next_cursor: cursor },
   },
 });
@@ -86,7 +92,7 @@ describe('rede person store', () => {
     const store = useRedePersonStore();
     PeopleAPI.timeline.mockResolvedValueOnce(apiTimeline('abc'));
     await store.getTimeline(1, { project_id: 2 });
-    PeopleAPI.timeline.mockResolvedValueOnce(apiTimeline(null));
+    PeopleAPI.timeline.mockResolvedValueOnce(apiTimeline(null, 2));
     await store.loadMoreTimeline(1, { project_id: 2 });
     expect(PeopleAPI.timeline).toHaveBeenLastCalledWith(1, {
       project_id: 2,
@@ -233,5 +239,83 @@ describe('rede person store', () => {
     store.reset();
     expect(store.person).toEqual({});
     expect(store.timeline).toEqual([]);
+  });
+  it('loadMoreTimeline concatenates without duplicating events', async () => {
+    const event = (id, type = 'call') => ({
+      type,
+      occurred_at: '2026-11-01T10:00:00Z',
+      data: { interaction_id: id },
+    });
+    PeopleAPI.timeline.mockResolvedValueOnce({
+      data: { payload: [event(1), event(2)], meta: { next_cursor: 'c1' } },
+    });
+    PeopleAPI.timeline.mockResolvedValueOnce({
+      data: { payload: [event(2), event(3)], meta: { next_cursor: null } },
+    });
+    const store = useRedePersonStore();
+    await store.getTimeline(1);
+    await store.loadMoreTimeline(1);
+    expect(store.timeline.map(e => e.data.interactionId)).toEqual([1, 2, 3]);
+  });
+
+  it('keeps assignment started and closed of the same assignment', async () => {
+    const event = (type, action) => ({
+      type,
+      occurred_at: '2026-11-01T10:00:00Z',
+      data: { assignment_id: 4, action },
+    });
+    PeopleAPI.timeline.mockResolvedValueOnce({
+      data: {
+        payload: [event('assignment_change', 'closed')],
+        meta: { next_cursor: 'c' },
+      },
+    });
+    PeopleAPI.timeline.mockResolvedValueOnce({
+      data: {
+        payload: [event('assignment_change', 'started')],
+        meta: { next_cursor: null },
+      },
+    });
+    const store = useRedePersonStore();
+    await store.getTimeline(1);
+    await store.loadMoreTimeline(1);
+    expect(store.timeline).toHaveLength(2);
+  });
+
+  it('an action reloads the profile and the first timeline page with the filters', async () => {
+    InteractionsAPI.create.mockResolvedValue({ data: { id: 1 } });
+    const store = useRedePersonStore();
+    await store.getTimeline(1, { types: ['call'] });
+    PeopleAPI.show.mockClear();
+    PeopleAPI.timeline.mockClear();
+    await store.addNote({ projectId: 2, contactId: 1, summary: 'x' });
+    expect(PeopleAPI.show).toHaveBeenCalledWith(1);
+    expect(PeopleAPI.timeline).toHaveBeenCalledWith(1, { types: ['call'] });
+  });
+
+  it('a 404 on show becomes the notFound state without throwing', async () => {
+    PeopleAPI.show.mockRejectedValue({ response: { status: 404 } });
+    const store = useRedePersonStore();
+    await store.show(1);
+    expect(store.notFound).toBe(true);
+    expect(store.person).toEqual({});
+    store.reset();
+    expect(store.notFound).toBe(false);
+  });
+
+  it('updateInteraction patches and refreshes', async () => {
+    InteractionsAPI.update.mockResolvedValue({ data: { id: 9 } });
+    const store = useRedePersonStore();
+    await store.updateInteraction({
+      contactId: 1,
+      id: 9,
+      summary: 'novo',
+      answered: true,
+    });
+    expect(InteractionsAPI.update).toHaveBeenCalledWith(9, {
+      summary: 'novo',
+      answered: true,
+    });
+    expect(PeopleAPI.show).toHaveBeenCalledWith(1);
   });
 });
