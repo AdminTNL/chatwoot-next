@@ -99,6 +99,36 @@ describe('rede quality store', () => {
     expect(store.uiFlags.dismissing).toBe(false);
   });
 
+  it('reloads after dismiss with the fresh list and counts', async () => {
+    QualityAPI.dismiss.mockResolvedValue({ data: { id: 1 } });
+    QualityAPI.get.mockResolvedValue({
+      data: {
+        duplicates: [],
+        incompletes: [],
+        counts: { duplicates: 0, incompletes: 0, resolved_this_month: 5 },
+      },
+    });
+    const store = useRedeQualityStore();
+    await store.dismiss({ projectId: 1, contactAId: 1, contactBId: 2 });
+    expect(store.duplicates).toEqual([]);
+    expect(store.counts.resolvedThisMonth).toBe(5);
+  });
+
+  it('reloads after merge with the fresh list and counts', async () => {
+    QualityAPI.merge.mockResolvedValue({ data: { id: 1 } });
+    QualityAPI.get.mockResolvedValue({
+      data: {
+        duplicates: [],
+        incompletes: [],
+        counts: { duplicates: 0, incompletes: 0, resolved_this_month: 1 },
+      },
+    });
+    const store = useRedeQualityStore();
+    await store.merge({ projectId: 1, baseContactId: 1, mergeeContactId: 2 });
+    expect(store.duplicates).toEqual([]);
+    expect(store.counts.resolvedThisMonth).toBe(1);
+  });
+
   it('reset clears the data', async () => {
     const store = useRedeQualityStore();
     await store.get(1);
