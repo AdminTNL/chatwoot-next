@@ -305,6 +305,48 @@ Rails.application.routes.draw do
           end
           resource :notification_settings, only: [:show, :update]
 
+          namespace :rede do
+            resources :projects, only: [:index, :show, :create, :update] do
+              member do
+                post :close
+                post :reopen
+              end
+              resources :fronts, only: [:index, :create, :update] do
+                member do
+                  post :close
+                  post :reopen
+                end
+              end
+            end
+            resources :roles, only: [:index]
+            resources :people, only: [:index, :show] do
+              collection do
+                get :filters
+              end
+              member do
+                get :timeline
+              end
+            end
+            resources :evaluations, only: [:index, :create]
+            resources :interactions, only: [:index, :create, :update]
+            resources :participations, only: [:create, :update] do
+              resources :assignments, only: [:create, :update] do
+                member do
+                  post :close
+                end
+              end
+            end
+            resources :api_tokens, only: [:index, :create] do
+              member do
+                post :revoke
+              end
+            end
+            resource :overview, only: [:show], controller: 'overview'
+            get 'quality', to: 'quality#index'
+            post 'quality/dismissals', to: 'quality#dismiss'
+            post 'quality/merges', to: 'quality#merge'
+          end
+
           resources :teams do
             resources :team_members, only: [:index, :create] do
               collection do
@@ -515,6 +557,13 @@ Rails.application.routes.draw do
             end
           end
         end
+      end
+    end
+
+    # Leitura externa do CRM (Rede), fora de /api/v1/accounts e autenticada por token próprio.
+    namespace :rede do
+      namespace :v1 do
+        resources :projects, only: :index
       end
     end
   end

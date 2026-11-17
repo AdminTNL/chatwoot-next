@@ -18,8 +18,7 @@ class Api::V1::Accounts::TeamsController < Api::V1::Accounts::BaseController
   end
 
   def destroy
-    @team.destroy!
-    head :ok
+    render json: { error: I18n.t('errors.rede.project.not_deletable') }, status: :unprocessable_entity
   end
 
   private

@@ -1,0 +1,35 @@
+tags:
+  - Rede Projects
+operationId: rede-v1-list-projects
+summary: List the projects of the token account
+description: |
+  Read-only list of the projects (active and closed) of the account that owns the token, ordered by name, each with its fronts.
+  The project `id` is its slug and the front `id` is its `public_id`; both never change. The response carries an `ETag`;
+  send it back in `If-None-Match` to get `304` when nothing changed. The token is created by an account administrator and is shown only once.
+  This is version `v1` of the contract; incompatible changes will use `v2`.
+security:
+  - redeApiToken: []
+responses:
+  '200':
+    description: Success
+    content:
+      application/json:
+        schema:
+          type: array
+          description: 'Array of projects'
+          items:
+            $ref: '#/components/schemas/rede_project'
+  '304':
+    description: Not modified (the If-None-Match header matches the current ETag)
+  '401':
+    description: Missing, invalid or revoked token
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/rede_invalid_token_error'
+  '403':
+    description: The token does not have the projects:read scope
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/rede_forbidden_error'

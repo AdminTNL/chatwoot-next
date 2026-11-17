@@ -2,7 +2,7 @@ name: Build and push Chatwoot image
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     tags: ["v*"]
   workflow_dispatch:
 

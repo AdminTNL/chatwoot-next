@@ -818,3 +818,8 @@
           application/json:
             schema:
               $ref: '#/components/schemas/conversation_messages'
+
+# Rede (CRM): leitura externa, autenticada por token proprio
+/api/rede/v1/projects:
+  get:
+    $ref: ./rede/v1/projects.yml

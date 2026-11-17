@@ -1,35 +1,35 @@
 {
   "TEAMS_SETTINGS": {
-    "NEW_TEAM": "Create new team",
-    "HEADER": "Teams",
-    "LOADING": "Fetching teams",
-    "DESCRIPTION": "Teams allow you to organize agents into groups based on their responsibilities. An agent can belong to multiple teams. When working collaboratively, you can assign conversations to specific teams.",
-    "LEARN_MORE": "Learn more about teams",
-    "COUNT": "{n} team | {n} teams",
-    "SEARCH_PLACEHOLDER": "Search teams...",
-    "NO_RESULTS": "No teams found matching your search",
+    "NEW_TEAM": "Create new project",
+    "HEADER": "Projects",
+    "LOADING": "Fetching projects",
+    "DESCRIPTION": "Projects allow you to organize agents into groups based on their responsibilities. An agent can belong to multiple projects. When working collaboratively, you can assign conversations to specific projects.",
+    "LEARN_MORE": "Learn more about projects",
+    "COUNT": "{n} project | {n} projects",
+    "SEARCH_PLACEHOLDER": "Search projects...",
+    "NO_RESULTS": "No projects found matching your search",
     "LIST": {
-      "404": "There are no teams created on this account.",
-      "EDIT_TEAM": "Edit team",
+      "404": "There are no projects created on this account.",
+      "EDIT_TEAM": "Edit project",
       "NONE": "None"
     },
     "CREATE_FLOW": {
       "CREATE": {
-        "TITLE": "Create a new team",
-        "DESC": "Add a title and description to your new team."
+        "TITLE": "Create a new project",
+        "DESC": "Add a name, a color and a description to your new project."
       },
       "AGENTS": {
-        "BUTTON_TEXT": "Add agents to team",
-        "TITLE": "Add agents to team - {teamName}",
-        "DESC": "Add Agents to your newly created team. This lets you collaborate as a team on conversations, get notified on new events in the same conversation."
+        "BUTTON_TEXT": "Add agents to project",
+        "TITLE": "Add agents to project - {teamName}",
+        "DESC": "Add Agents to your newly created project. This lets you collaborate on conversations and get notified on new events in the same conversation."
       },
       "WIZARD_CREATE": {
         "TITLE": "Create",
-        "BODY": "Create a new team of agents."
+        "BODY": "Create a new project."
       },
       "WIZARD_ADD_AGENTS": {
         "TITLE": "Add Agents",
-        "BODY": "Add agents to the team."
+        "BODY": "Add agents to the project."
       },
       "WIZARD_FINISH": {
         "TITLE": "Finish",
@@ -38,24 +38,24 @@
     },
     "EDIT_FLOW": {
       "CREATE": {
-        "TITLE": "Edit your team details",
-        "DESC": "Edit title and description to your team.",
-        "BUTTON_TEXT": "Update team"
+        "TITLE": "Edit your project details",
+        "DESC": "Edit the name, color and description of your project.",
+        "BUTTON_TEXT": "Update project"
       },
       "AGENTS": {
-        "BUTTON_TEXT": "Update agents in team",
-        "TITLE": "Add agents to team - {teamName}",
-        "DESC": "Add Agents to your newly created team. All the added agents will be notified when a conversation is assigned to this team."
+        "BUTTON_TEXT": "Update agents in project",
+        "TITLE": "Edit agents of project - {teamName}",
+        "DESC": "Change the agents of the project. All the added agents will be notified when a conversation is assigned to this project."
       },
       "EDIT_WIZARD_DETAILS": {
-        "TITLE": "Team details",
+        "TITLE": "Project details",
         "ROUTE": "settings_teams_edit",
-        "BODY": "Change name, description and other details."
+        "BODY": "Change name, color, description and fronts."
       },
       "EDIT_WIZARD_AGENTS": {
         "TITLE": "Edit Agents",
         "ROUTE": "settings_teams_edit_members",
-        "BODY": "Edit agents in your team."
+        "BODY": "Edit agents in your project."
       },
       "EDIT_WIZARD_FINISH": {
         "TITLE": "Finish",
@@ -64,20 +64,20 @@
       }
     },
     "TEAM_FORM": {
-      "ERROR_MESSAGE": "Couldn't save the team details. Try again."
+      "ERROR_MESSAGE": "Couldn't save the project details. Try again."
     },
     "AGENTS": {
       "AGENT": "Agent",
       "EMAIL": "Email",
       "BUTTON_TEXT": "Add agents",
-      "ADD_AGENTS": "Adding Agents to your Team...",
+      "ADD_AGENTS": "Adding Agents to your Project...",
       "SELECT": "select",
       "SELECT_ALL": "select all agents",
       "SELECTED_COUNT": "{selected} out of {total} agents selected."
     },
     "ADD": {
-      "TITLE": "Add agents to team - {teamName}",
-      "DESC": "Add Agents to your newly created team. This lets you collaborate as a team on conversations, get notified on new events in the same conversation.",
+      "TITLE": "Add agents to project - {teamName}",
+      "DESC": "Add Agents to your newly created project. This lets you collaborate on conversations and get notified on new events in the same conversation.",
       "SELECT": "select",
       "SELECT_ALL": "select all agents",
       "SELECTED_COUNT": "{selected} out of {total} agents selected.",
@@ -85,8 +85,8 @@
       "AGENT_VALIDATION_ERROR": "Select at least one agent."
     },
     "FINISH": {
-      "TITLE": "Your team is ready!",
-      "MESSAGE": "You can now collaborate as a team on conversations. Happy supporting ",
+      "TITLE": "Your project is ready!",
+      "MESSAGE": "You can now collaborate on conversations with your project. Happy supporting ",
       "BUTTON_TEXT": "Finish"
     },
     "DELETE": {
@@ -105,17 +105,17 @@
     },
     "SETTINGS": "Settings",
     "FORM": {
-      "UPDATE": "Update team",
-      "CREATE": "Create team",
+      "UPDATE": "Update project",
+      "CREATE": "Create project",
       "NAME": {
-        "LABEL": "Team name",
-        "PLACEHOLDER": "Example: Sales, Customer Support"
+        "LABEL": "Project name",
+        "PLACEHOLDER": "Example: Mobiliza PE, Field survey"
       },
       "DESCRIPTION": {
-        "LABEL": "Team Description",
-        "PLACEHOLDER": "Short description about this team."
+        "LABEL": "Project description",
+        "PLACEHOLDER": "Short description about this project."
       },
-      "SUBMIT_CREATE": "Create team"
+      "SUBMIT_CREATE": "Create project"
     }
   }
 }

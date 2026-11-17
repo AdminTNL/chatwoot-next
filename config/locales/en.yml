@@ -80,6 +80,29 @@ en:
         invalid: is not a valid timezone
       support_email:
         invalid: is not a valid email address
+    rede:
+      project:
+        not_deletable: Projects cannot be deleted; close the project instead
+      participation:
+        already_exists: This person already participates in the project
+      interaction:
+        not_participating: The person does not participate in the project
+        front_other_project: The front must belong to the project
+        future_occurred_at: The date cannot be in the future
+        edit_window_expired: Calls and notes can only be edited within 24 hours of creation
+      evaluation:
+        not_participating: The person does not have an active participation in the project
+        front_must_be_blank: The front must be blank in a project without fronts
+        front_closed: The front is closed
+        front_without_temperature: The front does not accept temperature
+        assignment_required: The person needs an active assignment in the front
+      quality:
+        same_contact: The two contacts must be different
+        not_participating: Both people must participate in the project
+      timeline:
+        invalid_date: The date is invalid; use YYYY-MM-DD
+        invalid_range: The start date cannot be after the end date
+        invalid_cursor: The cursor is invalid
     validations:
       presence: must not be blank
     webhook:

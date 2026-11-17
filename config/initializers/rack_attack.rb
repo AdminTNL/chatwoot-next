@@ -278,6 +278,15 @@ class Rack::Attack
     "#{user_identifier}:#{match_data[:account_id]}" if user_identifier.present?
   end
 
+  ## Leitura externa do CRM (Rede): 60 requisições por minuto por token.
+  # A chave usa o digest do token, nunca o valor puro.
+  throttle('/api/rede/v1/token', limit: ENV.fetch('RATE_LIMIT_REDE_API_TOKEN', '60').to_i, period: 1.minute) do |req|
+    next unless req.path.start_with?('/api/rede/v1/')
+
+    scheme, value = req.get_header('HTTP_AUTHORIZATION').to_s.split(' ', 2)
+    Digest::SHA256.hexdigest(value.strip) if scheme.to_s.casecmp?('bearer') && value.present?
+  end
+
   ## ----------------------------------------------- ##
 end
 

@@ -726,6 +726,32 @@ const menuItems = computed(() => {
       ],
     },
     {
+      name: 'CRM',
+      label: t('REDE.SIDEBAR.CRM'),
+      icon: 'i-lucide-contact-round',
+      children: [
+        {
+          name: 'CRM Overview',
+          label: t('REDE.SIDEBAR.OVERVIEW'),
+          to: accountScopedRoute('rede_overview'),
+          activeOn: ['rede_overview'],
+        },
+        {
+          name: 'CRM People',
+          label: t('REDE.SIDEBAR.PEOPLE'),
+          to: accountScopedRoute('rede_people'),
+          activeOn: ['rede_people', 'rede_person'],
+        },
+        // Visível só para admin: a permissão vem do meta.permissions da rota.
+        {
+          name: 'CRM Quality',
+          label: t('REDE.SIDEBAR.QUALITY'),
+          to: accountScopedRoute('rede_quality'),
+          activeOn: ['rede_quality'],
+        },
+      ],
+    },
+    {
       name: 'Reports',
       label: t('SIDEBAR.REPORTS'),
       icon: 'i-lucide-chart-spline',
@@ -865,6 +891,13 @@ const menuItems = computed(() => {
             'settings_teams_edit_finish',
           ],
           to: accountScopedRoute('settings_teams_list'),
+        },
+        {
+          name: 'Settings Rede Api Tokens',
+          label: t('SIDEBAR.REDE_API_TOKENS'),
+          icon: 'i-lucide-key-round',
+          activeOn: ['settings_rede_api_tokens'],
+          to: accountScopedRoute('settings_rede_api_tokens'),
         },
         // Item "Atribuição de agentes" oculto: auto-atribuição desligada (spec 040).
         {

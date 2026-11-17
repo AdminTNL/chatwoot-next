@@ -1,162 +1,154 @@
-<script>
-import validations from './helpers/validations';
-import FormInput from 'v3/components/Form/Input.vue';
-import { reactive, ref, defineAsyncComponent } from 'vue';
-import { useVuelidate } from '@vuelidate/core';
-import { OnClickOutside } from '@vueuse/components';
+<script setup>
+import { reactive, ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useAlert } from 'dashboard/composables';
+import { copyTextToClipboard } from 'shared/helpers/clipboard';
 
 import NextButton from 'dashboard/components-next/button/Button.vue';
-import EmojiIcon from 'dashboard/components-next/emoji-icon-picker/EmojiIcon.vue';
-import Icon from 'dashboard/components-next/icon/Icon.vue';
+import Input from 'dashboard/components-next/input/Input.vue';
+import {
+  PROJECT_COLOR_PALETTE,
+  normalizeHexColor,
+  validateProjectForm,
+} from './helpers/projectForm';
 
-const EmojiIconPicker = defineAsyncComponent(
-  () =>
-    import('dashboard/components-next/emoji-icon-picker/EmojiIconPicker.vue')
+const props = defineProps({
+  onSubmit: { type: Function, default: () => {} },
+  submitInProgress: { type: Boolean, default: false },
+  formData: { type: Object, default: () => ({}) },
+  submitButtonText: { type: String, default: '' },
+});
+
+const { t } = useI18n();
+
+const state = reactive({
+  name: props.formData.name || '',
+  description: props.formData.description || '',
+  color: props.formData.color || PROJECT_COLOR_PALETTE[0],
+});
+const hexInput = ref(state.color);
+const submitted = ref(false);
+
+const slug = computed(() => props.formData.slug || '');
+const errors = computed(() => validateProjectForm(state));
+
+const nameError = computed(() =>
+  submitted.value && errors.value.name
+    ? t(`REDE.PROJECT_FORM.NAME.${errors.value.name}`)
+    : ''
+);
+const colorError = computed(() =>
+  errors.value.color ? t(`REDE.PROJECT_FORM.COLOR.${errors.value.color}`) : ''
 );
 
-export default {
-  components: {
-    NextButton,
-    FormInput,
-    OnClickOutside,
-    EmojiIcon,
-    Icon,
-    EmojiIconPicker,
-  },
-  props: {
-    onSubmit: {
-      type: Function,
-      default: () => {},
-    },
-    submitInProgress: {
-      type: Boolean,
-      default: false,
-    },
-    formData: {
-      type: Object,
-      default: () => {},
-    },
-    submitButtonText: {
-      type: String,
-      default: '',
-    },
-  },
-  setup(props) {
-    const formData = props.formData || {};
-    const {
-      description = '',
-      name: title = '',
-      icon = '',
-      icon_color: iconColor = '',
-    } = formData;
+const selectColor = color => {
+  state.color = color;
+  hexInput.value = color;
+};
 
-    const state = reactive({
-      description,
-      title,
-      icon,
-      iconColor,
-    });
+const onHexInput = value => {
+  hexInput.value = value;
+  state.color = normalizeHexColor(value);
+};
 
-    const isIconPickerOpen = ref(false);
+const copySlug = async () => {
+  try {
+    await copyTextToClipboard(slug.value);
+    useAlert(t('REDE.COPY.SUCCESS'));
+  } catch {
+    useAlert(t('REDE.COPY.ERROR'));
+  }
+};
 
-    const rules = validations;
-    const v$ = useVuelidate(rules, state);
-    return { state, v$, isIconPickerOpen };
-  },
-  methods: {
-    onSelectIcon({ type, value, color }) {
-      this.state.icon = value;
-      this.state.iconColor = type === 'icon' ? color : '';
-      this.isIconPickerOpen = false;
-    },
-    onColorChange(color) {
-      this.state.iconColor = color;
-    },
-    onRemoveIcon() {
-      this.state.icon = '';
-      this.state.iconColor = '';
-      this.isIconPickerOpen = false;
-    },
-    handleSubmit() {
-      this.v$.$touch();
-      if (this.v$.$invalid) {
-        return;
-      }
-      this.onSubmit({
-        description: this.state.description,
-        name: this.state.title,
-        icon: this.state.icon,
-        icon_color: this.state.iconColor,
-      });
-    },
-  },
+const handleSubmit = () => {
+  submitted.value = true;
+  if (Object.keys(errors.value).length) return;
+  props.onSubmit({
+    name: state.name.trim(),
+    color: state.color,
+    description: state.description,
+  });
 };
 </script>
 
 <template>
   <div class="flex-shrink-0 w-full">
     <form class="mx-0 grid gap-4" @submit.prevent="handleSubmit">
-      <div class="relative">
-        <FormInput
-          v-model="state.title"
-          class="!ps-12"
-          name="title"
-          spacing="compact"
-          :label="$t('TEAMS_SETTINGS.FORM.NAME.LABEL')"
-          :placeholder="$t('TEAMS_SETTINGS.FORM.NAME.PLACEHOLDER')"
-          :has-error="v$.title.$error"
-          :error-message="v$.title.$error ? v$.title.$errors[0].$message : ''"
-          @blur="v$.title.$touch"
+      <Input
+        v-model="state.name"
+        :label="t('TEAMS_SETTINGS.FORM.NAME.LABEL')"
+        :placeholder="t('TEAMS_SETTINGS.FORM.NAME.PLACEHOLDER')"
+        :message="nameError"
+        :message-type="nameError ? 'error' : 'info'"
+      />
+
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ t('REDE.PROJECT_FORM.COLOR.LABEL') }}
+        </span>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            v-for="color in PROJECT_COLOR_PALETTE"
+            :key="color"
+            type="button"
+            class="size-6 rounded-full outline outline-2 outline-offset-2"
+            :class="
+              state.color.toLowerCase() === color.toLowerCase()
+                ? 'outline-n-brand'
+                : 'outline-transparent'
+            "
+            :style="{ backgroundColor: color }"
+            :aria-label="color"
+            @click="selectColor(color)"
+          />
+        </div>
+        <Input
+          :model-value="hexInput"
+          :label="t('REDE.PROJECT_FORM.COLOR.HEX_LABEL')"
+          :placeholder="t('REDE.PROJECT_FORM.COLOR.PLACEHOLDER')"
+          :message="colorError"
+          :message-type="colorError ? 'error' : 'info'"
+          @update:model-value="onHexInput"
         />
-        <OnClickOutside
-          class="absolute top-[1.75rem] start-0"
-          @trigger="isIconPickerOpen = false"
-        >
+      </div>
+
+      <Input
+        v-model="state.description"
+        :label="t('TEAMS_SETTINGS.FORM.DESCRIPTION.LABEL')"
+        :placeholder="t('TEAMS_SETTINGS.FORM.DESCRIPTION.PLACEHOLDER')"
+      />
+
+      <div v-if="slug" class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-n-slate-12">
+          {{ t('REDE.PROJECT_FORM.SLUG.LABEL') }}
+        </span>
+        <div class="flex items-center gap-2">
+          <code
+            class="px-2 py-1 text-sm rounded-md bg-n-alpha-2 text-n-slate-12"
+          >
+            {{ slug }}
+          </code>
           <NextButton
             type="button"
             variant="ghost"
             color="slate"
-            class="text-lg !size-[2.5rem] !p-0 ltr:!rounded-r-none rtl:!rounded-l-none"
-            @click="isIconPickerOpen = !isIconPickerOpen"
-          >
-            <EmojiIcon
-              v-if="state.icon"
-              :value="state.icon"
-              :color="state.iconColor"
-              class="size-5 text-xl !leading-5"
-            />
-            <Icon v-else icon="i-lucide-smile-plus " class="size-4" />
-          </NextButton>
-          <EmojiIconPicker
-            v-if="isIconPickerOpen"
-            class="start-0 top-10"
-            :value="state.icon"
-            :color="state.iconColor"
-            show-remove-button
-            @select="onSelectIcon"
-            @color-change="onColorChange"
-            @remove="onRemoveIcon"
+            size="sm"
+            icon="i-lucide-copy"
+            :label="t('REDE.COPY.BUTTON')"
+            @click="copySlug"
           />
-        </OnClickOutside>
+        </div>
+        <p class="mb-0 text-xs text-n-slate-11">
+          {{ t('REDE.PROJECT_FORM.SLUG.HELP') }}
+        </p>
       </div>
-      <FormInput
-        v-model="state.description"
-        name="description"
-        spacing="compact"
-        :label="$t('TEAMS_SETTINGS.FORM.DESCRIPTION.LABEL')"
-        :placeholder="$t('TEAMS_SETTINGS.FORM.DESCRIPTION.PLACEHOLDER')"
-        :has-error="v$.description.$error"
-        :error-message="
-          v$.description.$error ? v$.description.$errors[0].$message : ''
-        "
-        @blur="v$.description.$touch"
-      />
+
       <div class="flex flex-row justify-end gap-2 py-2 px-0 w-full">
         <div class="w-full">
           <NextButton
             type="submit"
             :label="submitButtonText"
-            :disabled="v$.title.$invalid || submitInProgress"
+            :disabled="submitInProgress"
             :is-loading="submitInProgress"
           />
         </div>

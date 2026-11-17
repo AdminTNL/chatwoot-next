@@ -1,0 +1,6 @@
+json.type resource[:type]
+json.occurred_at resource[:occurred_at]
+json.project resource[:project]
+json.front resource[:front]
+json.author resource[:author]
+json.data resource[:data]

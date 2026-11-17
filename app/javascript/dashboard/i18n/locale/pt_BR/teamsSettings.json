@@ -1,35 +1,35 @@
 {
   "TEAMS_SETTINGS": {
-    "NEW_TEAM": "Criar novo time",
-    "HEADER": "Times",
-    "LOADING": "Buscando times",
-    "DESCRIPTION": "Os times permitem que você organize agentes em grupos com base em suas responsabilidades. Um agente pode pertencer a vários times. Ao trabalhar de forma colaborativa, você pode atribuir conversas a times específicos.",
-    "LEARN_MORE": "Saiba mais sobre times",
-    "COUNT": "{n} time | {n} times",
-    "SEARCH_PLACEHOLDER": "Pesquisar times...",
-    "NO_RESULTS": "Nenhum time encontrado correspondente à sua busca",
+    "NEW_TEAM": "Criar novo projeto",
+    "HEADER": "Projetos",
+    "LOADING": "Buscando projetos",
+    "DESCRIPTION": "Os projetos permitem que você organize agentes em grupos com base em suas responsabilidades. Um agente pode pertencer a vários projetos. Ao trabalhar de forma colaborativa, você pode atribuir conversas a projetos específicos.",
+    "LEARN_MORE": "Saiba mais sobre projetos",
+    "COUNT": "{n} projeto | {n} projetos",
+    "SEARCH_PLACEHOLDER": "Pesquisar projetos...",
+    "NO_RESULTS": "Nenhum projeto encontrado correspondente à sua busca",
     "LIST": {
-      "404": "Não existem agentes associados a esta conta.",
-      "EDIT_TEAM": "Editar time",
+      "404": "Não existem projetos criados nesta conta.",
+      "EDIT_TEAM": "Editar projeto",
       "NONE": "Nenhuma"
     },
     "CREATE_FLOW": {
       "CREATE": {
-        "TITLE": "Criar novo time",
-        "DESC": "Adicione um título e uma descrição a seu novo time."
+        "TITLE": "Criar novo projeto",
+        "DESC": "Adicione um nome, uma cor e uma descrição ao seu novo projeto."
       },
       "AGENTS": {
-        "BUTTON_TEXT": "Adicionar agente a seu time",
-        "TITLE": "Adicionar agentes ao time: {teamName}",
-        "DESC": "Adicione agentes a seu time recém-criado. Isso permite que você colabore como um time em conversas, seja notificado sobre novos eventos na mesma conversa."
+        "BUTTON_TEXT": "Adicionar agentes ao projeto",
+        "TITLE": "Adicionar agentes ao projeto: {teamName}",
+        "DESC": "Adicione agentes ao seu projeto recém-criado. Isso permite que você colabore em conversas e seja notificado sobre novos eventos na mesma conversa."
       },
       "WIZARD_CREATE": {
         "TITLE": "Criar",
-        "BODY": "Criar um novo time de agentes."
+        "BODY": "Criar um novo projeto."
       },
       "WIZARD_ADD_AGENTS": {
         "TITLE": "Adicionar Agentes",
-        "BODY": "Adicionar agentes ao time."
+        "BODY": "Adicionar agentes ao projeto."
       },
       "WIZARD_FINISH": {
         "TITLE": "Finalizar",
@@ -38,24 +38,24 @@
     },
     "EDIT_FLOW": {
       "CREATE": {
-        "TITLE": "Editar detalhes da seu time",
-        "DESC": "Edite o título e a descrição de seu time.",
-        "BUTTON_TEXT": "Atualizar time"
+        "TITLE": "Editar detalhes do projeto",
+        "DESC": "Edite o nome, a cor e a descrição do projeto.",
+        "BUTTON_TEXT": "Atualizar projeto"
       },
       "AGENTS": {
-        "BUTTON_TEXT": "Atualizar agentes no time",
-        "TITLE": "Adicionar agentes ao time: {teamName}",
-        "DESC": "Adicionar agentes ao seu time recém-criado. Todos os agentes adicionados serão notificados quando uma conversa for atribuída a este time."
+        "BUTTON_TEXT": "Atualizar agentes no projeto",
+        "TITLE": "Alterar agentes do projeto: {teamName}",
+        "DESC": "Altere os agentes do projeto. Todos os agentes adicionados serão notificados quando uma conversa for atribuída a este projeto."
       },
       "EDIT_WIZARD_DETAILS": {
-        "TITLE": "Detalhes do time",
+        "TITLE": "Detalhes do projeto",
         "ROUTE": "ajustes_times_editar",
-        "BODY": "Alterar nome, descrição e outros detalhes."
+        "BODY": "Alterar nome, cor, descrição e frentes."
       },
       "EDIT_WIZARD_AGENTS": {
         "TITLE": "Alterar agentes",
         "ROUTE": "ajustes_times_editar_membros",
-        "BODY": "Gerenciar agentes do seu time."
+        "BODY": "Gerenciar agentes do seu projeto."
       },
       "EDIT_WIZARD_FINISH": {
         "TITLE": "Finalizar",
@@ -64,20 +64,20 @@
       }
     },
     "TEAM_FORM": {
-      "ERROR_MESSAGE": "Não foi possível salvar os detalhes do time. Tente novamente."
+      "ERROR_MESSAGE": "Não foi possível salvar os detalhes do projeto. Tente novamente."
     },
     "AGENTS": {
       "AGENT": "Agente",
       "EMAIL": "E-mail",
       "BUTTON_TEXT": "Adicionar agentes",
-      "ADD_AGENTS": "Adicionando agentes à sua caixa de entrada...",
+      "ADD_AGENTS": "Adicionando agentes ao seu projeto...",
       "SELECT": "Selecionar",
       "SELECT_ALL": "Selecionar todos os agentes",
       "SELECTED_COUNT": "{selected} de {total} agentes selecionados."
     },
     "ADD": {
-      "TITLE": "Adicionar agentes ao time: {teamName}",
-      "DESC": "Adicione agentes ao time recém-criado. Isso permite que você colabore como um time em conversas, seja notificado sobre novos eventos na mesma conversa.",
+      "TITLE": "Adicionar agentes ao projeto: {teamName}",
+      "DESC": "Adicione agentes ao projeto recém-criado. Isso permite que você colabore em conversas e seja notificado sobre novos eventos na mesma conversa.",
       "SELECT": "Selecionar",
       "SELECT_ALL": "Selecionar todos os agentes",
       "SELECTED_COUNT": "{selected} de {total} agentes selecionados.",
@@ -85,8 +85,8 @@
       "AGENT_VALIDATION_ERROR": "Selecione pelo menos um agente."
     },
     "FINISH": {
-      "TITLE": "Sua caixa de entrada está pronta!",
-      "MESSAGE": "Agora você pode colaborar como um time em conversas",
+      "TITLE": "Seu projeto está pronto!",
+      "MESSAGE": "Agora você pode colaborar em conversas com o seu projeto",
       "BUTTON_TEXT": "Finalizar"
     },
     "DELETE": {
@@ -105,17 +105,17 @@
     },
     "SETTINGS": "Configurações",
     "FORM": {
-      "UPDATE": "Atualizar time",
-      "CREATE": "Criar novo time",
+      "UPDATE": "Atualizar projeto",
+      "CREATE": "Criar novo projeto",
       "NAME": {
-        "LABEL": "Nome do Time",
-        "PLACEHOLDER": "Exemplo: Vendas, Suporte ao Cliente"
+        "LABEL": "Nome do projeto",
+        "PLACEHOLDER": "Exemplo: Mobiliza PE, Pesquisa de campo"
       },
       "DESCRIPTION": {
-        "LABEL": "Descrição do time",
-        "PLACEHOLDER": "Breve descrição sobre este time."
+        "LABEL": "Descrição do projeto",
+        "PLACEHOLDER": "Breve descrição sobre este projeto."
       },
-      "SUBMIT_CREATE": "Criar novo time"
+      "SUBMIT_CREATE": "Criar novo projeto"
     }
   }
 }

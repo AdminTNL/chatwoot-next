@@ -6,6 +6,49 @@ RSpec.describe Team do
     it { is_expected.to have_many(:conversations) }
     it { is_expected.to have_many(:team_members) }
     it { is_expected.to have_many(:inboxes) }
+    it { is_expected.to have_one(:rede_project).class_name('Rede::Project') }
+  end
+
+  describe 'rede project' do
+    let(:account) { create(:account) }
+
+    it 'creates a project when the team is created' do
+      team = create(:team, account: account, name: 'mobiliza pará')
+
+      expect(team.rede_project).to be_persisted
+      expect(team.rede_project).to have_attributes(name: 'Mobiliza Pará', slug: 'mobiliza-para', status: 'active', account_id: account.id)
+    end
+
+    it 'does not create the team when the project creation fails' do
+      allow(Rede::Projects::Builder).to receive(:for_team).and_raise(ActiveRecord::RecordInvalid.new(Rede::Project.new))
+
+      expect { create(:team, account: account) }.to raise_error(ActiveRecord::RecordInvalid)
+      expect(described_class.count).to eq(0)
+    end
+
+    it 'destroys the project together with the team' do
+      team = create(:team, account: account)
+
+      expect { team.destroy! }.to change(Rede::Project, :count).by(-1)
+    end
+
+    it 'destroys interactions that reference a front of the project' do
+      project = create(:team, account: account).rede_project
+      front = create(:rede_front, account: account, project: project)
+      create(:rede_interaction, account: account, project: project, front: front)
+
+      expect { project.team.destroy! }.to change(Rede::Interaction, :count).by(-1)
+    end
+
+    it 'destroys evaluations that reference a front of the project' do
+      project = create(:team, account: account).rede_project
+      front = create(:rede_front, account: account, project: project)
+      participation = create(:rede_participation, account: account, project: project)
+      create(:rede_assignment, account: account, participation: participation, front: front)
+      create(:rede_evaluation, account: account, project: project, contact: participation.contact, front: front)
+
+      expect { project.team.destroy! }.to change(Rede::Evaluation, :count).by(-1)
+    end
   end
 
   describe '#inboxes' do

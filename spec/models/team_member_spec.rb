@@ -58,6 +58,7 @@ RSpec.describe TeamMember do
 
     it 'does not raise when the team no longer exists' do
       team_member = create(:team_member, team: team, user: user)
+      Rede::Project.where(team_id: team.id).delete_all
       Team.where(id: team.id).delete_all
 
       expect { team_member.destroy! }.not_to raise_error

@@ -1,0 +1,417 @@
+{
+  "REDE": {
+    "COPY": {
+      "BUTTON": "Copy",
+      "SUCCESS": "Copied to the clipboard.",
+      "ERROR": "Couldn't copy. Select the text and copy it manually."
+    },
+    "STATUS": {
+      "CLOSED": "Closed"
+    },
+    "ACTIONS": {
+      "CLOSE": "Close",
+      "REOPEN": "Reopen"
+    },
+    "PROJECT_FORM": {
+      "NAME": {
+        "REQUIRED": "Enter the project name."
+      },
+      "COLOR": {
+        "LABEL": "Color",
+        "HEX_LABEL": "Hex color",
+        "PLACEHOLDER": "#1F93FF",
+        "INVALID_HEX": "Use a hexadecimal color in the #RRGGBB format."
+      },
+      "SLUG": {
+        "LABEL": "Identifier",
+        "HELP": "Identifier used by external tools. It never changes."
+      }
+    },
+    "PROJECTS": {
+      "LOAD_ERROR": "Couldn't load the projects. Try again.",
+      "SHOW_CLOSED": "Show closed",
+      "MEMBERS_COUNT": "{n} member | {n} members",
+      "INBOXES_COUNT": "{n} inbox | {n} inboxes",
+      "CLOSE": {
+        "TITLE": "Close the project {name}?",
+        "MESSAGE": "The project leaves the default list but stays saved with its whole history. You can reopen it any time.",
+        "SUCCESS": "Project closed.",
+        "ERROR": "Couldn't close the project. Try again."
+      },
+      "REOPEN": {
+        "SUCCESS": "Project reopened.",
+        "ERROR": "Couldn't reopen the project. Try again."
+      }
+    },
+    "FRONTS": {
+      "TITLE": "Fronts",
+      "DESCRIPTION": "Work fronts of the project. A project without fronts is also valid.",
+      "NEW": "New front",
+      "EDIT": "Edit",
+      "EMPTY": "This project has no fronts yet.",
+      "HAS_TEMPERATURE": "Has temperature",
+      "WITH_TEMPERATURE": "With temperature",
+      "WITHOUT_TEMPERATURE": "Without temperature",
+      "PUBLIC_ID": "Public ID:",
+      "NAME_REQUIRED": "Enter the front name.",
+      "SAVE_SUCCESS": "Front saved.",
+      "SAVE_ERROR": "Couldn't save the front. Try again.",
+      "DIALOG": {
+        "NEW_TITLE": "New front",
+        "EDIT_TITLE": "Edit front",
+        "SAVE": "Save",
+        "NAME_LABEL": "Front name",
+        "NAME_PLACEHOLDER": "Example: Field, Digital"
+      }
+    },
+    "API_TOKENS": {
+      "HEADER": "CRM integrations",
+      "DESCRIPTION": "Read-only tokens for external tools to query the projects. They only read, never write.",
+      "LOADING": "Fetching tokens",
+      "EMPTY": "No tokens created yet.",
+      "LOAD_ERROR": "Couldn't load the tokens. Try again.",
+      "CREATE": "Create token",
+      "CREATE_ERROR": "Couldn't create the token. Try again.",
+      "NAME_REQUIRED": "Enter the token name.",
+      "PREFIX": "Prefix",
+      "CREATED_BY": "Created by",
+      "LAST_USED": "Last used",
+      "NEVER_USED": "Never used",
+      "STATUS": {
+        "ACTIVE": "Active",
+        "REVOKED": "Revoked"
+      },
+      "DIALOG": {
+        "TITLE": "Create token",
+        "DESCRIPTION": "Use a name that tells which tool will use this token.",
+        "CREATE": "Create",
+        "DONE": "Done",
+        "WARNING": "Save it now. It will not be shown again.",
+        "NAME_LABEL": "Name",
+        "NAME_PLACEHOLDER": "Example: Abib forms"
+      },
+      "REVOKE": {
+        "BUTTON": "Revoke",
+        "TITLE": "Revoke the token {name}?",
+        "MESSAGE": "Tools using this token lose access immediately. This can't be undone.",
+        "SUCCESS": "Token revoked.",
+        "ERROR": "Couldn't revoke the token. Try again."
+      }
+    },
+    "SIDEBAR": {
+      "CRM": "CRM",
+      "OVERVIEW": "Overview",
+      "PEOPLE": "People",
+      "QUALITY": "Data quality"
+    },
+    "PEOPLE": {
+      "HELP": "A person appears once for each front they work in.",
+      "ROWS_COUNT": "{count} row | {count} rows",
+      "PAGINATION_INFO": "Showing {startItem} - {endItem} of {totalItems} rows",
+      "LOAD_ERROR": "Could not load the people. Try again.",
+      "UNNAMED": "No name",
+      "NEVER": "Never",
+      "FRONT_PENDING": "Front to be defined",
+      "FRONT_CLOSED": "(closed)",
+      "PROJECT_CLOSED": "Closed project",
+      "NO_VALUE": "—",
+      "COLUMNS": {
+        "PERSON": "Person",
+        "PROJECT": "Project",
+        "FRONT": "Front",
+        "ROLE": "Role",
+        "TEMPERATURE": "Temperature",
+        "RESPONSIBLE": "Responsible",
+        "LAST_CONTACT": "Last contact",
+        "NEXT_STEP": "Next step"
+      },
+      "FILTERS": {
+        "PROJECT": "Project",
+        "FRONT": "Front",
+        "TEMPERATURE": "Temperature",
+        "RESPONSIBLE": "Responsible",
+        "CITY": "City",
+        "NO_CONTACT": "No contact for",
+        "NO_CONTACT_ANY": "Any time",
+        "NO_CONTACT_DAYS": "{n} days",
+        "NO_CONTACT_CUSTOM": "Custom",
+        "CUSTOM_DAYS": "Days",
+        "SEARCH": "Search by name or phone",
+        "INCLUDE_CLOSED": "Include closed projects",
+        "NO_FRONT": "No front",
+        "NO_RESPONSIBLE": "No responsible",
+        "CLEAR": "Clear filters"
+      },
+      "EMPTY": {
+        "NO_FILTERS_TITLE": "Nobody in this project yet",
+        "NO_FILTERS_DESCRIPTION": "Add the first person to start tracking the network.",
+        "FILTERED_TITLE": "No people match these filters"
+      },
+      "ADD": {
+        "BUTTON": "Add person",
+        "TITLE": "Add person to a project",
+        "MODE_EXISTING": "Existing contact",
+        "MODE_NEW": "New person",
+        "SEARCH_PLACEHOLDER": "Search contacts by name, phone or email",
+        "NO_RESULTS": "No contacts found.",
+        "NAME": "Name",
+        "PHONE": "Phone",
+        "CITY": "City",
+        "PROJECT": "Project",
+        "PROJECT_PLACEHOLDER": "Choose a project",
+        "FRONT": "Front",
+        "FRONT_NONE": "No front yet",
+        "ROLE": "Role",
+        "ROLE_NONE": "No role",
+        "RESPONSIBLE": "Responsible",
+        "RESPONSIBLE_NONE": "No responsible",
+        "NEXT_STEP": "Next step",
+        "CONFIRM": "Add",
+        "SUCCESS": "Person added to the project.",
+        "FOUND_EXISTING": "We found {name} with that phone. They were added to the project.",
+        "GENERIC_ERROR": "Could not add the person. Try again.",
+        "UPDATE_ERROR": "The person was added, but the responsible and next step were not saved.",
+        "ERRORS": {
+          "PROJECT_REQUIRED": "Choose a project.",
+          "CONTACT_REQUIRED": "Select a contact.",
+          "NAME_OR_PHONE_REQUIRED": "Enter a name or a phone number."
+        }
+      }
+    },
+    "TEMPERATURE": {
+      "VAPOR": "Steaming",
+      "QUENTE": "Hot",
+      "MORNO": "Warm",
+      "FRIO": "Cold",
+      "NONE": "No temperature"
+    },
+    "OVERVIEW": {
+      "PROJECT_SELECT": "Project",
+      "ALL_PROJECTS": "All projects",
+      "LOAD_ERROR": "Could not load the overview. Try again.",
+      "OUT_OF_SCOPE": "That project is not available to you, so the filter was cleared.",
+      "CARDS": {
+        "PEOPLE": "People",
+        "FRONT_PARTICIPATIONS": "Front participations",
+        "PENDING_FRONT": "Front to be defined",
+        "NO_CONTACT_7D": "No contact for 7 days or more"
+      },
+      "BY_TEMPERATURE": {
+        "TITLE": "By temperature",
+        "HINT": "Click a level to see those people."
+      },
+      "RECENT": {
+        "TITLE": "What changed this week",
+        "EMPTY": "Nothing changed in the last 7 days."
+      },
+      "CHANGE": {
+        "TEMPERATURE": "temperature changed from {from} to {to}",
+        "JOINED": "joined the project",
+        "ASSIGNMENT": "started a new role",
+        "UNKNOWN": "had an update"
+      }
+    },
+    "QUALITY": {
+      "PROJECT_LABEL": "Project",
+      "LOAD_ERROR": "Could not load data quality. Try again.",
+      "EMPTY": "Nothing to resolve in this project.",
+      "DUPLICATES_TITLE": "Possible duplicates",
+      "INCOMPLETES_TITLE": "Incomplete records",
+      "STATS": {
+        "DUPLICATES": "Possible duplicates",
+        "INCOMPLETES": "Incomplete records",
+        "RESOLVED_THIS_MONTH": "Resolved this month"
+      },
+      "PAIR": {
+        "NO_NAME": "No name",
+        "EMPTY": "not set",
+        "PHONE": "Phone",
+        "CITY": "City",
+        "CREATED_AT": "Created",
+        "CONVERSATIONS": "Conversations",
+        "MERGE": "Merge records",
+        "DISMISS": "Not the same person",
+        "DISMISS_SUCCESS": "Pair dismissed.",
+        "DISMISS_ERROR": "Could not dismiss the pair. Try again."
+      },
+      "MERGE": {
+        "TITLE": "Merge records",
+        "CHOOSE": "Choose which record stays.",
+        "WARNING": "The other record will be deleted. Conversations, history and participations move to the one that stays. This cannot be undone.",
+        "CONFIRM": "Merge",
+        "SUCCESS": "Records merged.",
+        "ERROR": "Could not merge the records. Nothing was changed."
+      },
+      "PROBLEM": {
+        "MISSING_CITY": "No city",
+        "MISSING_PHONE": "No phone",
+        "MISSING_NAME": "No name",
+        "PENDING_FRONT": "Front to be defined"
+      },
+      "ACTIONS": {
+        "COMPLETE": "Complete",
+        "OPEN_RECORD": "Open record"
+      },
+      "COMPLETE": {
+        "TITLE": "Complete: {field}",
+        "CITY": "City",
+        "PHONE": "Phone",
+        "NAME": "Name",
+        "SAVE": "Save",
+        "REQUIRED": "Fill in the value.",
+        "ERROR": "Could not save. Try again.",
+        "PHONE_INVALID": "Enter the phone in international format, for example +5581999990000.",
+        "PHONE_TAKEN": "That phone number already belongs to someone else.",
+        "PHONE_TAKEN_HINT": "If both people are in this project, merge them in the duplicates list."
+      }
+    },
+    "PERSON": {
+      "BACK": "Back to people",
+      "RETRY": "Try again",
+      "NONE": "None",
+      "GENERIC_ERROR": "Could not complete the action. Try again.",
+      "NOT_FOUND": {
+        "TITLE": "Person not found or you do not have access",
+        "BACK": "Back to the list"
+      },
+      "HEADER": {
+        "VIEW_CONTACT": "View contact",
+        "REGISTER_CALL": "Log call",
+        "ADD_NOTE": "Add note"
+      },
+      "PARTICIPATION": {
+        "CLOSED": "Closed",
+        "LAST_CONTACT": "Last contact",
+        "RESPONSIBLE": "Responsible",
+        "RESPONSIBLE_NONE": "No responsible",
+        "OUT_OF_PROJECT": "{name} (outside the project)",
+        "REFERRED_BY": "Referred by",
+        "REFERRED_PLACEHOLDER": "Search a contact or type a name",
+        "NEXT_STEP": "Next step"
+      },
+      "ASSIGNMENT": {
+        "NO_FRONT": "No front",
+        "ROLE": "Role",
+        "ROLE_NONE": "No role",
+        "SUPERIOR": "Superior",
+        "SUPERIOR_PLACEHOLDER": "Search a contact",
+        "CHANGE": "Change",
+        "CLOSE": "Close assignment",
+        "FRONT_PENDING": "Front to be defined",
+        "DEFINE_FRONT": "Define front",
+        "FRONT_PLACEHOLDER": "Choose a front",
+        "ADD": "Add assignment",
+        "ADD_CONFIRM": "Add",
+        "ERRORS": {
+          "FRONT_REQUIRED": "Choose a front."
+        }
+      },
+      "TEMPERATURE": {
+        "LABEL": "Temperature",
+        "NOTE_PLACEHOLDER": "Note (optional)",
+        "SAVE": "Save temperature"
+      },
+      "CONTACT_SEARCH": {
+        "NO_RESULTS": "No contacts found.",
+        "USE_TEXT": "Use \"{text}\" as typed"
+      },
+      "CALL": {
+        "TITLE": "Log call",
+        "CONFIRM": "Log call",
+        "PROJECT": "Project",
+        "PROJECT_PLACEHOLDER": "Choose a project",
+        "FRONT": "Front",
+        "FRONT_NONE": "No front",
+        "OCCURRED_AT": "Date and time",
+        "ANSWERED": "Answered?",
+        "ANSWERED_PLACEHOLDER": "Choose",
+        "YES": "Yes",
+        "NO": "No",
+        "SUMMARY": "Summary",
+        "AUTHOR": "Called by",
+        "ERRORS": {
+          "PROJECT_REQUIRED": "Choose a project.",
+          "ANSWERED_REQUIRED": "Say whether the call was answered.",
+          "DATE_REQUIRED": "Enter the date and time.",
+          "FUTURE_DATE": "The date cannot be in the future."
+        }
+      },
+      "NOTE": {
+        "TITLE": "Add note",
+        "CONFIRM": "Add note",
+        "SUMMARY": "Note",
+        "ERRORS": {
+          "SUMMARY_REQUIRED": "Write the note."
+        }
+      },
+      "TIMELINE": {
+        "TITLE": "History",
+        "EMPTY": "No events for these filters.",
+        "LOAD_MORE": "Load more"
+      },
+      "FILTERS": {
+        "PROJECT": "Project",
+        "ALL_PROJECTS": "All projects",
+        "FROM": "From",
+        "TO": "To",
+        "LAST_DAYS": "{days} days",
+        "INVALID_RANGE": "The start date must be before the end date.",
+        "CLEAR": "Clear filters"
+      },
+      "TYPES": {
+        "CONVERSATION": "Conversation",
+        "CALL": "Call",
+        "NOTE": "Note",
+        "TEMPERATURE_CHANGE": "Temperature",
+        "ASSIGNMENT_CHANGE": "Assignment"
+      },
+      "EVENTS": {
+        "CONVERSATION": "Conversation #{id} in {inbox}",
+        "CALL_ANSWERED": "Answered call",
+        "CALL_MISSED": "Unanswered call",
+        "NOTE": "Note",
+        "TEMPERATURE_CHANGED": "Temperature from {from} to {to}",
+        "TEMPERATURE_SET": "Temperature set to {to}",
+        "ASSIGNMENT_STARTED": "Assignment started",
+        "ASSIGNMENT_CLOSED": "Assignment closed",
+        "EDIT": "Edit",
+        "SAVE": "Save",
+        "CANCEL": "Cancel"
+      }
+    },
+    "CONVERSATION": {
+      "TITLE": "CRM",
+      "NO_PROJECT": "This inbox does not belong to a project.",
+      "OUTSIDE": "Outside project {name}",
+      "ADD_TO_PROJECT": "Add to project",
+      "LOAD_ERROR": "Could not load the CRM",
+      "RETRY": "Try again",
+      "OPEN_PROFILE": "Open profile"
+    },
+    "CRM": {
+      "COMING_SOON": "The content of this page is coming soon.",
+      "OVERVIEW": {
+        "TITLE": "CRM overview",
+        "DESCRIPTION": "Numbers of the people in your projects."
+      },
+      "PEOPLE": {
+        "TITLE": "People",
+        "DESCRIPTION": "People taking part in your projects."
+      },
+      "PERSON": {
+        "TITLE": "Person",
+        "DESCRIPTION": "Profile and history of the person."
+      },
+      "QUALITY": {
+        "TITLE": "Data quality",
+        "DESCRIPTION": "Duplicates and incomplete records to fix."
+      },
+      "NO_PROJECTS": {
+        "TITLE": "No projects yet",
+        "DESCRIPTION": "The CRM shows people by project. Create a project to get started.",
+        "CREATE": "Create project",
+        "ASK_ADMIN": "Ask an administrator to create a project."
+      }
+    }
+  }
+}

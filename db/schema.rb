@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_19_110000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_16_170000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1232,6 +1232,155 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_19_110000) do
     t.index ["user_id"], name: "index_portals_members_on_user_id"
   end
 
+  create_table "rede_api_tokens", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "created_by_user_id"
+    t.string "name", null: false
+    t.string "token_digest", null: false
+    t.string "token_prefix", null: false
+    t.string "scopes", default: ["projects:read"], null: false, array: true
+    t.datetime "last_used_at"
+    t.datetime "revoked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rede_api_tokens_on_account_id"
+    t.index ["created_by_user_id"], name: "index_rede_api_tokens_on_created_by_user_id"
+    t.index ["token_digest"], name: "index_rede_api_tokens_on_token_digest", unique: true
+  end
+
+  create_table "rede_assignments", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "participation_id", null: false
+    t.bigint "front_id"
+    t.bigint "role_id"
+    t.integer "superior_contact_id"
+    t.integer "status", default: 0, null: false
+    t.datetime "started_at", null: false
+    t.datetime "ended_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "participation_id, COALESCE(front_id, (0)::bigint)", name: "index_rede_assignments_on_active_participation_and_front", unique: true, where: "(status = 0)"
+    t.index ["account_id"], name: "index_rede_assignments_on_account_id"
+    t.index ["front_id"], name: "index_rede_assignments_on_front_id"
+    t.index ["participation_id", "status"], name: "index_rede_assignments_on_participation_id_and_status"
+    t.index ["role_id"], name: "index_rede_assignments_on_role_id"
+    t.index ["superior_contact_id"], name: "index_rede_assignments_on_superior_contact_id"
+  end
+
+  create_table "rede_evaluations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "contact_id", null: false
+    t.bigint "project_id", null: false
+    t.bigint "front_id"
+    t.integer "author_user_id"
+    t.string "dimension", default: "temperatura", null: false
+    t.integer "level"
+    t.text "note"
+    t.datetime "evaluated_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rede_evaluations_on_account_id"
+    t.index ["author_user_id"], name: "index_rede_evaluations_on_author_user_id"
+    t.index ["contact_id", "project_id", "front_id", "evaluated_at"], name: "index_rede_evaluations_on_context_and_evaluated_at"
+    t.index ["front_id"], name: "index_rede_evaluations_on_front_id"
+    t.index ["project_id"], name: "index_rede_evaluations_on_project_id"
+  end
+
+  create_table "rede_fronts", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.string "name", null: false
+    t.uuid "public_id", default: -> { "gen_random_uuid()" }, null: false
+    t.boolean "has_temperature", default: true, null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "project_id, lower((name)::text)", name: "index_rede_fronts_on_project_id_and_lower_name", unique: true
+    t.index ["account_id"], name: "index_rede_fronts_on_account_id"
+    t.index ["project_id"], name: "index_rede_fronts_on_project_id"
+    t.index ["public_id"], name: "index_rede_fronts_on_public_id", unique: true
+  end
+
+  create_table "rede_interactions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "contact_id", null: false
+    t.bigint "project_id", null: false
+    t.bigint "front_id"
+    t.integer "author_user_id"
+    t.integer "kind", null: false
+    t.boolean "answered"
+    t.text "summary", null: false
+    t.datetime "occurred_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rede_interactions_on_account_id"
+    t.index ["author_user_id"], name: "index_rede_interactions_on_author_user_id"
+    t.index ["contact_id", "project_id", "occurred_at"], name: "index_rede_interactions_on_contact_project_occurred_at"
+    t.index ["front_id"], name: "index_rede_interactions_on_front_id"
+  end
+
+  create_table "rede_participations", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.integer "contact_id", null: false
+    t.bigint "project_id", null: false
+    t.integer "responsible_user_id"
+    t.integer "referred_by_contact_id"
+    t.string "referred_by_text"
+    t.text "next_step"
+    t.integer "origin", default: 0, null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "joined_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "last_contact_at"
+    t.index ["account_id"], name: "index_rede_participations_on_account_id"
+    t.index ["contact_id", "project_id"], name: "index_rede_participations_on_contact_id_and_project_id", unique: true
+    t.index ["project_id", "last_contact_at"], name: "index_rede_participations_on_project_id_and_last_contact_at"
+    t.index ["project_id", "status"], name: "index_rede_participations_on_project_id_and_status"
+    t.index ["referred_by_contact_id"], name: "index_rede_participations_on_referred_by_contact_id"
+    t.index ["responsible_user_id"], name: "index_rede_participations_on_responsible_user_id"
+  end
+
+  create_table "rede_projects", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "team_id", null: false
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.string "color", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "slug"], name: "index_rede_projects_on_account_id_and_slug", unique: true
+    t.index ["account_id"], name: "index_rede_projects_on_account_id"
+    t.index ["team_id"], name: "index_rede_projects_on_team_id", unique: true
+  end
+
+  create_table "rede_quality_resolutions", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.integer "kind", null: false
+    t.integer "contact_a_id", null: false
+    t.integer "contact_b_id", null: false
+    t.integer "resolved_by_user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_rede_quality_resolutions_on_account_id"
+    t.index ["project_id", "contact_a_id", "contact_b_id"], name: "index_rede_quality_resolutions_dismissed_pair", unique: true, where: "(kind = 1)"
+    t.index ["project_id", "created_at"], name: "index_rede_quality_resolutions_on_project_and_created_at"
+  end
+
+  create_table "rede_roles", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "key", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "key"], name: "index_rede_roles_on_account_id_and_key", unique: true
+    t.index ["account_id"], name: "index_rede_roles_on_account_id"
+  end
+
   create_table "related_categories", force: :cascade do |t|
     t.bigint "category_id"
     t.bigint "related_category_id"
@@ -1454,6 +1603,35 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_19_110000) do
   add_foreign_key "label_groups", "teams"
   add_foreign_key "labels", "label_groups"
   add_foreign_key "labels", "teams"
+  add_foreign_key "rede_api_tokens", "accounts"
+  add_foreign_key "rede_api_tokens", "users", column: "created_by_user_id", on_delete: :nullify
+  add_foreign_key "rede_assignments", "accounts"
+  add_foreign_key "rede_assignments", "contacts", column: "superior_contact_id", on_delete: :nullify
+  add_foreign_key "rede_assignments", "rede_fronts", column: "front_id"
+  add_foreign_key "rede_assignments", "rede_participations", column: "participation_id"
+  add_foreign_key "rede_assignments", "rede_roles", column: "role_id"
+  add_foreign_key "rede_evaluations", "accounts"
+  add_foreign_key "rede_evaluations", "contacts"
+  add_foreign_key "rede_evaluations", "rede_fronts", column: "front_id"
+  add_foreign_key "rede_evaluations", "rede_projects", column: "project_id"
+  add_foreign_key "rede_evaluations", "users", column: "author_user_id", on_delete: :nullify
+  add_foreign_key "rede_fronts", "accounts"
+  add_foreign_key "rede_fronts", "rede_projects", column: "project_id"
+  add_foreign_key "rede_interactions", "accounts"
+  add_foreign_key "rede_interactions", "contacts"
+  add_foreign_key "rede_interactions", "rede_fronts", column: "front_id"
+  add_foreign_key "rede_interactions", "rede_projects", column: "project_id"
+  add_foreign_key "rede_interactions", "users", column: "author_user_id", on_delete: :nullify
+  add_foreign_key "rede_participations", "accounts"
+  add_foreign_key "rede_participations", "contacts"
+  add_foreign_key "rede_participations", "contacts", column: "referred_by_contact_id", on_delete: :nullify
+  add_foreign_key "rede_participations", "rede_projects", column: "project_id"
+  add_foreign_key "rede_participations", "users", column: "responsible_user_id", on_delete: :nullify
+  add_foreign_key "rede_projects", "accounts"
+  add_foreign_key "rede_projects", "teams"
+  add_foreign_key "rede_quality_resolutions", "accounts"
+  add_foreign_key "rede_quality_resolutions", "rede_projects", column: "project_id"
+  add_foreign_key "rede_roles", "accounts"
   add_foreign_key "user_sessions", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").

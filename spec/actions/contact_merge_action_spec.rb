@@ -89,5 +89,36 @@ describe ContactMergeAction do
         end.to raise_error('contact does not belong to the account')
       end
     end
+
+    context 'when contacts have rede data' do
+      let(:project) { create(:rede_project, account: account) }
+      let!(:participation) { create(:rede_participation, account: account, contact: mergee_contact, project: project) }
+
+      before do
+        create(:rede_assignment, account: account, participation: participation)
+        create(:rede_evaluation, account: account, contact: mergee_contact, project: project)
+        create(:rede_interaction, account: account, contact: mergee_contact, project: project)
+      end
+
+      it 'moves the rede data to the base contact' do
+        contact_merge
+
+        expect(participation.reload.contact_id).to eq(base_contact.id)
+        expect(Rede::Evaluation.where(contact_id: base_contact.id).count).to eq(1)
+        expect(Rede::Interaction.where(contact_id: base_contact.id).count).to eq(1)
+        expect(Rede::Participation.where(contact_id: mergee_contact.id)).to be_empty
+      end
+
+      it 'rolls everything back when the rede merge fails' do
+        allow(Rede::LastContact::Recompute).to receive(:new).and_raise(StandardError, 'boom')
+
+        expect { contact_merge }.to raise_error('boom')
+
+        expect(Contact.exists?(mergee_contact.id)).to be(true)
+        expect(participation.reload.contact_id).to eq(mergee_contact.id)
+        expect(Rede::Evaluation.where(contact_id: mergee_contact.id).count).to eq(1)
+        expect(Conversation.where(contact_id: mergee_contact.id).count).to eq(2)
+      end
+    end
   end
 end

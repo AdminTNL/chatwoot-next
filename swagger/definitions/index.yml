@@ -308,3 +308,11 @@ reporting_event_meta:
   $ref: ./resource/reporting_event_meta.yml
 reporting_events_list_response:
   $ref: ./resource/reporting_events_list_response.yml
+rede_project:
+  $ref: ./resource/rede_project.yml
+rede_front:
+  $ref: ./resource/rede_front.yml
+rede_invalid_token_error:
+  $ref: ./error/rede_invalid_token.yml
+rede_forbidden_error:
+  $ref: ./error/rede_forbidden.yml

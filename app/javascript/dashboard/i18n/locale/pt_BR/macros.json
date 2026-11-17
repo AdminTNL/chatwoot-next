@@ -94,12 +94,12 @@
       "ATLEAST_ONE_ACTION_REQUIRED": "Pelo menos uma ação é necessária"
     },
     "ACTIONS": {
-      "ASSIGN_TEAM": "Atribuir um Time",
+      "ASSIGN_TEAM": "Atribuir um Projeto",
       "ASSIGN_AGENT": "Atribuir um Agente",
       "ADD_LABEL": "Adicionar uma Etiqueta",
       "REMOVE_LABEL": "Remover uma Etiqueta",
       "REMOVE_ASSIGNED_AGENT": "Remove Assigned Agent",
-      "REMOVE_ASSIGNED_TEAM": "Remover Time Atribuído",
+      "REMOVE_ASSIGNED_TEAM": "Remover Projeto Atribuído",
       "SEND_EMAIL_TRANSCRIPT": "Enviar uma transcrição por e-mail",
       "MUTE_CONVERSATION": "Silenciar Conversa",
       "SNOOZE_CONVERSATION": "Adiar Conversa",

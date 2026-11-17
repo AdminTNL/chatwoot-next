@@ -19,6 +19,9 @@
 class Team < ApplicationRecord
   include AccountCacheRevalidator
 
+  # Evita o ciclo de sincronização de nome entre time e projeto (spec 001).
+  attr_accessor :skip_rede_project_name_sync
+
   belongs_to :account
   has_many :team_members, dependent: :destroy_async
   has_many :members, through: :team_members, source: :user
@@ -26,7 +29,10 @@ class Team < ApplicationRecord
   has_many :inboxes, dependent: :nullify
   has_many :labels, dependent: :nullify
   has_many :label_groups, dependent: :destroy
+  has_one :rede_project, class_name: 'Rede::Project', dependent: :destroy, inverse_of: :team
 
+  after_create :create_default_rede_project
+  after_update :sync_rede_project_name, if: :saved_change_to_name?
   before_destroy :capture_filtered_unread_count_member_ids, prepend: true
   after_destroy_commit :invalidate_filtered_unread_counts_after_destroy
   after_destroy_commit :refresh_access_after_destroy
@@ -80,6 +86,19 @@ class Team < ApplicationRecord
   end
 
   private
+
+  def create_default_rede_project
+    Rede::Projects::Builder.for_team(self)
+  end
+
+  def sync_rede_project_name
+    return if skip_rede_project_name_sync || rede_project.blank?
+
+    rede_project.skip_team_name_sync = true
+    rede_project.update!(name: name.titleize)
+  ensure
+    rede_project&.skip_team_name_sync = false
+  end
 
   def capture_filtered_unread_count_member_ids
     @filtered_unread_count_member_ids = team_members.pluck(:user_id)

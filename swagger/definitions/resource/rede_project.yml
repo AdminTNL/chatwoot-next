@@ -1,0 +1,26 @@
+type: object
+properties:
+  id:
+    type: string
+    description: The public id of the project (its slug). It never changes.
+  name:
+    type: string
+    description: The display name of the project
+  status:
+    type: string
+    enum:
+      - active
+      - closed
+    description: Whether the project is active or closed
+  color:
+    type: string
+    description: The project color as a hex code
+  updated_at:
+    type: string
+    format: date-time
+    description: When the project was last updated
+  fronts:
+    type: array
+    description: The fronts of the project (empty when it has none)
+    items:
+      $ref: '#/components/schemas/rede_front'

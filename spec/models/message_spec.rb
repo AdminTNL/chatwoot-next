@@ -977,4 +977,75 @@ RSpec.describe Message do
       end
     end
   end
+
+  describe 'rede last contact' do
+    let(:rede_account) { create(:account) }
+    let(:rede_project) { create(:team, account: rede_account).rede_project }
+    let(:rede_other_project) { create(:team, account: rede_account).rede_project }
+    let(:rede_contact) { create(:contact, account: rede_account) }
+    let(:rede_inbox) { create(:inbox, account: rede_account, team_id: rede_project.team_id) }
+    let(:rede_conversation) do
+      create(:conversation, account: rede_account, inbox: rede_inbox, contact: rede_contact,
+                            contact_inbox: create(:contact_inbox, contact: rede_contact, inbox: rede_inbox))
+    end
+    let!(:participation) { create(:rede_participation, account: rede_account, project: rede_project, contact: rede_contact) }
+    let!(:other_participation) { create(:rede_participation, account: rede_account, project: rede_other_project, contact: rede_contact) }
+
+    def create_rede_message(conversation = rede_conversation, **attrs)
+      create(:message, { account: rede_account, conversation: conversation, inbox: conversation.inbox,
+                         message_type: :incoming, sender: rede_contact }.merge(attrs))
+    end
+
+    it 'updates only the project of the conversation team on an incoming contact message' do
+      message = create_rede_message
+
+      expect(participation.reload.last_contact_at).to be_within(1.second).of(message.created_at)
+      expect(other_participation.reload.last_contact_at).to be_nil
+    end
+
+    it 'ignores outgoing messages' do
+      create_rede_message(message_type: :outgoing, sender: create(:user, account: rede_account))
+
+      expect(participation.reload.last_contact_at).to be_nil
+    end
+
+    it 'ignores private messages' do
+      create_rede_message(private: true)
+
+      expect(participation.reload.last_contact_at).to be_nil
+    end
+
+    it 'ignores activity messages' do
+      create_rede_message(message_type: :activity, sender: nil)
+
+      expect(participation.reload.last_contact_at).to be_nil
+    end
+
+    it 'ignores conversations of inboxes without team' do
+      inbox = create(:inbox, account: rede_account)
+      conversation = create(:conversation, account: rede_account, inbox: inbox, contact: rede_contact,
+                                           contact_inbox: create(:contact_inbox, contact: rede_contact, inbox: inbox))
+
+      expect { create_rede_message(conversation) }.not_to raise_error
+      expect(participation.reload.last_contact_at).to be_nil
+    end
+
+    it 'does not lower the value for imported old messages' do
+      recent = create_rede_message
+      create_rede_message(created_at: 10.days.ago)
+
+      expect(participation.reload.last_contact_at).to be_within(1.second).of(recent.created_at)
+    end
+
+    it 'creates the message and logs when the touch raises' do
+      allow(Rede::LastContact::Touch).to receive(:new).and_raise(StandardError, 'boom')
+      allow(Rails.logger).to receive(:error)
+
+      message = nil
+      expect { message = create_rede_message }.not_to raise_error
+
+      expect(message).to be_persisted
+      expect(Rails.logger).to have_received(:error).with(/boom/)
+    end
+  end
 end

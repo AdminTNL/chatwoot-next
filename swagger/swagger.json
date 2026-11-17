@@ -8851,6 +8851,60 @@
           }
         }
       }
+    },
+    "/api/rede/v1/projects": {
+      "get": {
+        "tags": [
+          "Rede Projects"
+        ],
+        "operationId": "rede-v1-list-projects",
+        "summary": "List the projects of the token account",
+        "description": "Read-only list of the projects (active and closed) of the account that owns the token, ordered by name, each with its fronts.\nThe project `id` is its slug and the front `id` is its `public_id`; both never change. The response carries an `ETag`;\nsend it back in `If-None-Match` to get `304` when nothing changed. The token is created by an account administrator and is shown only once.\nThis is version `v1` of the contract; incompatible changes will use `v2`.\n",
+        "security": [
+          {
+            "redeApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "description": "Array of projects",
+                  "items": {
+                    "$ref": "#/components/schemas/rede_project"
+                  }
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified (the If-None-Match header matches the current ETag)"
+          },
+          "401": {
+            "description": "Missing, invalid or revoked token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rede_invalid_token_error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The token does not have the projects:read scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rede_forbidden_error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15342,6 +15396,96 @@
             "description": "List of reporting events"
           }
         }
+      },
+      "rede_project": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The public id of the project (its slug). It never changes."
+          },
+          "name": {
+            "type": "string",
+            "description": "The display name of the project"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "closed"
+            ],
+            "description": "Whether the project is active or closed"
+          },
+          "color": {
+            "type": "string",
+            "description": "The project color as a hex code"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the project was last updated"
+          },
+          "fronts": {
+            "type": "array",
+            "description": "The fronts of the project (empty when it has none)",
+            "items": {
+              "$ref": "#/components/schemas/rede_front"
+            }
+          }
+        }
+      },
+      "rede_front": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The public id of the front. It never changes."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the front"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "closed"
+            ],
+            "description": "Whether the front is active or closed"
+          },
+          "has_temperature": {
+            "type": "boolean",
+            "description": "Whether people in this front have a temperature"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the front was last updated"
+          }
+        }
+      },
+      "rede_invalid_token_error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "invalid_token"
+            ]
+          }
+        }
+      },
+      "rede_forbidden_error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "forbidden"
+            ]
+          }
+        }
       }
     },
     "parameters": {
@@ -15556,6 +15700,11 @@
         "name": "api_access_token",
         "description": "This token should be provided by system admin or obtained via rails console. This token can be used to build bot integrations and can only access limited apis."
       },
+      "redeApiToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Read-only token created by an account administrator (shown only once on creation). Sent as `Authorization Bearer <token>`."
+      },
       "platformAppApiKey": {
         "type": "apiKey",
         "in": "header",
@@ -15662,6 +15811,10 @@
       "description": "Knowledge base management"
     },
     {
+      "name": "Rede Projects",
+      "description": "Read-only access to the CRM projects for external tools"
+    },
+    {
       "name": "Contacts API",
       "description": "Public contact APIs"
     },
@@ -15712,7 +15865,8 @@
         "Teams",
         "Webhooks",
         "Automation Rule",
-        "Help Center"
+        "Help Center",
+        "Rede Projects"
       ]
     },
     {
