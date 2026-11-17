@@ -19,12 +19,12 @@
 #
 # Indexes
 #
-#  index_rede_participations_on_account_id                 (account_id)
-#  index_rede_participations_on_contact_id_and_project_id  (contact_id,project_id) UNIQUE
+#  index_rede_participations_on_account_id                      (account_id)
+#  index_rede_participations_on_contact_id_and_project_id       (contact_id,project_id) UNIQUE
 #  index_rede_participations_on_project_id_and_last_contact_at  (project_id,last_contact_at)
-#  index_rede_participations_on_project_id_and_status      (project_id,status)
-#  index_rede_participations_on_referred_by_contact_id     (referred_by_contact_id)
-#  index_rede_participations_on_responsible_user_id        (responsible_user_id)
+#  index_rede_participations_on_project_id_and_status           (project_id,status)
+#  index_rede_participations_on_referred_by_contact_id          (referred_by_contact_id)
+#  index_rede_participations_on_responsible_user_id             (responsible_user_id)
 #
 # Foreign Keys
 #
