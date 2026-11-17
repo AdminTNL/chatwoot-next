@@ -58,6 +58,15 @@ describe('rede overview store', () => {
     expect(OverviewAPI.get).toHaveBeenCalledWith({});
   });
 
+  it('changing the project fetches again with the new id', async () => {
+    OverviewAPI.get.mockResolvedValue({ data: apiOverview });
+    const store = useRedeOverviewStore();
+    await store.get(1);
+    await store.get(2);
+    expect(OverviewAPI.get).toHaveBeenNthCalledWith(1, { project_id: 1 });
+    expect(OverviewAPI.get).toHaveBeenNthCalledWith(2, { project_id: 2 });
+  });
+
   it('get clears the flag and rethrows on error', async () => {
     OverviewAPI.get.mockRejectedValue(new Error('404'));
     const store = useRedeOverviewStore();

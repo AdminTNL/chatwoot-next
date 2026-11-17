@@ -104,12 +104,166 @@
       "PEOPLE": "People",
       "QUALITY": "Data quality"
     },
+    "PEOPLE": {
+      "HELP": "A person appears once for each front they work in.",
+      "ROWS_COUNT": "{count} row | {count} rows",
+      "PAGINATION_INFO": "Showing {startItem} - {endItem} of {totalItems} rows",
+      "LOAD_ERROR": "Could not load the people. Try again.",
+      "UNNAMED": "No name",
+      "NEVER": "Never",
+      "FRONT_PENDING": "Front to be defined",
+      "FRONT_CLOSED": "(closed)",
+      "PROJECT_CLOSED": "Closed project",
+      "NO_VALUE": "—",
+      "COLUMNS": {
+        "PERSON": "Person",
+        "PROJECT": "Project",
+        "FRONT": "Front",
+        "ROLE": "Role",
+        "TEMPERATURE": "Temperature",
+        "RESPONSIBLE": "Responsible",
+        "LAST_CONTACT": "Last contact",
+        "NEXT_STEP": "Next step"
+      },
+      "FILTERS": {
+        "PROJECT": "Project",
+        "FRONT": "Front",
+        "TEMPERATURE": "Temperature",
+        "RESPONSIBLE": "Responsible",
+        "CITY": "City",
+        "NO_CONTACT": "No contact for",
+        "NO_CONTACT_ANY": "Any time",
+        "NO_CONTACT_DAYS": "{n} days",
+        "NO_CONTACT_CUSTOM": "Custom",
+        "CUSTOM_DAYS": "Days",
+        "SEARCH": "Search by name or phone",
+        "INCLUDE_CLOSED": "Include closed projects",
+        "NO_FRONT": "No front",
+        "NO_RESPONSIBLE": "No responsible",
+        "CLEAR": "Clear filters"
+      },
+      "EMPTY": {
+        "NO_FILTERS_TITLE": "Nobody in this project yet",
+        "NO_FILTERS_DESCRIPTION": "Add the first person to start tracking the network.",
+        "FILTERED_TITLE": "No people match these filters"
+      },
+      "ADD": {
+        "BUTTON": "Add person",
+        "TITLE": "Add person to a project",
+        "MODE_EXISTING": "Existing contact",
+        "MODE_NEW": "New person",
+        "SEARCH_PLACEHOLDER": "Search contacts by name, phone or email",
+        "NO_RESULTS": "No contacts found.",
+        "NAME": "Name",
+        "PHONE": "Phone",
+        "CITY": "City",
+        "PROJECT": "Project",
+        "PROJECT_PLACEHOLDER": "Choose a project",
+        "FRONT": "Front",
+        "FRONT_NONE": "No front yet",
+        "ROLE": "Role",
+        "ROLE_NONE": "No role",
+        "RESPONSIBLE": "Responsible",
+        "RESPONSIBLE_NONE": "No responsible",
+        "NEXT_STEP": "Next step",
+        "CONFIRM": "Add",
+        "SUCCESS": "Person added to the project.",
+        "FOUND_EXISTING": "We found {name} with that phone. They were added to the project.",
+        "GENERIC_ERROR": "Could not add the person. Try again.",
+        "UPDATE_ERROR": "The person was added, but the responsible and next step were not saved.",
+        "ERRORS": {
+          "PROJECT_REQUIRED": "Choose a project.",
+          "CONTACT_REQUIRED": "Select a contact.",
+          "NAME_OR_PHONE_REQUIRED": "Enter a name or a phone number."
+        }
+      }
+    },
     "TEMPERATURE": {
       "VAPOR": "Steaming",
       "QUENTE": "Hot",
       "MORNO": "Warm",
       "FRIO": "Cold",
       "NONE": "No temperature"
+    },
+    "OVERVIEW": {
+      "PROJECT_SELECT": "Project",
+      "ALL_PROJECTS": "All projects",
+      "LOAD_ERROR": "Could not load the overview. Try again.",
+      "OUT_OF_SCOPE": "That project is not available to you, so the filter was cleared.",
+      "CARDS": {
+        "PEOPLE": "People",
+        "FRONT_PARTICIPATIONS": "Front participations",
+        "PENDING_FRONT": "Front to be defined",
+        "NO_CONTACT_7D": "No contact for 7 days or more"
+      },
+      "BY_TEMPERATURE": {
+        "TITLE": "By temperature",
+        "HINT": "Click a level to see those people."
+      },
+      "RECENT": {
+        "TITLE": "What changed this week",
+        "EMPTY": "Nothing changed in the last 7 days."
+      },
+      "CHANGE": {
+        "TEMPERATURE": "temperature changed from {from} to {to}",
+        "JOINED": "joined the project",
+        "ASSIGNMENT": "started a new role",
+        "UNKNOWN": "had an update"
+      }
+    },
+    "QUALITY": {
+      "PROJECT_LABEL": "Project",
+      "LOAD_ERROR": "Could not load data quality. Try again.",
+      "EMPTY": "Nothing to resolve in this project.",
+      "DUPLICATES_TITLE": "Possible duplicates",
+      "INCOMPLETES_TITLE": "Incomplete records",
+      "STATS": {
+        "DUPLICATES": "Possible duplicates",
+        "INCOMPLETES": "Incomplete records",
+        "RESOLVED_THIS_MONTH": "Resolved this month"
+      },
+      "PAIR": {
+        "NO_NAME": "No name",
+        "EMPTY": "not set",
+        "PHONE": "Phone",
+        "CITY": "City",
+        "CREATED_AT": "Created",
+        "CONVERSATIONS": "Conversations",
+        "MERGE": "Merge records",
+        "DISMISS": "Not the same person",
+        "DISMISS_SUCCESS": "Pair dismissed.",
+        "DISMISS_ERROR": "Could not dismiss the pair. Try again."
+      },
+      "MERGE": {
+        "TITLE": "Merge records",
+        "CHOOSE": "Choose which record stays.",
+        "WARNING": "The other record will be deleted. Conversations, history and participations move to the one that stays. This cannot be undone.",
+        "CONFIRM": "Merge",
+        "SUCCESS": "Records merged.",
+        "ERROR": "Could not merge the records. Nothing was changed."
+      },
+      "PROBLEM": {
+        "MISSING_CITY": "No city",
+        "MISSING_PHONE": "No phone",
+        "MISSING_NAME": "No name",
+        "PENDING_FRONT": "Front to be defined"
+      },
+      "ACTIONS": {
+        "COMPLETE": "Complete",
+        "OPEN_RECORD": "Open record"
+      },
+      "COMPLETE": {
+        "TITLE": "Complete: {field}",
+        "CITY": "City",
+        "PHONE": "Phone",
+        "NAME": "Name",
+        "SAVE": "Save",
+        "REQUIRED": "Fill in the value.",
+        "ERROR": "Could not save. Try again.",
+        "PHONE_INVALID": "Enter the phone in international format, for example +5581999990000.",
+        "PHONE_TAKEN": "That phone number already belongs to someone else.",
+        "PHONE_TAKEN_HINT": "If both people are in this project, merge them in the duplicates list."
+      }
     },
     "CRM": {
       "COMING_SOON": "The content of this page is coming soon.",

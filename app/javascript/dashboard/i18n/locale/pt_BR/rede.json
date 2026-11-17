@@ -104,12 +104,166 @@
       "PEOPLE": "Pessoas",
       "QUALITY": "Qualidade dos dados"
     },
+    "PEOPLE": {
+      "HELP": "Uma pessoa aparece uma vez por frente em que atua.",
+      "ROWS_COUNT": "{count} linha | {count} linhas",
+      "PAGINATION_INFO": "Exibindo {startItem} - {endItem} de {totalItems} linhas",
+      "LOAD_ERROR": "Não foi possível carregar as pessoas. Tente novamente.",
+      "UNNAMED": "Sem nome",
+      "NEVER": "Nunca",
+      "FRONT_PENDING": "Frente a definir",
+      "FRONT_CLOSED": "(encerrada)",
+      "PROJECT_CLOSED": "Projeto encerrado",
+      "NO_VALUE": "—",
+      "COLUMNS": {
+        "PERSON": "Pessoa",
+        "PROJECT": "Projeto",
+        "FRONT": "Frente",
+        "ROLE": "Papel",
+        "TEMPERATURE": "Temperatura",
+        "RESPONSIBLE": "Responsável",
+        "LAST_CONTACT": "Último contato",
+        "NEXT_STEP": "Próximo passo"
+      },
+      "FILTERS": {
+        "PROJECT": "Projeto",
+        "FRONT": "Frente",
+        "TEMPERATURE": "Temperatura",
+        "RESPONSIBLE": "Responsável",
+        "CITY": "Cidade",
+        "NO_CONTACT": "Sem contato há",
+        "NO_CONTACT_ANY": "Qualquer prazo",
+        "NO_CONTACT_DAYS": "{n} dias",
+        "NO_CONTACT_CUSTOM": "Personalizado",
+        "CUSTOM_DAYS": "Dias",
+        "SEARCH": "Buscar por nome ou telefone",
+        "INCLUDE_CLOSED": "Incluir projetos encerrados",
+        "NO_FRONT": "Sem frente",
+        "NO_RESPONSIBLE": "Sem responsável",
+        "CLEAR": "Limpar filtros"
+      },
+      "EMPTY": {
+        "NO_FILTERS_TITLE": "Ninguém neste projeto ainda",
+        "NO_FILTERS_DESCRIPTION": "Adicione a primeira pessoa para começar a acompanhar a rede.",
+        "FILTERED_TITLE": "Nenhuma pessoa com esses filtros"
+      },
+      "ADD": {
+        "BUTTON": "Adicionar pessoa",
+        "TITLE": "Adicionar pessoa a um projeto",
+        "MODE_EXISTING": "Contato existente",
+        "MODE_NEW": "Pessoa nova",
+        "SEARCH_PLACEHOLDER": "Buscar contatos por nome, telefone ou e-mail",
+        "NO_RESULTS": "Nenhum contato encontrado.",
+        "NAME": "Nome",
+        "PHONE": "Telefone",
+        "CITY": "Cidade",
+        "PROJECT": "Projeto",
+        "PROJECT_PLACEHOLDER": "Escolha um projeto",
+        "FRONT": "Frente",
+        "FRONT_NONE": "Sem frente por enquanto",
+        "ROLE": "Papel",
+        "ROLE_NONE": "Sem papel",
+        "RESPONSIBLE": "Responsável",
+        "RESPONSIBLE_NONE": "Sem responsável",
+        "NEXT_STEP": "Próximo passo",
+        "CONFIRM": "Adicionar",
+        "SUCCESS": "Pessoa adicionada ao projeto.",
+        "FOUND_EXISTING": "Encontramos {name} com esse telefone. Ela foi adicionada ao projeto.",
+        "GENERIC_ERROR": "Não foi possível adicionar a pessoa. Tente novamente.",
+        "UPDATE_ERROR": "A pessoa foi adicionada, mas o responsável e o próximo passo não foram salvos.",
+        "ERRORS": {
+          "PROJECT_REQUIRED": "Escolha um projeto.",
+          "CONTACT_REQUIRED": "Selecione um contato.",
+          "NAME_OR_PHONE_REQUIRED": "Informe o nome ou o telefone."
+        }
+      }
+    },
     "TEMPERATURE": {
       "VAPOR": "Vapor",
       "QUENTE": "Quente",
       "MORNO": "Morno",
       "FRIO": "Frio",
       "NONE": "Sem temperatura"
+    },
+    "OVERVIEW": {
+      "PROJECT_SELECT": "Projeto",
+      "ALL_PROJECTS": "Todos os projetos",
+      "LOAD_ERROR": "Não foi possível carregar a visão geral. Tente novamente.",
+      "OUT_OF_SCOPE": "Esse projeto não está disponível para você, então o filtro foi limpo.",
+      "CARDS": {
+        "PEOPLE": "Pessoas",
+        "FRONT_PARTICIPATIONS": "Participações em frentes",
+        "PENDING_FRONT": "Frente a definir",
+        "NO_CONTACT_7D": "Sem contato há 7 dias ou mais"
+      },
+      "BY_TEMPERATURE": {
+        "TITLE": "Por temperatura",
+        "HINT": "Clique em um nível para ver essas pessoas."
+      },
+      "RECENT": {
+        "TITLE": "O que mudou esta semana",
+        "EMPTY": "Nada mudou nos últimos 7 dias."
+      },
+      "CHANGE": {
+        "TEMPERATURE": "mudou de {from} para {to}",
+        "JOINED": "entrou no projeto",
+        "ASSIGNMENT": "começou um novo papel",
+        "UNKNOWN": "teve uma atualização"
+      }
+    },
+    "QUALITY": {
+      "PROJECT_LABEL": "Projeto",
+      "LOAD_ERROR": "Não foi possível carregar a qualidade dos dados. Tente novamente.",
+      "EMPTY": "Nada para resolver neste projeto.",
+      "DUPLICATES_TITLE": "Possíveis duplicados",
+      "INCOMPLETES_TITLE": "Cadastros incompletos",
+      "STATS": {
+        "DUPLICATES": "Possíveis duplicados",
+        "INCOMPLETES": "Cadastros incompletos",
+        "RESOLVED_THIS_MONTH": "Resolvidos este mês"
+      },
+      "PAIR": {
+        "NO_NAME": "Sem nome",
+        "EMPTY": "não informado",
+        "PHONE": "Telefone",
+        "CITY": "Cidade",
+        "CREATED_AT": "Criado em",
+        "CONVERSATIONS": "Conversas",
+        "MERGE": "Juntar cadastros",
+        "DISMISS": "Não são a mesma pessoa",
+        "DISMISS_SUCCESS": "Par descartado.",
+        "DISMISS_ERROR": "Não foi possível descartar o par. Tente novamente."
+      },
+      "MERGE": {
+        "TITLE": "Juntar cadastros",
+        "CHOOSE": "Escolha qual cadastro fica.",
+        "WARNING": "O outro cadastro será apagado. Conversas, histórico e participações passam para o que fica. Não dá para desfazer.",
+        "CONFIRM": "Juntar",
+        "SUCCESS": "Cadastros juntados.",
+        "ERROR": "Não foi possível juntar os cadastros. Nada foi alterado."
+      },
+      "PROBLEM": {
+        "MISSING_CITY": "Sem cidade",
+        "MISSING_PHONE": "Sem telefone",
+        "MISSING_NAME": "Sem nome",
+        "PENDING_FRONT": "Frente a definir"
+      },
+      "ACTIONS": {
+        "COMPLETE": "Completar",
+        "OPEN_RECORD": "Abrir ficha"
+      },
+      "COMPLETE": {
+        "TITLE": "Completar: {field}",
+        "CITY": "Cidade",
+        "PHONE": "Telefone",
+        "NAME": "Nome",
+        "SAVE": "Salvar",
+        "REQUIRED": "Preencha o valor.",
+        "ERROR": "Não foi possível salvar. Tente novamente.",
+        "PHONE_INVALID": "Informe o telefone no formato internacional, por exemplo +5581999990000.",
+        "PHONE_TAKEN": "Esse telefone já é de outra pessoa.",
+        "PHONE_TAKEN_HINT": "Se as duas estiverem neste projeto, junte os cadastros na lista de duplicados."
+      }
     },
     "CRM": {
       "COMING_SOON": "O conteúdo desta tela chega em breve.",
