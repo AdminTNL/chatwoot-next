@@ -41,11 +41,11 @@ class TnlAuth::AccessTokenVerifier
   end
 
   def issuer
-    ENV.fetch('TNL_AUTH_ISSUER', '').to_s.chomp('/')
+    TnlAuth::Config.issuer
   end
 
   def client_id
-    ENV.fetch('TNL_AUTH_CLIENT_ID', nil).presence || 'chatwoot'
+    TnlAuth::Config.client_id
   end
 
   # Chamado pelo gem jwt: primeiro sem invalidar (usa cache); se o kid nao existe, de novo com invalidate.

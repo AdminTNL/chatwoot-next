@@ -23,13 +23,21 @@ RSpec.describe 'TnlAuth OmniAuth callback', type: :request do
     JWT.encode(payload, signing_key, 'ES256', { kid: 'k1' })
   end
 
+  # Comeca pelo /tnl_auth/login (grava state e verifier na sessao) e devolve state e code_challenge do redirect.
+  def start_login
+    get '/tnl_auth/login'
+    query = Rack::Utils.parse_query(URI.parse(response.location).query)
+    [query['state'], query['code_challenge']]
+  end
+
   # A falha e entregue na propria resposta do callback do OmniAuth (nao ha redirect intermediario).
   def request_callback
-    get '/omniauth/tnl_auth/callback', params: { code: 'abc' }
+    state, = start_login
+    get '/omniauth/tnl_auth/callback', params: { code: 'abc', state: state }
   end
 
   def run_callback
-    get '/omniauth/tnl_auth/callback', params: { code: 'abc' }
+    request_callback
     follow_redirect!
   end
 
@@ -53,7 +61,7 @@ RSpec.describe 'TnlAuth OmniAuth callback', type: :request do
 
     it 'logs the agent in through the sso token' do
       with_modified_env env_options do
-        get '/omniauth/tnl_auth/callback', params: { code: 'abc' }
+        request_callback
         expect(response.location).to start_with('http://www.example.com/auth/tnl_auth/callback')
         follow_redirect!
 
@@ -63,10 +71,19 @@ RSpec.describe 'TnlAuth OmniAuth callback', type: :request do
       end
     end
 
-    it 'sends client_id and redirect_uri in the body, without Basic auth' do
+    it 'sends client_id, redirect_uri and a code_verifier that matches the code_challenge' do
+      challenge = nil
       with_modified_env env_options do
-        run_callback
+        state, challenge = start_login
+        get '/omniauth/tnl_auth/callback', params: { code: 'abc', state: state }
       end
+
+      verifier = nil
+      expect(a_request(:post, token_url).with do |req|
+        verifier = Rack::Utils.parse_query(req.body)['code_verifier']
+        verifier.present?
+      end).to have_been_made.once
+      expect(Base64.urlsafe_encode64(Digest::SHA256.digest(verifier), padding: false)).to eq(challenge)
 
       expect(a_request(:post, token_url).with(
                body: hash_including('grant_type' => 'authorization_code', 'code' => 'abc', 'client_id' => 'chatwoot',
@@ -77,7 +94,7 @@ RSpec.describe 'TnlAuth OmniAuth callback', type: :request do
 
     it 'does not double the slash when FRONTEND_URL ends with slash' do
       with_modified_env env_options.merge(FRONTEND_URL: 'http://www.example.com/') do
-        get '/omniauth/tnl_auth/callback', params: { code: 'abc' }
+        request_callback
       end
 
       expect(a_request(:post, token_url).with(
@@ -132,10 +149,60 @@ RSpec.describe 'TnlAuth OmniAuth callback', type: :request do
     end
 
     it 'redirects to tnl-auth-failed when TNL_AUTH_ISSUER is missing' do
-      with_modified_env env_options.merge(TNL_AUTH_ISSUER: nil) do
-        request_callback
+      with_modified_env env_options do
+        state, = start_login
+        with_modified_env TNL_AUTH_ISSUER: nil do
+          get '/omniauth/tnl_auth/callback', params: { code: 'abc', state: state }
+        end
+      end
+
+      expect(response).to redirect_to(failed_url)
+    end
+  end
+
+  context 'when the state or session is not valid' do
+    before { create(:user, email: 'ana@gmail.com') }
+
+    it 'fails without state and does not call /token' do
+      with_modified_env env_options do
+        start_login
+        get '/omniauth/tnl_auth/callback', params: { code: 'abc' }
+      end
+
+      expect(response).to redirect_to(failed_url)
+      expect(a_request(:post, token_url)).not_to have_been_made
+    end
+
+    it 'fails with a wrong state and does not call /token' do
+      with_modified_env env_options do
+        start_login
+        get '/omniauth/tnl_auth/callback', params: { code: 'abc', state: 'errado' }
+      end
+
+      expect(response).to redirect_to(failed_url)
+      expect(a_request(:post, token_url)).not_to have_been_made
+    end
+
+    it 'fails without passing through /tnl_auth/login and does not call /token' do
+      with_modified_env env_options do
+        get '/omniauth/tnl_auth/callback', params: { code: 'abc', state: 'a' * 48 }
+      end
+
+      expect(response).to redirect_to(failed_url)
+      expect(a_request(:post, token_url)).not_to have_been_made
+    end
+
+    it 'fails on a replayed callback with the same state' do
+      with_modified_env env_options do
+        state, = start_login
+        get '/omniauth/tnl_auth/callback', params: { code: 'abc', state: state }
+        expect(response.location).to start_with('http://www.example.com/auth/tnl_auth/callback')
+
+        get '/omniauth/tnl_auth/callback', params: { code: 'abc', state: state }
         expect(response).to redirect_to(failed_url)
       end
+
+      expect(a_request(:post, token_url)).to have_been_made.once
     end
   end
 

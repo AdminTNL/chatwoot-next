@@ -7,8 +7,8 @@ class OmniAuth::Strategies::TnlAuth < OmniAuth::Strategies::OAuth2
   option :name, 'tnl_auth'
   option :client_options, { authorize_url: '/authorize', token_url: '/token', auth_scheme: :request_body }
   option :client_secret, ''
-  option :provider_ignores_state, true
-  option :pkce, false
+  option :provider_ignores_state, false
+  option :pkce, true
 
   uid { raw_info['sub'] }
 
@@ -24,7 +24,7 @@ class OmniAuth::Strategies::TnlAuth < OmniAuth::Strategies::OAuth2
   end
 
   def callback_url
-    "#{ENV.fetch('FRONTEND_URL', '').chomp('/')}/omniauth/tnl_auth/callback"
+    ::TnlAuth::Config.callback_url
   end
 
   def callback_phase
@@ -50,10 +50,10 @@ class OmniAuth::Strategies::TnlAuth < OmniAuth::Strategies::OAuth2
   end
 
   def issuer
-    ENV.fetch('TNL_AUTH_ISSUER', '').to_s.chomp('/')
+    ::TnlAuth::Config.issuer
   end
 
   def client_id
-    ENV.fetch('TNL_AUTH_CLIENT_ID', nil).presence || 'chatwoot'
+    ::TnlAuth::Config.client_id
   end
 end
