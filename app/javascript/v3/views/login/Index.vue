@@ -15,18 +15,13 @@ import { SESSION_EVENTS } from 'dashboard/helper/AnalyticsHelper/events';
 import SimpleDivider from '../../components/Divider/SimpleDivider.vue';
 import FormInput from '../../components/Form/Input.vue';
 import GoogleOAuthButton from '../../components/GoogleOauth/Button.vue';
+import TnlAuthButton from '../../components/TnlAuth/Button.vue';
 import Spinner from 'shared/components/Spinner.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import MfaVerification from 'dashboard/components/auth/MfaVerification.vue';
 import SessionLimitOverlay from 'dashboard/components/auth/SessionLimitOverlay.vue';
-
-const ERROR_MESSAGES = {
-  'no-account-found': 'LOGIN.OAUTH.NO_ACCOUNT_FOUND',
-  'business-account-only': 'LOGIN.OAUTH.BUSINESS_ACCOUNTS_ONLY',
-  'saml-authentication-failed': 'LOGIN.SAML.API.ERROR_MESSAGE',
-  'saml-not-enabled': 'LOGIN.SAML.API.ERROR_MESSAGE',
-};
+import { ERROR_MESSAGES, getLoginOptions } from './loginOptions';
 
 const IMPERSONATION_URL_SEARCH_KEY = 'impersonation';
 const USER_NOT_CONFIRMED_ERROR_CODE = 'user_not_confirmed';
@@ -35,6 +30,7 @@ export default {
   components: {
     FormInput,
     GoogleOAuthButton,
+    TnlAuthButton,
     Spinner,
     NextButton,
     SimpleDivider,
@@ -94,11 +90,17 @@ export default {
     allowedLoginMethods() {
       return window.chatwootConfig.allowedLoginMethods || ['email'];
     },
+    loginOptions() {
+      return getLoginOptions(window.chatwootConfig);
+    },
     showGoogleOAuth() {
-      return (
-        this.allowedLoginMethods.includes('google_oauth') &&
-        Boolean(window.chatwootConfig.googleOAuthClientId)
-      );
+      return this.loginOptions.showGoogleOAuth;
+    },
+    showTnlAuth() {
+      return this.loginOptions.showTnlAuth;
+    },
+    showSocialDivider() {
+      return this.loginOptions.showSocialDivider;
     },
     showSignupLink() {
       return window.chatwootConfig.signupEnabled === 'true';
@@ -130,6 +132,8 @@ export default {
       switch (key) {
         case 'LOGIN.OAUTH.NO_ACCOUNT_FOUND':
           return this.$t('LOGIN.OAUTH.NO_ACCOUNT_FOUND');
+        case 'LOGIN.OAUTH.TNL_AUTH_FAILED':
+          return this.$t('LOGIN.OAUTH.TNL_AUTH_FAILED');
         case 'LOGIN.OAUTH.BUSINESS_ACCOUNTS_ONLY':
           return this.$t('LOGIN.OAUTH.BUSINESS_ACCOUNTS_ONLY');
         case 'LOGIN.API.UNAUTH':
@@ -339,13 +343,14 @@ export default {
       v-else
       class="bg-white shadow sm:mx-auto mt-11 sm:w-full sm:max-w-lg dark:bg-n-solid-2 p-11 sm:shadow-lg sm:rounded-lg"
       :class="{
-        'mb-8 mt-15': !showGoogleOAuth,
+        'mb-8 mt-15': !showSocialDivider,
         'animate-wiggle': loginApi.hasErrored,
       }"
     >
       <div v-if="!email">
         <div class="flex flex-col gap-4">
           <GoogleOAuthButton v-if="showGoogleOAuth" />
+          <TnlAuthButton v-if="showTnlAuth" />
           <div v-if="showSamlLogin" class="text-center">
             <router-link
               to="/app/login/sso"
@@ -361,7 +366,7 @@ export default {
             </router-link>
           </div>
           <SimpleDivider
-            v-if="showGoogleOAuth || showSamlLogin"
+            v-if="showSocialDivider || showSamlLogin"
             :label="$t('COMMON.OR')"
             class="uppercase"
           />

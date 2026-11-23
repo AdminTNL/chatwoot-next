@@ -17,6 +17,8 @@
     },
     "OAUTH": {
       "GOOGLE_LOGIN": "Entrar com o Google",
+      "TNL_AUTH_LOGIN": "Entrar com a conta da Tiro na Lua",
+      "TNL_AUTH_FAILED": "Não foi possível entrar. Tente de novo.",
       "BUSINESS_ACCOUNTS_ONLY": "Use o endereço de endereço eletrônico da empresa para fazer ‘login’",
       "NO_ACCOUNT_FOUND": "Não encontramos uma conta para seu endereço de correio eletrônico."
     },

@@ -40,6 +40,8 @@
         googleOAuthClientId: '<%= ENV.fetch('GOOGLE_OAUTH_CLIENT_ID', nil) %>',
         googleOAuthCallbackUrl: '<%= ENV.fetch('GOOGLE_OAUTH_CALLBACK_URL', nil) %>',
         allowedLoginMethods: <%= @global_config['ALLOWED_LOGIN_METHODS'].to_json.html_safe %>,
+        tnlAuthEnabled: <%= TnlAuth::Config.enabled? %>,
+        tnlAuthProvider: '<%= j TnlAuth::Config.provider %>',
         fbApiVersion: '<%= @global_config['FACEBOOK_API_VERSION'] %>',
         whatsappAppId: '<%= @global_config['WHATSAPP_APP_ID'] %>',
         whatsappConfigurationId: '<%= @global_config['WHATSAPP_CONFIGURATION_ID'] %>',

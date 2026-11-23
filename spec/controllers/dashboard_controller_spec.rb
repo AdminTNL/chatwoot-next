@@ -18,6 +18,33 @@ describe '/app/login', type: :request do
     end
   end
 
+  context 'with tnl_auth config' do
+    it 'exposes only the enabled flag and provider when TNL_AUTH_ISSUER is set' do
+      with_modified_env TNL_AUTH_ISSUER: 'https://auth.test', TNL_AUTH_CLIENT_ID: 'segredo-cliente', TNL_AUTH_PROVIDER: 'google' do
+        get '/app/login'
+        expect(response.body).to include 'tnlAuthEnabled: true'
+        expect(response.body).to include "tnlAuthProvider: 'google'"
+        expect(response.body).not_to include 'auth.test'
+        expect(response.body).not_to include 'segredo-cliente'
+        expect(response.body).not_to include '/omniauth/tnl_auth/callback'
+      end
+    end
+
+    it 'exposes an empty provider when TNL_AUTH_PROVIDER is empty' do
+      with_modified_env TNL_AUTH_ISSUER: 'https://auth.test', TNL_AUTH_PROVIDER: '' do
+        get '/app/login'
+        expect(response.body).to include "tnlAuthProvider: ''"
+      end
+    end
+
+    it 'disables the flag without TNL_AUTH_ISSUER' do
+      with_modified_env TNL_AUTH_ISSUER: nil do
+        get '/app/login'
+        expect(response.body).to include 'tnlAuthEnabled: false'
+      end
+    end
+  end
+
   context 'with non-HTML format' do
     it 'returns not acceptable for JSON with error message' do
       get '/app/login', headers: { 'Accept' => 'application/json' }
