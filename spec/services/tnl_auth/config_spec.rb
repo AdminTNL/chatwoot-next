@@ -57,6 +57,29 @@ RSpec.describe TnlAuth::Config do
     end
   end
 
+  describe '.auto_provision_account_id' do
+    it 'is nil when not set or blank' do
+      with_modified_env TNL_AUTH_AUTO_PROVISION_ACCOUNT_ID: nil do
+        expect(described_class.auto_provision_account_id).to be_nil
+      end
+      with_modified_env TNL_AUTH_AUTO_PROVISION_ACCOUNT_ID: ' ' do
+        expect(described_class.auto_provision_account_id).to be_nil
+      end
+    end
+
+    it 'is nil when not a positive integer' do
+      with_modified_env TNL_AUTH_AUTO_PROVISION_ACCOUNT_ID: 'abc' do
+        expect(described_class.auto_provision_account_id).to be_nil
+      end
+    end
+
+    it 'returns the integer id' do
+      with_modified_env TNL_AUTH_AUTO_PROVISION_ACCOUNT_ID: '1' do
+        expect(described_class.auto_provision_account_id).to eq(1)
+      end
+    end
+  end
+
   describe '.callback_url' do
     it 'builds the url from FRONTEND_URL' do
       with_modified_env FRONTEND_URL: 'http://www.example.com' do

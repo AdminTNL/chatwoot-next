@@ -17,6 +17,12 @@ module TnlAuth::Config
     ENV.fetch('TNL_AUTH_PROVIDER', 'google').to_s
   end
 
+  # Id da conta onde o primeiro login cria o agente (spec 067). nil = desligado.
+  def self.auto_provision_account_id
+    value = ENV.fetch('TNL_AUTH_AUTO_PROVISION_ACCOUNT_ID', '').to_s.strip
+    value.match?(/\A\d+\z/) && value.to_i.positive? ? value.to_i : nil
+  end
+
   def self.callback_url
     "#{ENV.fetch('FRONTEND_URL', '').chomp('/')}/omniauth/tnl_auth/callback"
   end
