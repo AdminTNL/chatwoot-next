@@ -253,6 +253,37 @@ describe WebhookListener do
     end
   end
 
+  describe '#contact_merged' do
+    let(:event_name) { :'contact.merged' }
+    let(:contact_merged_event) { Events::Base.new(event_name, Time.zone.now, contact: contact, mergee_contact_id: 9999) }
+
+    context 'when webhook is not configured' do
+      it 'does not trigger webhook' do
+        expect(WebhookJob).to receive(:perform_later).exactly(0).times
+        listener.contact_merged(contact_merged_event)
+      end
+    end
+
+    context 'when webhook subscribes to contact_merged' do
+      it 'triggers webhook with merged_contact_id' do
+        webhook = create(:webhook, account: account, subscriptions: ['contact_merged'])
+        expect(WebhookJob).to receive(:perform_later).with(
+          webhook.url, contact.webhook_data.merge(event: 'contact_merged', merged_contact_id: 9999), :account_webhook,
+          secret: webhook.secret, delivery_id: instance_of(String)
+        ).once
+        listener.contact_merged(contact_merged_event)
+      end
+    end
+
+    context 'when webhook does not subscribe to contact_merged' do
+      it 'does not trigger webhook' do
+        create(:webhook, account: account, subscriptions: ['contact_created'])
+        expect(WebhookJob).to receive(:perform_later).exactly(0).times
+        listener.contact_merged(contact_merged_event)
+      end
+    end
+  end
+
   describe '#contact_updated' do
     let(:event_name) { :'contact.updated' }
     let!(:contact_updated_event) { Events::Base.new(event_name, Time.zone.now, contact: contact, changed_attributes: changed_attributes) }

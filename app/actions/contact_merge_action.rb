@@ -56,7 +56,8 @@ class ContactMergeAction
 
     @mergee_contact.reload.destroy!
     Rails.configuration.dispatcher.dispatch(CONTACT_MERGED, Time.zone.now, contact: @base_contact,
-                                                                           tokens: [@base_contact.contact_inboxes.filter_map(&:pubsub_token)])
+                                                                           tokens: [@base_contact.contact_inboxes.filter_map(&:pubsub_token)],
+                                                                           mergee_contact_id: @mergee_contact.id)
     @base_contact.update!(merged_attributes)
   end
 end
