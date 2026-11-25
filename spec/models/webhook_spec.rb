@@ -9,6 +9,13 @@ RSpec.describe Webhook do
     it { is_expected.to belong_to(:account) }
   end
 
+  describe 'subscriptions' do
+    it 'accepts contact_merged' do
+      webhook = build(:webhook, account: create(:account), subscriptions: ['contact_merged'])
+      expect(webhook).to be_valid
+    end
+  end
+
   describe 'secret token' do
     let!(:account) { create(:account) }
 

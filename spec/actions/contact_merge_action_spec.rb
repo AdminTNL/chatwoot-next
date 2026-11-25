@@ -40,6 +40,15 @@ describe ContactMergeAction do
       expect(base_contact.custom_attributes['val_empty_new']).to eq('')
     end
 
+    it 'dispatches CONTACT_MERGED with the mergee contact id' do
+      mergee_id = mergee_contact.id
+      allow(Rails.configuration.dispatcher).to receive(:dispatch)
+      contact_merge
+      expect(Rails.configuration.dispatcher).to have_received(:dispatch).with(
+        Events::Types::CONTACT_MERGED, anything, hash_including(contact: base_contact, mergee_contact_id: mergee_id)
+      )
+    end
+
     context 'when base contact and merge contact are same' do
       it 'does not delete contact' do
         mergee_contact = base_contact
