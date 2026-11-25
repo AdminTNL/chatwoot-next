@@ -41,6 +41,8 @@ class DeviseOverrides::OmniauthCallbacksController < DeviseTokenAuth::OmniauthCa
   end
 
   def sign_up_user
+    return provision_tnl_auth_agent if tnl_auth_auto_provision?
+
     return redirect_to login_page_url(error: 'no-account-found') unless account_signup_allowed?
     return redirect_to login_page_url(error: 'business-account-only') unless validate_signup_email_is_business_domain?
 
@@ -49,6 +51,35 @@ class DeviseOverrides::OmniauthCallbacksController < DeviseTokenAuth::OmniauthCa
     token = @resource.send(:set_reset_password_token)
     frontend_url = ENV.fetch('FRONTEND_URL', nil)
     redirect_to "#{frontend_url}/app/auth/password/edit?config=default&reset_password_token=#{token}"
+  end
+
+  # So o provedor tnl_auth, e so com TNL_AUTH_AUTO_PROVISION_ACCOUNT_ID definido (spec 067).
+  def tnl_auth_auto_provision?
+    auth_hash['provider'].to_s == 'tnl_auth' && TnlAuth::Config.auto_provision_account_id.present?
+  end
+
+  # Falha fechada: qualquer problema com /allowed ou na criacao termina em no-account-found.
+  def provision_tnl_auth_agent
+    allowed = TnlAuth::AllowedClient.new(auth_hash.dig('credentials', 'token')).perform
+    return redirect_to login_page_url(error: 'no-account-found') unless allowed && allowed['status'] == 'active'
+
+    @resource = build_tnl_auth_agent(allowed)
+    @resource.present? ? sign_in_user : redirect_to(login_page_url(error: 'no-account-found'))
+  rescue ActiveRecord::ActiveRecordError => e
+    Rails.logger.error "[TnlAuth] falha ao criar agente (#{e.class})"
+    redirect_to login_page_url(error: 'no-account-found')
+  end
+
+  # Usa sempre o e-mail do token; se o /allowed devolver outro, so avisa no log.
+  def build_tnl_auth_agent(allowed)
+    email = auth_hash.dig('info', 'email').to_s.downcase
+    if allowed['email'].present? && allowed['email'].to_s.downcase != email
+      Rails.logger.warn "[TnlAuth] e-mail do /allowed difere do e-mail do token; usando o do token (#{email})"
+    end
+
+    TnlAuth::ProvisionAgent.new(
+      email: email, allowed: allowed, account_id: TnlAuth::Config.auto_provision_account_id
+    ).perform
   end
 
   def login_page_url(error: nil, email: nil, sso_auth_token: nil)

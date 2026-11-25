@@ -40,6 +40,8 @@ module Chatwoot
     config.rails_i18n.enabled_modules = [:pluralization]
 
     config.eager_load_paths << Rails.root.join('lib')
+    # lib/omniauth/strategies/tnl_auth.rb define OmniAuth::Strategies::TnlAuth (nao Omniauth::...); carregado por require no initializer
+    Rails.autoloaders.main.ignore(Rails.root.join('lib/omniauth'))
     config.eager_load_paths << Rails.root.join('enterprise/lib')
     config.eager_load_paths << Rails.root.join('enterprise/listeners')
     # rubocop:disable Rails/FilePath
